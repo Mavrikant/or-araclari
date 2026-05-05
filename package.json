@@ -1,0 +1,27 @@
+{
+  "name": "or-araclari",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Yöneylem Araştırması (Operations Research) klasik problemleri için tarayıcıda çalışan ücretsiz, açık kaynak Türkçe araç koleksiyonu.",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^5.0.4",
+    "@tailwindcss/vite": "^4.2.4",
+    "astro": "^6.2.2",
+    "tailwindcss": "^4.2.4"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "typescript": "^6.0.3"
+  }
+}
