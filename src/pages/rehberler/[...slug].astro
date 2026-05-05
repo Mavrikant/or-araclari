@@ -2,6 +2,7 @@
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Container from '../../components/Container.astro';
+import AdSlot from '../../components/AdSlot.astro';
 import { SITE, withBase } from '../../data/site';
 import { TOOLS } from '../../data/tools';
 
@@ -148,6 +149,8 @@ const faqJsonLd = data.faq
     <div class="mt-10 grid gap-10 lg:grid-cols-[1fr_220px]">
       <div class="prose-tr mx-auto w-full max-w-2xl lg:mx-0">
         <Content />
+
+        <AdSlot slot="rehber-icerik-alt" format="auto" class="not-prose" />
 
         {
           data.faq && (
