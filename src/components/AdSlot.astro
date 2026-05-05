@@ -1,0 +1,56 @@
+---
+import { ADSENSE_CLIENT_ID } from '../data/site';
+
+interface Props {
+  /**
+   * The AdSense slot ID (10-digit numeric, from the AdSense dashboard).
+   * Each ad placement has its own slot ID; create them in the AdSense
+   * panel under "Ads" → "By ad unit" before referencing here.
+   */
+  slot: string;
+  /** AdSense format hint. */
+  format?: 'auto' | 'fluid' | 'rectangle' | 'horizontal' | 'vertical';
+  /** Required for in-feed and in-article ads. */
+  layoutKey?: string;
+  /** Allow the ad to fill the full container width on small screens. */
+  responsive?: boolean;
+  class?: string;
+}
+
+const {
+  slot,
+  format = 'auto',
+  layoutKey,
+  responsive = true,
+  class: className = '',
+} = Astro.props as Props;
+
+const enabled = Boolean(ADSENSE_CLIENT_ID);
+---
+
+{
+  enabled && (
+    <aside
+      class:list={[
+        'my-8 mx-auto block w-full max-w-2xl text-center text-xs text-slate-400 dark:text-slate-600',
+        className,
+      ]}
+      aria-label="Reklam"
+      data-ad-slot-name={slot}
+    >
+      <span class="mb-1 block uppercase tracking-wider">Reklam</span>
+      <ins
+        class="adsbygoogle block"
+        style="display:block; min-height:90px;"
+        data-ad-client={ADSENSE_CLIENT_ID}
+        data-ad-slot={slot}
+        data-ad-format={format}
+        data-ad-layout-key={layoutKey}
+        data-full-width-responsive={String(responsive)}
+      />
+      <script is:inline>
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </aside>
+  )
+}

@@ -16,6 +16,20 @@ export const SITE = {
 } as const;
 
 /**
+ * Google Analytics 4 measurement ID (e.g. "G-XXXXXXXXXX").
+ * Empty/undefined disables analytics entirely — useful for local dev and
+ * preview builds. Set via PUBLIC_GA_ID env var (GH Actions repo secret).
+ */
+export const GA_ID = import.meta.env.PUBLIC_GA_ID ?? '';
+
+/**
+ * Google AdSense publisher ID (e.g. "ca-pub-1234567890123456").
+ * Empty/undefined hides every AdSlot and skips loading the AdSense script.
+ * Set via PUBLIC_ADSENSE_CLIENT_ID once the AdSense application is approved.
+ */
+export const ADSENSE_CLIENT_ID = import.meta.env.PUBLIC_ADSENSE_CLIENT_ID ?? '';
+
+/**
  * Returns BASE_URL guaranteed to end with `/` so concatenations like
  * `${base}rehberler` always render as `/or-araclari/rehberler` with a single
  * separator, regardless of how Astro normalises BASE_URL across versions.

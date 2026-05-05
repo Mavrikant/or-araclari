@@ -1,8 +1,9 @@
 ---
 import '../styles/global.css';
-import { SITE, base } from '../data/site';
+import { SITE, base, GA_ID, ADSENSE_CLIENT_ID } from '../data/site';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import CookieBanner from '../components/CookieBanner.astro';
 
 interface Props {
   title?: string;
@@ -82,6 +83,41 @@ const websiteJsonLd = {
 
     <script is:inline type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
 
+    {
+      GA_ID && (
+        <>
+          <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} />
+          <script is:inline define:vars={{ gaId: GA_ID }}>
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              window.gtag = gtag;
+              gtag('consent', 'default', {
+                analytics_storage: 'denied',
+                ad_storage: 'denied',
+                ad_user_data: 'denied',
+                ad_personalization: 'denied',
+                wait_for_update: 500
+              });
+              gtag('js', new Date());
+              gtag('config', gaId, { anonymize_ip: true });
+            `}
+          </script>
+        </>
+      )
+    }
+
+    {
+      ADSENSE_CLIENT_ID && (
+        <script
+          is:inline
+          async
+          crossorigin="anonymous"
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
+        />
+      )
+    }
+
     <slot name="head" />
   </head>
   <body class="flex min-h-dvh flex-col font-sans">
@@ -99,5 +135,7 @@ const websiteJsonLd = {
     </main>
 
     <Footer />
+
+    {(GA_ID || ADSENSE_CLIENT_ID) && <CookieBanner />}
   </body>
 </html>
