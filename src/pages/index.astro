@@ -1,9 +1,20 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Container from '../components/Container.astro';
 import ToolCard from '../components/ToolCard.astro';
 import { TOOLS } from '../data/tools';
 import { withBase } from '../data/site';
+
+const recentGuides = (await getCollection('rehberler'))
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime())
+  .slice(0, 3);
+
+const dateFormatter = new Intl.DateTimeFormat('tr-TR', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
 
 const valueProps = [
   {
@@ -128,28 +139,72 @@ const valueProps = [
   </Container>
 
   <Container as="section" size="wide" class="py-12 sm:py-16">
-    <div class="mb-8">
-      <h2
-        class="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl dark:text-white"
-      >
-        Son rehberler
-      </h2>
-      <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
-        Yöneylem araştırması üzerine Türkçe yazılar.
-      </p>
+    <div class="mb-8 flex items-end justify-between gap-4">
+      <div>
+        <h2
+          class="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl dark:text-white"
+        >
+          Son rehberler
+        </h2>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+          Yöneylem araştırması üzerine Türkçe yazılar.
+        </p>
+      </div>
+      {
+        recentGuides.length > 0 && (
+          <a
+            href={withBase('/rehberler')}
+            class="hidden text-sm font-medium text-brand-600 hover:text-brand-700 sm:inline-flex dark:text-accent-400 dark:hover:text-accent-300"
+          >
+            Tümünü gör →
+          </a>
+        )
+      }
     </div>
 
-    <div
-      class="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-8 text-center dark:border-slate-700 dark:bg-slate-900/30"
-    >
-      <p class="text-sm text-slate-600 dark:text-slate-400">
-        İlk rehberler önümüzdeki haftalarda yayında.
-        <a
-          href={withBase('/rehberler')}
-          class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"
-          >Yol haritasını gör →</a
-        >
-      </p>
-    </div>
+    {
+      recentGuides.length > 0 ? (
+        <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {recentGuides.map((guide) => (
+            <li>
+              <a
+                href={withBase(`/rehberler/${guide.id}`)}
+                class="group flex h-full flex-col gap-3 rounded-xl border border-slate-200 bg-white p-5 transition-colors hover:border-accent-400 hover:bg-accent-50/40 dark:border-slate-800 dark:bg-slate-900/40 dark:hover:border-accent-500 dark:hover:bg-slate-900"
+              >
+                <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                  <time datetime={guide.data.pubDate.toISOString()}>
+                    {dateFormatter.format(guide.data.pubDate)}
+                  </time>
+                  {guide.data.readingMinutes && (
+                    <>
+                      <span class="text-slate-300 dark:text-slate-700">·</span>
+                      <span>{guide.data.readingMinutes} dk okuma</span>
+                    </>
+                  )}
+                </div>
+                <h3 class="font-display text-lg font-semibold tracking-tight text-slate-900 group-hover:text-brand-700 dark:text-white dark:group-hover:text-accent-300">
+                  {guide.data.title}
+                </h3>
+                <p class="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                  {guide.data.description}
+                </p>
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-8 text-center dark:border-slate-700 dark:bg-slate-900/30">
+          <p class="text-sm text-slate-600 dark:text-slate-400">
+            İlk rehberler önümüzdeki haftalarda yayında.
+            <a
+              href={withBase('/rehberler')}
+              class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"
+            >
+              Yol haritasını gör →
+            </a>
+          </p>
+        </div>
+      )
+    }
   </Container>
 </BaseLayout>

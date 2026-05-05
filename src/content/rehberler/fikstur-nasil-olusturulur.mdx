@@ -1,0 +1,383 @@
+---
+title: "Round-Robin Algoritması: Lig Fikstürü Nasıl Oluşturulur?"
+description: "Lig fikstürü nedir, round-robin algoritması nasıl çalışır, tek/çift devre, bay takım kavramı ve Türkiye Süper Ligi pratiği üzerine kapsamlı Türkçe rehber."
+pubDate: 2026-05-06
+relatedTool: "lig-fiksturu-olusturucu"
+keywords:
+  - "lig fikstürü"
+  - "round-robin"
+  - "fikstür oluşturucu"
+  - "round robin algoritması"
+  - "berger tablosu"
+  - "süper lig fikstürü"
+  - "amatör lig"
+readingMinutes: 12
+faq:
+  - question: "Tek devreli ile çift devreli lig arasındaki fark nedir?"
+    answer: "Tek devreli ligde her takım birbiriyle bir kez oynar; çift devreli ligde aynı eşleşme bir defa ev sahibi, bir defa deplasman olarak iki kez oynanır. Süper Lig dahil profesyonel liglerin büyük kısmı çift devreli oynanır; ev–deplasman avantajının dengelenmesi ve sezonun yeterli uzunlukta olması bu tercihin temel nedenleridir."
+  - question: "Bay takım ne demek?"
+    answer: "Bir hafta hiçbir maçı olmayan, dinlenen takıma 'bay takım' denir. Tek sayıda takım olduğunda her hafta zorunlu olarak bir takım bay kalır. Round-robin algoritmasında bu durum, listeye sanal bir 'BAY' takım eklenerek çözülür ve gerçek takımlar sırayla bu sanal takımla 'eşleştiği' hafta dinlenmiş olur."
+  - question: "Round-robin algoritması her takıma eşit ev/deplasman maçı verir mi?"
+    answer: "Saf circle method, ev–deplasman dengesini garanti etmez; küçük sapmalar oluşabilir. Profesyonel liglerin kullandığı Berger tabloları bu dengeyi optimize eder ve ek olarak ardışık ev/deplasman maçlarının sayısını sınırlandırır. Amatör ligler için saf circle method genellikle yeterlidir; küçük dengesizlikler ikinci yarı düzenlenmesiyle (mirror) telafi edilir."
+  - question: "N takımlı bir ligde toplam kaç maç oynanır?"
+    answer: "Tek devrede her takım diğer N-1 takımla bir kez oynadığı için toplam maç sayısı N × (N-1) / 2'dir; çift devrede bunun iki katı, yani N × (N-1). Örneğin 18 takımlı tek devre ligde 153, çift devre ligde 306 maç oynanır."
+  - question: "Aynı haftada bir takım iki maç oynayabilir mi?"
+    answer: "Round-robin algoritmasının temel garantisi her hafta her takımın en fazla bir maçının olmasıdır. Aksi geçerli bir round-robin programı sayılmaz. Pratikte erteleme veya kupa fikstürüyle çakışma olduğunda manuel düzeltmeler gerekebilir; ama algoritmanın doğal çıktısı bu kuralı ihlal etmez."
+---
+
+Bir ligin başlamadan önce çözülmesi gereken sessiz ama hayati bir sorunu vardır:
+hangi takım hangi hafta kiminle oynayacak? Yöneylem araştırmasının klasik
+"çizelgeleme" başlığı altına giren bu soru, ilk bakışta basit görünse de, ölçek
+büyüdüğünde —veya kısıtlar arttıkça— zorlu bir kombinatoryel probleme dönüşür.
+Bu rehber, lig fikstürünün arkasındaki matematiği, tarihsel olarak kullanılan
+çözüm yöntemini ve Türk futbolunda bu işin nasıl yürüdüğünü adım adım anlatır.
+
+## Fikstür nedir, neden önemlidir?
+
+Fikstür, bir lig veya turnuva sezonu boyunca oynanacak tüm maçların hangi
+hafta, hangi takımlar arasında ve nerede yapılacağını belirleyen takvimdir.
+Süper Lig'in 38 haftalık programı, mahalle halı saha turnuvasının dört haftalık
+çizelgesi, üniversite spor şenliğinin akşam koşturmacası — hepsi aynı
+çekirdek problemi çözer. Tek fark ölçek ve eşlik eden kısıtların sayısıdır.
+
+İyi bir fikstürün taşıdığı yük göründüğünden büyüktür. Saha tahsisi
+yapılmalıdır: aynı belediye sahasında iki maç çakışırsa biri saha sıkıntısına
+düşer. Yayın takvimi belirlenmelidir: bir kanal aynı saatte iki popüler maçı
+canlı yayınlayamayacağı için derbiler haftaya yayılmalıdır. Taraftar planlaması
+gerekir: deplasmana giden bir takımın iki ardışık maçı uzak şehirlerde olursa
+hem maliyet hem yorgunluk birikir. Federasyonların ve organizatörlerin yıllar
+içinde geliştirdiği "iyi fikstür" reçetesi, bu birbirine zıt amaçların aynı
+takvimde dengelendiği bir uzlaşıdır.
+
+İşin özünde matematiksel olarak şu üç koşulun sağlanması beklenir: her takım,
+ligdeki her bir başka takımla planlanmış sayıda (tek veya iki kez) oynar; aynı
+hafta içinde hiçbir takım birden fazla maça çıkmaz; ve sezon sonunda kimsenin
+maç sayısı diğerlerinden farklı olmaz. Bu üç şartı sağlayan herhangi bir
+takvime *round-robin* (Türkçe karşılığıyla *tam tur*) çizelgesi denir; üzerine
+eklenen ev/deplasman dengesi, derbi tarihi gibi kısıtlar, problemi yöneylem
+araştırmasının daha karmaşık varyantlarına taşır.
+
+## Round-robin algoritmasının matematiği
+
+Round-robin çizelgelemenin matematiksel temeli sade ve zariftir. **N takımlı**
+bir ligde:
+
+- Tek devrede toplam **N × (N−1) / 2** maç oynanır.
+- Hafta başına **N / 2** maç çıkar (tek sayıda takım için bu sayı
+  (N+1)/2 ve her hafta bir takım dinlenir).
+- Tek devrenin tamamlanması için gereken hafta sayısı **N − 1**'dir.
+
+18 takımlı bir ligin tek devresinde 18 × 17 / 2 = 153 maç vardır; her hafta
+9 maç oynanır ve 17 haftada tüm eşleşmeler tamamlanır. Çift devrede bu sayılar
+ikiye katlanır: 306 maç, 9 maç/hafta, 34 hafta. Süper Lig'in 38 haftalık
+takvimi, 19 takımla bu hesaba uyum sağlar.
+
+İşin algoritmik kısmı, bu eşleşmelerin haftalara nasıl dağıtıldığıyla ilgilidir.
+"Hangi hafta kim kime karşı oynar?" sorusunun klasik cevabı **Berger
+tablolarıdır**. 19. yüzyılın sonlarında Alman satranç ustası Johann Berger'in
+turnuva çizelgeleri için sistemleştirdiği yöntem, bugün hâlâ kullanımdadır ve
+bilgisayar bilimleri literatüründe **circle method** (daire yöntemi) olarak
+bilinir.
+
+### Circle method adım adım
+
+Yöntemin sezgisini anlatmak için 4 takımlı (A, B, C, D) basit bir örnek
+yeterlidir. Öncelikle takımlar yuvarlak bir masanın etrafına oturur gibi
+düşünülür. Bir takım sabit kalır (genellikle birinci sıradaki); diğerleri her
+hafta sonunda saat yönünde bir adım rotasyonla yer değiştirir. Her hafta,
+karşı karşıya oturan takımlar o haftanın maçlarını oynar.
+
+```
+Hafta 1:    A     Eşleşmeler: A–D, B–C
+          /   \
+         B     D
+          \   /
+            C
+
+Hafta 2:    A     Eşleşmeler: A–C, D–B
+          /   \
+         D     C  (B, C, D döndü; D şimdi A'nın solunda)
+          \   /
+            B
+
+Hafta 3:    A     Eşleşmeler: A–B, C–D
+          /   \
+         C     B
+          \   /
+            D
+```
+
+Üç hafta sonunda tüm 6 eşleşme (4 × 3 / 2 = 6) tamamlanmıştır. Algoritma
+N − 1 hafta sürer ve her hafta tüm takımları içeren bir maç dilimi oluşturur.
+
+### Tek sayıda takım: phantom BAY hilesi
+
+8 takımdan 9'a çıktığınız anda algoritma kırılır gibi görünür: 9 / 2 = 4,5
+maç olamaz. Çözüm zarif: listeye 10. bir "BAY" takım eklenir, böylece her hafta
+10 / 2 = 5 eşleşme yapılır. Ancak gerçekte 5 değil 4 maç oynanır; BAY ile
+eşleşen takım o hafta dinlenir. Rotasyon devam ettiği için her takım sezon
+boyunca eşit sayıda haftada (tam olarak bir kez tek devre, iki kez çift devre)
+bay kalır. Bu, hem matematiksel olarak temizdir hem de saha planlaması açısından
+adildir.
+
+## Algoritmanın kısa tarihçesi
+
+Round-robin çizelgelemesi, 19. yüzyılın sonlarına kadar uzanan bir
+problemdir. Yöntemin sistemli ilk yazılı izahını, 1893 yılında Avusturyalı
+satranç ustası Johann Berger turnuva çizelgeleri için *Schach-Jahrbuch*'ta
+yayımlamıştır; bu yüzden tablolar bugün hâlâ "Berger tabloları" diye anılır.
+Berger'den önce de turnuva yöneticileri benzer rotasyon hilelerini sezgiyle
+uyguluyordu, ama Berger'in katkısı yöntemi tek bir reçeteye indirgemek ve
+herhangi bir takım sayısı için sistematik olarak çalıştığını göstermekti.
+
+20. yüzyılın ortasında bilgisayarlar saheneye girdiğinde round-robin programı
+ilk yazılan kombinatoryel çizelgeleme algoritmalarından biri oldu; o dönem
+ders kitaplarının "if/for döngüsüyle ne yapılır?" örneklerinde bile sıkça
+görülürdü. 1970'lerden itibaren kuzey Avrupa profesyonel ligleri çekiliş
+süreçlerini bilgisayarla destekleyen ilk federasyonlar oldu. Bugün dünya
+genelinde hemen hemen her büyük lig yapay zekâ takviyeli özel yazılımlar
+kullanır; saf round-robin, içine onlarca ek kısıt enjekte edilmiş bir
+çekirdek olarak görev yapar.
+
+## Algoritmik karmaşıklık ve performans
+
+Saf circle method'un karmaşıklığı problem boyutuna göre **O(N²)**'dir: N − 1
+hafta için N / 2 eşleşme üretirsiniz, toplam yaklaşık N² / 2 işlem yapılır.
+N = 32 için bu yaklaşık 500 işlem; N = 100 için bile 5000 işlem demektir.
+Modern bir bilgisayarda mikrosaniyeler içinde tamamlanır, hatta tarayıcı
+JavaScript ortamında bile gözle görülür bir gecikme olmaz.
+
+Hesaplama maliyeti döngüde değil, çıktıyı insan okuyabilir biçime
+dönüştürmede gizlenir. 32 takımlı çift devre lig 31 × 2 = 62 hafta ve
+toplamda 992 maç üretir; bu kadar veriyi tabloya işleyip yazdırmaya hazırlamak
+algoritmanın kendisinden çok daha uzun sürer. Bu nedenle pratik
+optimizasyonlar genellikle algoritma değil, render katmanına odaklanır:
+sayfayı sanal kaydırma (virtual scrolling) ile parça parça yüklemek, baskı
+çıktısını LaTeX/PDF kütüphanesine devretmek gibi.
+
+Ek kısıt katmanı eklendiğinde ise problem hızla zorlaşır. Ev/deplasman
+dengesinin minimize edilmesi, ardışık deplasman maçlarının sınırlandırılması
+veya derbi tarihinin sabitlenmesi gibi koşullar genellikle **NP-zor**
+karaktere bürünür. Bu seviyede artık saf circle method yetmez; **kısıt
+programlama (CP)**, **tamsayı programlama (IP)** veya **metasezgisel
+algoritmalar** (simulated annealing, genetik algoritma) devreye girer.
+
+## Tek devreli mi, çift devreli mi?
+
+İki ana varyantın farkı bir lig sezonunun ruhunu belirler. **Tek devreli**
+formatta her takım birbiriyle yalnızca bir kez oynar; ev–deplasman ataması
+algoritma çıktısında ne ise odur, sezon ortasında değiştirilmez. Avantajı
+süre kısalığıdır: 18 takımlı bir lig, tek devrede 17 haftada bitirilebilir.
+Genelde turnuva formatlarında, üniversite ligi gibi sıkışık takvimlerde ve
+play-off öncesi düzenli sezon olarak tercih edilir.
+
+**Çift devreli** formatta ise her takım birbiriyle iki kez oynar: bir kez
+kendi sahasında, bir kez rakibin sahasında. Bu yaklaşımın iki büyük getirisi
+vardır. Birincisi adil bir ev–deplasman dengesi: kâğıt üstünde her takım
+diğerlerine karşı eşit sayıda saha avantajı kullanır. İkincisi sezonun nefes
+alabilir uzunluğu: 19 takımlı Süper Lig'de 38 hafta, hem federasyonun
+ekonomik beklentilerini karşılayan yayın hakkı süresini sağlar hem de
+şampiyonluk yarışına yeterli zaman tanır. Algoritmik olarak çift devre,
+tek devre çıktısının ikinci yarıda ev/deplasman ters çevrilmiş şekilde
+tekrarlanmasıyla (mirror schedule) elde edilir; bu basit ama güçlü dönüşüm,
+adillik garantisini ücretsiz verir.
+
+İki sistem arasında seçim yaparken, "ne kadar hafta dolduracağız ve ev–
+deplasman önemli mi?" sorularına cevap vermek yeterlidir. Bir mahalle ligi
+için tek devre genellikle ideal; bir okul finalleri için çift devre
+gereksiz olabilir. Profesyonel ya da yarı-profesyonel bir yapı kuruyorsanız
+çift devre standart hâle gelir.
+
+### Çift devre düzenleme biçimleri
+
+Çift devrenin "ikinci yarı" mantığında üç ana okul vardır. **Mirror schedule**
+(ayna fikstür), tek devrenin tamamen aynı sırasıyla, sadece ev/deplasman
+çevrilmiş olarak tekrarlanmasıdır; en yaygın yaklaşımdır ve Türkiye Süper Ligi
+de bu modeli kullanır. Avantajı, ilk yarıdaki rakip sıralamanın ikinci yarıda
+da korunması ve bu sayede sezonun "döner" hissi yaratmasıdır.
+
+**French schedule** (Fransız tipi) olarak bilinen ikinci model, ikinci yarının
+ilk yarıdan farklı bir sırada düzenlendiği biçimdir. Bu model rakip
+sıralamasının daha rastgele dağıtılmasını ve özellikle son haftalarda kritik
+maçların öngörülemez şekilde yer almasını sağlar. UEFA Şampiyonlar Ligi grup
+aşamasının sonraki dönüşüm öncesi düzeni bu modelin bir varyantını kullanırdı.
+
+Üçüncü yaklaşım **mixed format**'tır: ilk yarı round-robin'in çıktısını
+takip eder, ikinci yarı önceki sezonun klasmanına göre yeniden çizilir.
+Belçika Pro League ve İskoçya Premier Ligi bu tarz hibrit yapıları kullanır;
+play-off öncesi puan dağılımını daraltma amacıyla bilinçli olarak tercih
+edilir. Algoritmik karmaşıklık biraz artar fakat round-robin'in temel garantisi
+(her takım birbiriyle iki kez oynar) korunur.
+
+## Bay takım kavramı ve pratik öneriler
+
+Tek sayılı takım listesi olduğunda BAY rotasyonu kaçınılmazdır, ama bunun
+pratikte birkaç şekilde yumuşatılması mümkündür. En basit yol, her takıma
+sezon başında bir "açık hafta" verildiğini açıkça duyurmaktır; bu, BAY
+haftasının ceza değil, dinlenme ve idmana ayrılan değerli bir zaman olarak
+algılanmasını sağlar. Profesyonel liglerde bu hafta genelde milli takım maçı,
+kupa müsabakası veya Avrupa kupası fikstürüyle çakıştırılır, böylece takvim
+boşa düşmez.
+
+Amatör ligler için bir başka pratik yol şudur: ligi tek sayıda takımla başlatmak
+yerine, sezon başında çekilen kura ile bir "yedek hafta" planı çıkarmak.
+Yağmur, saha bakımı, federasyon kararıyla iptal edilen bir maç, BAY haftasında
+bekleyen takım için telafi maçı zamanı olarak kullanılabilir. Round-robin
+çizelgesinin matematiksel kısmı bunu doğrudan halletmez, ama BAY haftalarının
+varlığı bu esnekliği sağlar.
+
+## Süper Lig fikstür çekilişi nasıl yapılır?
+
+Türkiye Süper Ligi'nin sezon öncesi fikstür çekilişi, federasyon merkezinde
+yapılan ve canlı yayınlanan bir törendir. Görsel olarak teatral bir sahne
+olsa da arka planda ciddi bir bilgisayar çalışması yatar: çekiliş, takım
+adlarının kura ile tek tek çıkarılıp matrise yerleştirilmesi değil, daha
+ziyade önceden hesaplanmış birden fazla geçerli fikstür adayı arasından
+belirlenen kuralları sağlayan bir adayın seçilmesi şeklinde işler.
+
+Profesyonel ligin çekiliş yazılımı klasik round-robin'in üzerine birçok
+ek kısıt katmanı ekler. Şehir bazlı kısıtlar (aynı şehirden iki takımın aynı
+hafta deplasmanda olmaması, böylece güvenlik kaynaklarının tek bir maç için
+yoğunlaştırılabilmesi), derbi yerleştirme (büyük dört derbisinin sezon başına
+veya sonuna fazla yığılmaması), milli takım pencereleri (FIFA'nın belirlediği
+millî maç tarihlerinde ligin durdurulması) ve yayın takvimi (Cumartesi akşamı
+ile Pazar akşamına denk gelmesi gereken belirli sayıda popüler maç) yöneylem
+araştırmasında "ek kısıtlar altında çizelgeleme" diye geçen alana girer.
+
+Bu nedenle çekiliş gününde aslında olan şey, federasyonun bir adayı bir ya da
+iki "rastgele" parametreyle (örneğin, ilk hafta ev sahibi olan referans takım)
+sabitlemesi ve önceden test edilmiş bir aday fikstürün buna göre kesinleşmesidir.
+Tören, geleneksel yön bulma ihtiyacının değil, taraftarın merak ve heyecanını
+süreçle paylaşmanın aracıdır.
+
+## Amatör lig ve turnuva için pratik öneriler
+
+Bir mahalle, üniversite veya iş yeri ligi düzenliyorsanız, profesyonel
+fikstür çekilişine gerek yoktur. Düşük takım sayısında saf round-robin
+algoritması son derece tatmin edici sonuçlar verir. Ancak dikkat edilmesi
+gereken birkaç nokta vardır.
+
+İlk olarak takvim çakışmaları: Türk takvimine göre dini bayramlar, milli bayramlar
+ve okulların yarıyıl tatilleri sezon planlamasında "boş hafta" olarak işaretlenmelidir.
+Round-robin algoritması bu tür ara verileri doğrudan modellemez, fakat fikstür
+oluşturulduktan sonra haftaların tarihlerini elle kaydırarak telafi etmek
+kolaydır. İkinci olarak hava koşulları: kışın oynanan açık hava sahası
+ligleri için iki haftada bir "yedek tarih" bırakmak, iptal edilen maçların
+sezona yayılmasını sağlar. Üçüncü olarak hakem ve görevli temini: her hafta
+oynanacak maç sayısı sabittir (N/2), ama bu sayıdan fazla görevli bulamayacaksanız,
+bazı maçları akşama veya sonraki güne kaydırmanız gerekebilir.
+
+Son olarak, bu sitedeki [Lig Fikstürü Oluşturucu](/or-araclari/araclar/lig-fiksturu-olusturucu)
+aracını kullanarak takım listesini saniyeler içinde bir takvime
+dönüştürebilirsin. Üretilen fikstürü CSV olarak indirip Excel'de açabilir,
+yazdırıp duvara asabilir veya paylaşılabilir bağlantıyla takım kaptanlarına
+gönderebilirsin. Tüm hesaplama tarayıcında yapıldığı için takım listen veya
+takvimin başka kimseyle paylaşılmaz.
+
+## Yaygın hatalar ve nasıl önlenir
+
+Amatör fikstür düzenlemesinde tekrar tekrar gördüğümüz birkaç tipik hata
+vardır. İlk ve en sık olanı **takım sayısının tek olduğunun fark edilmemesi**:
+listeyi 11 takımla oluşturup "her hafta 11 maç oynayalım" diye yola çıkmak,
+matematiksel olarak imkânsızdır. Doğru yaklaşım, BAY takımı baştan kabul edip
+takvimi 11 hafta üzerinden planlamaktır.
+
+İkinci hata **ev/deplasman dengesizliği**dir. Saf circle method'un ürettiği
+fikstürde takımların ev/deplasman maç sayıları arasında küçük farklar
+oluşabilir; özellikle ilk pozisyondaki "sabit" takım yakındaki rakipleriyle
+hep aynı pozisyondan oynamaya başlar. Profesyonel ligler Berger tablolarının
+optimize edilmiş varyantlarını kullanarak bu farkı 1 maça indirirken, basit
+bir circle method 2-3 maça kadar fark üretebilir. Çift devre kullanmak bu
+sorunu büyük ölçüde çözer; tek devre ise dengesizlik kabul edilir bir sınırın
+altındaysa kullanılabilir.
+
+Üçüncü hata **tarih kaydırmasını fikstür değişikliği zannetmek**tir. Bir maç
+yağmur sebebiyle ertelendiğinde aynı eşleşme bir sonraki uygun haftaya
+kaydırılır; bu fikstürün bozulması değil, sadece bir tarih güncellemesidir.
+Round-robin'in temel kuralları (her hafta her takım en fazla bir maç,
+her takım her diğer takımla planlanan sayıda) korunduğu sürece tarih
+değişiklikleri sorun değildir.
+
+Dördüncü ve belki de en sinsi hata **takım adlarının tutarsız yazılması**dır.
+"Galatasaray", "GALATASARAY" ve "galatasaray" alfabetik sıralamada farklı
+yerlere düşer ve fikstürün okunmasını güçleştirir. Bu siteyi kullanırken
+takım adlarının tek bir tutarlı biçimde girilmesini öneririz; algoritma
+yine de büyük/küçük harf duyarsız olarak tekrar kontrolü yapar ve aynı adı
+iki kez girmenizi engeller.
+
+## İleri konular: kısıt programlama ve OR-Tools
+
+Lig fikstürü probleminin ek kısıtlarla zenginleşmiş hâli, yöneylem
+araştırmasının modern araçlarına ihtiyaç duyar. Google'ın açık kaynak optimizasyon
+kütüphanesi **OR-Tools**, bu tür problemleri çözmek için yazılmış güçlü bir
+araçtır ve özellikle CP-SAT solver'ı çizelgeleme problemleri için endüstri
+standardıdır. Bir takıma "ardışık iki deplasman olmasın", "büyük dört derbisi
+yedi haftadan az aralıkla oynamasın", "milli takım maç haftalarında lig
+durdurulsun" gibi kuralları kısıt olarak ifade ettikten sonra solver, bu
+kısıtların hepsini sağlayan geçerli bir fikstür arar.
+
+Bu seviyede artık tek bir "doğru fikstür" yoktur; binlerce geçerli aday
+arasından en dengeli olanı (bir hedef fonksiyonuyla, örneğin "ev/deplasman
+sapmasının karelerinin toplamını minimize et") seçilir. Bu yaklaşım
+profesyonel federasyonların kullandığı yöntemdir ve büyük çoğunluğu OR-Tools
+veya benzeri ticari kütüphaneler (IBM CPLEX, Gurobi) üzerine kuruludur.
+Akademik literatürde bu probleme **Sports Scheduling Problem (SSP)** adı verilir
+ve son 30 yılda yüzlerce makale yayımlanmıştır.
+
+OR Araçları sitesinde bu seviyedeki bir LP/CP çözücü ileride yer alacak; o
+zamana kadar amatör ihtiyaçlar için saf round-robin algoritması ve bu sayfa
+yeterlidir.
+
+## Türkiye Futbol Federasyonu kuralları
+
+TFF'nin profesyonel ligler için yayımladığı *Müsabaka Talimatı*, fikstür
+düzenlemesini açıkça şu çerçeveye oturtur: ligler tam round-robin formatında,
+her takım birbiriyle ev sahibi ve deplasman olarak ikişer kez oynayacak şekilde
+düzenlenir; sezon başlamadan önce fikstür kura ile belirlenir; sezon başladıktan
+sonra fikstür değişiklikleri ancak federasyon kararıyla ve istisnai durumlarda
+yapılır.
+
+Daha alt liglerde (3. ve 4. lig, BAL, amatör küme) federasyon il temsilcilikleri
+benzer kuralları daha esnek uygular. Bölgesel ligler için il sayılarına ve
+takım sayılarına göre tek devre + play-off, çift devre veya iki gruplu format
+kullanılabilir. Her durumda algoritmik temel aynıdır: round-robin'in farklı
+varyantlarının üst üste binmesi.
+
+Üzerinde durmaya değer bir not: TFF'nin kullandığı çekiliş ve aday üretme
+sürecinin tam matematiksel detayı kamuya açık değildir; ancak çıktıların
+incelenmesi (her sezon yayınlanan fikstür dökümleri) standart Berger tablolarına
+ek kısıtlarla ulaşıldığını gösterir. Bu, yöneylem araştırması açısından
+oldukça yaygın bir uygulamadır ve dünya genelindeki çoğu profesyonel ligde
+benzer şekilde işler.
+
+## Özet ve sezon planlama kontrol listesi
+
+Bu kadar uzun bir metni okuduktan sonra fikstür düzenlemenin görünenden çok
+daha derin bir yöneylem problemi olduğunu fark etmişsindir. İyi haber şu:
+amatör ve yarı-profesyonel düzeydeki ihtiyaçların büyük çoğunluğu için saf
+round-robin algoritması fazlasıyla yeterli, hatta neredeyse her zaman doğru
+seçimdir. Profesyonel düzeyde ek kısıtların gerektirdiği karmaşık optimizasyon
+ise tek başınıza üstleneceğiniz bir iş olmaktan çıkmıştır; mevcut açık kaynak
+kütüphaneler ve federasyon yazılımları bu işi sizden devralır.
+
+Sezon başlamadan önce kontrol etmeniz gereken pratik liste:
+
+- **Takım sayısı** belirlendi mi? Tek sayıdaysa BAY rotasyonunu kabul ettin
+  mi, yoksa son anda bir "hayalet" takım eklemeyi mi düşüneceksin?
+- **Devre tipi** (tek/çift) ihtiyaca uygun mu? Sezon süresi ile takım sayısı
+  birbirine uygun planlandı mı?
+- **Resmi tatiller** ve **dini bayramlar** takvimde işaretlendi mi? Bu haftalar
+  için ya boş hafta planlandı ya da maçlar ileri/geri kaydırıldı mı?
+- **Saha tahsisi** her hafta için garanti altına alındı mı? Aynı sahada birden
+  fazla takım maç yapacaksa saatler çakışmıyor mu?
+- **Hakem ve görevli** sayısı haftalık maç sayısına yeterli mi? Yedek
+  hakem listesi hazır mı?
+- **Hava ve doğal afet** planı: kar, sağanak, deprem gibi durumlarda
+  ertelenecek maçların telafi tarihleri için yedek hafta ayrıldı mı?
+- **Fikstür herkese duyuruldu mu?** Takım kaptanları, taraftarlar ve görevliler
+  güncel takvime erişebiliyor mu? Bu siteyi kullandıysan, paylaşılabilir
+  bağlantıyı ya da CSV çıktısını dağıtmayı unutma.
+
+Sezonun kolay geçsin. Eğer round-robin'i daha derin anlamak istiyorsan,
+[OR-Tools, kısıt programlama ve ileri çizelgeleme yöntemleri rehberlerimiz](/or-araclari/rehberler)
+yakında burada.

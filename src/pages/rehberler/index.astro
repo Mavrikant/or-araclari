@@ -1,7 +1,13 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Container from '../../components/Container.astro';
 import { withBase } from '../../data/site';
+
+const allGuides = await getCollection('rehberler');
+const publishedGuides = allGuides.sort(
+  (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime(),
+);
 
 const upcomingGuides = [
   {
@@ -15,11 +21,6 @@ const upcomingGuides = [
       'Amaç fonksiyonu, kısıtlar, simpleks yöntemi ve grafiksel çözüm — örneklerle.',
   },
   {
-    title: 'Round-Robin Algoritması: Lig Fikstürü Nasıl Oluşturulur?',
-    summary:
-      'Berger tablosu, tek/çift devre, bay takımlar ve Türkiye ligi pratiği.',
-  },
-  {
     title: 'Çizelgeleme Problemleri: Türler ve Çözüm Yaklaşımları',
     summary:
       'Job-shop, flow-shop, ders/sınav programlama ve hangi araçların hangi probleme uyduğu.',
@@ -27,9 +28,15 @@ const upcomingGuides = [
   {
     title: 'Google OR-Tools ile Optimizasyon: Türkçe Genel Bakış',
     summary:
-      'Google\'ın açık kaynak optimizasyon kütüphanesinin Türkçe tanıtımı ve örnekleri.',
+      "Google'ın açık kaynak optimizasyon kütüphanesinin Türkçe tanıtımı ve örnekleri.",
   },
 ];
+
+const dateFormatter = new Intl.DateTimeFormat('tr-TR', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
 ---
 
 <BaseLayout
@@ -45,32 +52,63 @@ const upcomingGuides = [
       <p class="mt-4 text-base leading-relaxed text-slate-600 dark:text-slate-400">
         Her aracın yanında o problemi tanıtan, algoritmasını adım adım açıklayan
         ve gerçek hayatta nerede kullanıldığını gösteren bir yazı bulunur.
-        İlk yazılar önümüzdeki haftalarda yayında.
       </p>
     </header>
 
-    <div class="mt-10 rounded-xl border border-dashed border-slate-300 bg-slate-50/40 p-6 dark:border-slate-700 dark:bg-slate-900/30">
-      <h2 class="font-display text-lg font-semibold text-slate-900 dark:text-white">
-        Yakında yayınlanacaklar
-      </h2>
-      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        Planlanan ilk yazı seti:
-      </p>
-      <ul class="mt-5 space-y-4">
-        {
-          upcomingGuides.map((guide) => (
-            <li class="border-l-2 border-slate-300 pl-4 dark:border-slate-700">
-              <p class="font-display font-semibold text-slate-800 dark:text-slate-100">
-                {guide.title}
-              </p>
-              <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                {guide.summary}
-              </p>
+    {
+      publishedGuides.length > 0 && (
+        <ul class="mt-10 space-y-4">
+          {publishedGuides.map((guide) => (
+            <li>
+              <a
+                href={withBase(`/rehberler/${guide.id}`)}
+                class="group block rounded-xl border border-slate-200 bg-white p-5 transition-colors hover:border-accent-400 hover:bg-accent-50/40 dark:border-slate-800 dark:bg-slate-900/40 dark:hover:border-accent-500 dark:hover:bg-slate-900"
+              >
+                <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                  <time datetime={guide.data.pubDate.toISOString()}>
+                    {dateFormatter.format(guide.data.pubDate)}
+                  </time>
+                  {guide.data.readingMinutes && (
+                    <>
+                      <span class="text-slate-300 dark:text-slate-700">·</span>
+                      <span>{guide.data.readingMinutes} dk okuma</span>
+                    </>
+                  )}
+                </div>
+                <h2 class="mt-2 font-display text-lg font-semibold text-slate-900 group-hover:text-brand-700 dark:text-white dark:group-hover:text-accent-300">
+                  {guide.data.title}
+                </h2>
+                <p class="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                  {guide.data.description}
+                </p>
+              </a>
             </li>
-          ))
-        }
-      </ul>
-    </div>
+          ))}
+        </ul>
+      )
+    }
+
+    {
+      upcomingGuides.length > 0 && (
+        <div class="mt-12 rounded-xl border border-dashed border-slate-300 bg-slate-50/40 p-6 dark:border-slate-700 dark:bg-slate-900/30">
+          <h2 class="font-display text-lg font-semibold text-slate-900 dark:text-white">
+            Yakında yayınlanacaklar
+          </h2>
+          <ul class="mt-5 space-y-4">
+            {upcomingGuides.map((guide) => (
+              <li class="border-l-2 border-slate-300 pl-4 dark:border-slate-700">
+                <p class="font-display font-semibold text-slate-800 dark:text-slate-100">
+                  {guide.title}
+                </p>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                  {guide.summary}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
 
     <p class="mt-8 text-sm text-slate-500 dark:text-slate-400">
       Önerin var mı?
