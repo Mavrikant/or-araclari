@@ -129,6 +129,88 @@ describe('solveTimetable — realistic small case', () => {
   });
 });
 
+describe('solveTimetable — weeklyHours expansion', () => {
+  it('default (no weeklyHours) yields one occurrence per lesson', () => {
+    const r = solveTimetable({
+      lessons: lessons([['Mat', 'Ahmet', '9A']]),
+      slots: 5,
+    });
+    expect(r.assignments).toHaveLength(1);
+    expect(r.assignments[0].occurrence).toEqual({ index: 1, total: 1 });
+  });
+
+  it('weeklyHours: 4 produces four assignments referencing the same source', () => {
+    const r = solveTimetable({
+      lessons: [{ label: 'Mat', teacher: 'Ahmet', group: '9A', weeklyHours: 4 }],
+      slots: 6,
+    });
+    expect(r.assignments).toHaveLength(4);
+    // Same source lesson reference for every occurrence
+    expect(r.assignments.every((a) => a.lesson.label === 'Mat')).toBe(true);
+    expect(r.assignments.every((a) => a.occurrence.total === 4)).toBe(true);
+    // Each occurrence index appears exactly once
+    expect(new Set(r.assignments.map((a) => a.occurrence.index))).toEqual(
+      new Set([1, 2, 3, 4]),
+    );
+    // No two occurrences share a slot (single teacher → can't double-book)
+    const slots = r.assignments.map((a) => a.slot);
+    expect(new Set(slots).size).toBe(4);
+  });
+
+  it('mixed: some lessons multi-hour, others default', () => {
+    const r = solveTimetable({
+      lessons: [
+        { label: 'Mat 9A', teacher: 'Ahmet', group: '9A', weeklyHours: 3 },
+        { label: 'Fizik 9A', teacher: 'Burak', group: '9A', weeklyHours: 2 },
+        { label: 'İng 9A', teacher: 'Ceyda', group: '9A' }, // default 1
+      ],
+      slots: 6,
+    });
+    expect(r.assignments).toHaveLength(6); // 3+2+1
+    // Group 9A appears in every assignment, no slot collision
+    const slots = r.assignments.map((a) => a.slot);
+    expect(new Set(slots).size).toBe(6);
+  });
+
+  it('rejects when weeklyHours exceeds available slots', () => {
+    expect(() =>
+      solveTimetable({
+        lessons: [{ label: 'Mat', teacher: 'Ahmet', group: '9A', weeklyHours: 6 }],
+        slots: 5,
+      }),
+    ).toThrow(/saat istiyor/i);
+  });
+
+  it('rejects non-integer or zero weeklyHours', () => {
+    expect(() =>
+      solveTimetable({
+        lessons: [{ label: 'Mat', teacher: 'Ahmet', group: '9A', weeklyHours: 0 }],
+        slots: 5,
+      }),
+    ).toThrow(/en az 1/i);
+    expect(() =>
+      solveTimetable({
+        lessons: [{ label: 'Mat', teacher: 'Ahmet', group: '9A', weeklyHours: 2.5 }],
+        slots: 5,
+      }),
+    ).toThrow(/en az 1/i);
+  });
+
+  it('catches teacher capacity violation across expanded instances', () => {
+    // Ahmet has 3 lessons of 2 hours each = 6 instances, only 5 slots
+    expect(() =>
+      solveTimetable({
+        lessons: [
+          { label: 'Mat 9A', teacher: 'Ahmet', group: '9A', weeklyHours: 2 },
+          { label: 'Mat 9B', teacher: 'Ahmet', group: '9B', weeklyHours: 2 },
+          { label: 'Mat 9C', teacher: 'Ahmet', group: '9C', weeklyHours: 2 },
+        ],
+        slots: 5,
+      }),
+    ).toThrow(/Çakışmasız/);
+  });
+});
+
 describe('solveTimetable — validation', () => {
   it('rejects empty lesson list', () => {
     expect(() => solveTimetable({ lessons: [], slots: 5 })).toThrow(TimetableError);

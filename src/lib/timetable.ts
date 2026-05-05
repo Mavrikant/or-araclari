@@ -24,6 +24,13 @@ export interface Lesson {
   teacher: string;
   /** Single string identifying the student group (e.g. class section). */
   group: string;
+  /**
+   * How many slots this lesson should occupy in the week. Defaults to 1.
+   * The solver expands a lesson with weeklyHours=N into N independent
+   * instances, each requiring its own slot — so a 4-hour math course
+   * becomes four separate scheduling units that share teacher and group.
+   */
+  weeklyHours?: number;
 }
 
 export interface TimetableInput {
@@ -35,9 +42,21 @@ export interface TimetableInput {
 }
 
 export interface TimetableAssignment {
+  /**
+   * The original lesson the user defined (without the weeklyHours
+   * expansion). Two assignments referring back to the same source lesson
+   * indicate two different hours of that lesson.
+   */
   lesson: Lesson;
   slot: number;
   slotLabel?: string;
+  /**
+   * Which occurrence of the source lesson this assignment represents and
+   * the total number of occurrences. For a 4-hour math class these would
+   * be {index:1,total:4}, {index:2,total:4}, etc. For default 1-hour
+   * lessons this is always {index:1,total:1}.
+   */
+  occurrence: { index: number; total: number };
 }
 
 export interface TimetableResult {
@@ -71,6 +90,17 @@ function validate(input: TimetableInput): void {
     if (!l.label || !l.teacher || !l.group) {
       throw new TimetableError('Her ders bir etiket, öğretmen ve grup içermelidir.');
     }
+    const hours = l.weeklyHours ?? 1;
+    if (!Number.isInteger(hours) || hours < 1) {
+      throw new TimetableError(
+        `"${l.label}" için haftalık saat sayısı en az 1 olmalı (${hours} verildi).`,
+      );
+    }
+    if (hours > input.slots) {
+      throw new TimetableError(
+        `"${l.label}" haftada ${hours} saat istiyor ama yalnızca ${input.slots} slot var.`,
+      );
+    }
   }
   if (input.slotLabels && input.slotLabels.length !== input.slots) {
     throw new TimetableError(
@@ -79,15 +109,47 @@ function validate(input: TimetableInput): void {
   }
 }
 
+interface ExpandedInstance {
+  /** Index into the user's original lesson list. */
+  sourceIdx: number;
+  /** 1-based position among the source lesson's occurrences. */
+  occurrenceIndex: number;
+  /** Total number of occurrences this source lesson asked for. */
+  occurrenceTotal: number;
+  teacher: string;
+  group: string;
+}
+
+function expandLessons(
+  source: ReadonlyArray<Lesson>,
+): ExpandedInstance[] {
+  const expanded: ExpandedInstance[] = [];
+  source.forEach((lesson, sourceIdx) => {
+    const total = lesson.weeklyHours ?? 1;
+    for (let i = 1; i <= total; i++) {
+      expanded.push({
+        sourceIdx,
+        occurrenceIndex: i,
+        occurrenceTotal: total,
+        teacher: lesson.teacher,
+        group: lesson.group,
+      });
+    }
+  });
+  return expanded;
+}
+
 /**
  * Backtracking with the **most-constrained-variable** heuristic: at each
- * step, pick the lesson with the fewest remaining valid slots. This keeps
- * the search tree narrow and dramatically speeds up most realistic inputs.
+ * step, pick the lesson instance with the fewest remaining valid slots.
+ * This keeps the search tree narrow and dramatically speeds up most
+ * realistic inputs.
  */
 export function solveTimetable(input: TimetableInput): TimetableResult {
   validate(input);
 
-  const lessons = input.lessons;
+  const sourceLessons = input.lessons;
+  const lessons = expandLessons(sourceLessons);
   const slots = input.slots;
   const n = lessons.length;
 
@@ -196,9 +258,13 @@ export function solveTimetable(input: TimetableInput): TimetableResult {
     );
   }
 
-  const assignments: TimetableAssignment[] = lessons.map((lesson, i) => ({
-    lesson,
+  const assignments: TimetableAssignment[] = lessons.map((instance, i) => ({
+    lesson: sourceLessons[instance.sourceIdx],
     slot: assignment[i],
+    occurrence: {
+      index: instance.occurrenceIndex,
+      total: instance.occurrenceTotal,
+    },
     ...(input.slotLabels ? { slotLabel: input.slotLabels[assignment[i]] } : {}),
   }));
 
