@@ -5,7 +5,7 @@ import mdx from '@astrojs/mdx';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://mavrikant.github.io',
+  site: 'https://karaman.dev',
   base: '/or-araclari',
   trailingSlash: 'ignore',
   build: {

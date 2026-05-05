@@ -2,7 +2,7 @@
 
 Yöneylem Araştırması (Operations Research) klasik problemleri için tarayıcıda çalışan ücretsiz, açık kaynak Türkçe araç koleksiyonu. Her aracın yanında uzun-form Türkçe rehber içerik bulunur.
 
-**Canlı:** https://mavrikant.github.io/or-araclari/
+**Canlı:** https://karaman.dev/or-araclari/
 
 ## Felsefe
 
