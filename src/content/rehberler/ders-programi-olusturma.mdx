@@ -1,0 +1,292 @@
+---
+title: "Ders ve Sınav Programı Oluşturma: Yöneylem Bakışı"
+description: "Üniversite ve okul ders programı oluşturma (timetabling) problemi nedir, hangi algoritmalar kullanılır, çakışma çözme nasıl yapılır? Türkçe rehber."
+pubDate: 2026-05-06
+relatedTool: "ders-programi-uretici"
+keywords:
+  - "ders programı"
+  - "sınav programı"
+  - "timetabling"
+  - "üniversite ders programı"
+  - "okul ders programı"
+  - "kısıt programlama"
+  - "constraint satisfaction"
+readingMinutes: 11
+faq:
+  - question: "Ders programı oluşturma neden bu kadar zor bir problem?"
+    answer: "Ders programlama (timetabling) NP-zor sınıfa girer; problem boyutu büyüdükçe optimal çözüm bulma süresi katlanarak artar. 50 dersi 30 slota çakışmasız yerleştirme problemi bile saf brute-force ile pratik değildir. Üstüne sert kısıtlar (öğretmen/grup çakışmazlığı) ve yumuşak kısıtlar (boş ders sayısı, dağılım, tercih) eklenince problem hızla zorlaşır."
+  - question: "Bu sitenin aracı kompleks gerçek üniversite programlarını çözer mi?"
+    answer: "Hayır, bu araç temel CSP (constraint satisfaction problem) çözücüsüdür ve sert kısıtları (aynı öğretmen/grup aynı slotta olmasın) ele alır. Gerçek üniversite ders programlama sistemleri ek kısıtlar barındırır: derslik kapasitesi, ekipman gereksinimi, öğrenci tercih puanları, öğretmen müsaitliği. Bunlar için Google OR-Tools CP-SAT veya OptaPlanner gibi profesyonel çözücülere geçmek gerekir."
+  - question: "Sınav programı ile ders programı aynı problem mi?"
+    answer: "Yapısal olarak çok benzerler ama farklı kısıtlara sahiptir. Sınav programı genelde tek seferlik (sezon başında yapılır), öğrenci-sınav çakışmazlığını ön plana çıkarır, derslik kapasitesi kritiktir. Ders programı ise her hafta tekrarlanan rutin yapı kurar; öğretmen-grup çakışmazlığı ve dağılım dengeleri ön plandadır. İkisi de timetabling alt başlığı altında toplanır."
+  - question: "Excel'de ders programı yapılır mı?"
+    answer: "Küçük ölçekli (15-20 ders, 10 slot) basit problemler Excel ile manuel veya Solver eklentisiyle çözülebilir. Daha büyük problemler (üniversite çapında 200+ ders) Excel'in kapasite ve performans sınırlarına çarpar. Bu sitenin aracı orta ölçek için iyi bir seçenek; profesyonel düzey için OR-Tools veya özelleşmiş yazılımlar (FET, Untis) daha uygundur."
+  - question: "ITC (International Timetabling Competition) nedir?"
+    answer: "ITC, akademik araştırmacıların ve algoritma tasarımcılarının timetabling alanındaki sezgisellerini yarıştırdığı uluslararası bir bilimsel yarışmadır. Standart problem örnekleri (üniversite ders programı, sınav, lise programı) verilir; en iyi çözüm üreten algoritma kazanır. 2002'den beri düzenleniyor ve alanın gelişimi için önemli bir referans noktası."
+---
+
+Eylül başında yeni öğretim yılı yaklaşırken her okul müdürünün ya da
+fakülte sekreterinin masasına aynı problem düşer: önümüzdeki dönemin
+**ders programı**. 200 öğretmen, 1500 öğrenci, 30 sınıf, 50 derslik, beş
+gün, sekiz ders saati. Her dersin öğretmeni, sınıfı, derslik gereksinimi
+belirli; öğretmenlerin müsait oldukları zaman aralıkları farklı; sınıfların
+hafta içinde dengeli dağılması gerekiyor. Eski usul kâğıt-kalemle yapılır
+mıydı? Evet ama günler sürerdi ve genelde yeniden yapılması gerekirdi.
+Bilgisayar destekli ders programı çözücüleri bu işi otomatikleştirmek için
+on yıllardır kullanılıyor.
+
+Bu rehber, ders ve sınav programı oluşturma probleminin yöneylem
+araştırması bakış açısından tanıtımıdır. Algoritmaların nasıl çalıştığı,
+hangi kısıtların standart hâle geldiği ve gerçek dünya uygulamalarında
+nelere dikkat edildiği konularını ele alır.
+
+## Problem nedir? Klasik formülasyon
+
+Ders programlama (akademik literatürde *timetabling*) problemi kısaca
+şöyle tarif edilir: Bir grup **etkinlik** (ders, sınav, toplantı) var.
+Her etkinlik belirli **kaynaklar** kullanır (öğretmen, derslik, ekipman)
+ve belirli **katılımcı gruplarına** hitap eder (öğrenci sınıfları,
+projeler). Amaç, her etkinliği bir **zaman slotuna** atayarak haftalık
+veya dönemlik bir program oluşturmaktır.
+
+Standart sert kısıtlar:
+- **Öğretmen çakışmazlığı:** Aynı öğretmen aynı zamanda iki etkinlikte olamaz
+- **Grup çakışmazlığı:** Aynı öğrenci grubu aynı zamanda iki dersi alamaz
+- **Derslik çakışmazlığı:** Aynı derslik aynı zamanda iki etkinlik için kullanılamaz
+- **Müsaitlik:** Etkinlik yalnızca atanmış öğretmenin müsait olduğu zamanlarda olur
+
+Yumuşak kısıtlar (ihlal edilebilir ama maliyetli):
+- Öğretmenin **boş ders sayısı** minimize edilmeli
+- Aynı dersin haftaya **dengeli** dağılması (tek günde 4 saat değil, 2+2 olarak)
+- Öğrenci **tercih puanları**na uygunluk
+- Derslik tipi tercihleri (lab dersi laboratuvarda)
+- Sabah/akşam dağılımı
+
+## Tarihçe: 1960'lardan bugüne
+
+Timetabling probleminin ilk akademik formülasyonu 1960'larda Forrest
+Gotlieb tarafından İngiltere'de yapıldı. O dönem üniversitelerin manuel
+program oluşturma süreci haftalar sürerdi ve sürekli çakışmalarla
+güncellenirdi. İlk bilgisayar destekli yaklaşımlar 1970'lerde geldi ama
+küçük problem örnekleriyle sınırlıydı.
+
+1980'ler ve 90'lar timetabling alanında **kısıt programlama (CP)**'nin
+yükselişine sahne oldu. CHIP, ECLiPSe ve sonradan IBM'in ILOG CP Optimizer
+gibi ticari çözücüler eğitim kurumlarının tercih ettiği araçlar oldu.
+2000'lerde **metasezgisel** yaklaşımlar (tabu arama, simulated annealing,
+genetic algoritma) öne çıktı; özellikle çok büyük problemler için.
+
+2002'de başlayan ITC (International Timetabling Competition) yarışmaları
+alanın gelişimini ivmelendirdi. Standart problem örnekleri tüm dünyadaki
+araştırmacıların aynı zorluk üzerinde çalışmasını sağladı; rekorlar her
+yıl kırıldı.
+
+Modern dönemde Google OR-Tools'un CP-SAT modülü ücretsiz seçenekler
+arasında öne çıktı; akademik ve küçük-orta okullar için ticari yazılımlara
+ciddi alternatif. Bu sitenin Ders Programı Üretici aracı, basit
+problemler için bu paradigmanın indirgenmiş bir versiyonunu kullanır.
+
+## NP-hardness ve algoritma seçimi
+
+Timetabling NP-zor sınıfa girer ve hatta basit varyantları bile öyledir.
+N etkinlik, K slot için olası atamaların sayısı $K^N$ — 50 ders × 30 slot
+için 30^50 ≈ 7 × 10^73 olasılık. Brute-force imkansız; akıllı algoritmalar
+gerek.
+
+### Backtracking + forward checking
+
+Klasik kısıt programlama yaklaşımı. Ders ders ata, çakışma çıkarsa geri
+dön ve farklı slot dene. **Forward checking**, gelecekte de çakışma
+yaratacak slotları erken eler. **Most-constrained-variable** sezgiseli
+(en az müsait slotu olan dersi önce ata) hızı katlanarak artırır.
+
+Bu sitenin
+[Ders Programı Üretici](/or-araclari/araclar/ders-programi-uretici) aracı
+bu yaklaşımı kullanır; küçük-orta ölçekli problemler için yeterli ve
+saniyeler içinde sonuç verir.
+
+### Constraint Programming (CP-SAT)
+
+Modern profesyonel çözücüler kısıt programlama paradigması kullanır.
+Google OR-Tools'un CP-SAT modülü timetabling için sektör standardıdır;
+"interval variables" ve "no_overlap" kısıtları üzerine kurulu. Klasik
+backtracking'den çok daha verimli olduğu için 500+ etkinlikli problemleri
+de saniyeler içinde çözer.
+
+### Metasezgisel yöntemler
+
+Çok büyük problemler (1000+ etkinlik) için tabu arama, simulated
+annealing, genetic algoritma gibi yaklaşımlar kullanılır. Optimum
+garantisi yok ama "yeterince iyi" çözümü makul sürede bulurlar.
+
+### Hibrit yaklaşımlar
+
+Endüstriyel timetabling yazılımları genelde hibrittir: CP ile sert
+kısıtları sağlar, sonra metasezgisel ile yumuşak kısıtları optimize eder.
+Bu, en pratik ve en çok kullanılan modeldir.
+
+## Türkiye'deki uygulamalar
+
+Türkiye'de timetabling alanında aktif kullanım var ve birçok kurumda
+özel yazılımlar geliştirilmiştir.
+
+**Üniversiteler:** ODTÜ, Boğaziçi, İTÜ, Bilkent gibi büyük
+üniversitelerin sömestir başında ders programlama için kullandığı
+yazılımlar OR-Tools veya benzeri çözücülerle güçlendirilmiştir.
+Genel olarak %95-99 çakışmasız programlar elle ince ayar gerekmeden
+üretilir.
+
+**Liseler ve ilkokullar:** MEB ve özel okul zincirlerinin (Doğa Koleji,
+Bahçeşehir Koleji) ders programlama için kullandığı yerli yazılımlar
+mevcuttur. ITC standardı problemlere göre özelleştirilmişlerdir.
+
+**Sınavlar:** ÖSYM benzeri büyük ölçekli sınav organizasyonlarının
+salon-koltuk-öğrenci atama altyapısı timetabling'in özel bir varyantını
+çözer (sınav-zaman-yer atama).
+
+**Hastane ameliyat odası planlama:** Aynı matematiksel yapıyı paylaşır;
+ameliyatları zamanlara ve odalara çakışmasız atama ihtiyacı ders programıyla
+neredeyse özdeştir.
+
+## Yaygın hatalar ve nasıl önlenir
+
+Bu siteyi kullanırken veya kendi timetabling projeni yaparken dikkat
+edilmesi gereken birkaç tipik tuzak:
+
+**Birinci hata — yetersiz slot.** Aynı öğretmenin K dersi varsa en az K
+slot gerekir. Bu sitenin aracı bunu önceden kontrol eder ve net bir hata
+verir; ama manuel planlamada gözden kaçırılır.
+
+**İkinci hata — yumuşak kısıtları sert yapmak.** "Sabah saatleri tercih
+edilir" gibi yumuşak kısıtları zor kısıt yapmak çözücüyü gereksiz
+yorar veya çözüm bulamamasına yol açar. Tercihler ayrı, zorunluluklar
+ayrı tutulmalıdır.
+
+**Üçüncü hata — çıktıyı doğrulamadan sunmak.** Algoritmanın ürettiği
+program tüm sert kısıtları sağlar ama insan gözünün yakaladığı problemleri
+(örneğin Pazartesi sabahı 4 saat üst üste matematik) yakalayamaz. Çıktı
+mutlaka deneyimli bir okul müdürü veya sekreter tarafından son kontrol
+edilmelidir.
+
+**Dördüncü hata — değişikliklere açık olmamak.** Bir kez program
+oluşturulduktan sonra "tamam, oturdu" demek yanlış. Sezon içinde
+hastalanan öğretmenler, ek dersler, transfer öğrenciler — sürekli ufak
+değişiklikler olur. Sistem bu değişiklikleri kolayca uyguluyor olmalıdır.
+
+**Beşinci hata — küçük başlamamak.** 200 derslik bir programı tek
+seferde çözmek istemek başarısızlığa yol açar. 20 dersle başla, 50'ye
+çıkar, sonra tüm sezona uygula.
+
+## Pratik bir ders programı projesi nasıl ilerler?
+
+Bir okul veya üniversite için ders programlama yazılımı projesi tipik
+olarak altı aşamadan oluşur ve birkaç haftadan birkaç aya kadar sürer.
+
+**Birinci hafta — gereksinim toplama:** Hangi ders var, hangi öğretmen
+hangi dersleri verebilir, hangi sınıflar/gruplar hangi dersleri alır,
+slot sayısı ne, derslik kapasiteleri ne? Bu adım toplam projenin %30'unu
+alır ve veri kalitesi kritik. Bir tek "hangi dersler ortak ders kabul
+edilir" sorusunun cevabı bile haftalarca sürebilir.
+
+**İkinci-üçüncü hafta — model kurma:** Toplanan gereksinimler matematiksel
+kısıtlara çevrilir. Sert ve yumuşak kısıtlar ayrılır; öncelik sırası
+belirlenir. Bu adımın çıktısı, çözücüye verilebilecek bir CSP veya MILP
+modelidir.
+
+**Dördüncü hafta — algoritma seçimi ve prototipleme:** Hangi çözücüyü
+kullanacağına karar verilir (CP-SAT, OptaPlanner, FET, ticari yazılım).
+Küçük örneklerle prototip oluşturulur, performans ölçülür.
+
+**Beşinci-altıncı hafta — kalibrasyon:** Çözücü gerçek veriyle test
+edilir. Sonuçlar mevcut manuel programla karşılaştırılır, sapma analizi
+yapılır. Yumuşak kısıtların ağırlıkları ayarlanır.
+
+**Yedinci-sekizinci hafta — uygulamaya alma:** Kullanıcı arayüzü
+geliştirilir, eğitim verilir, mevcut sistemlerle entegrasyon yapılır.
+Bu adım çoğu zaman tahmin edilenden uzun sürer çünkü organizasyonel
+kabul matematiksel doğruluktan farklıdır.
+
+**Sonra — sezonluk bakım:** Her sömestir başında sistem güncellenir,
+yeni öğretmen/grup verileri eklenir, çıkanlar çıkarılır. İyi tasarlanmış
+bir sistem 5+ yıl yaşar.
+
+## Bir mini örnek üzerinden gidelim
+
+Diyelim küçük bir okulun 9-A sınıfı şu derslere ihtiyaç duyuyor: Mat
+(Ahmet), Fizik (Burak), İng (Ceyda). Aynı öğretmenler 9-B sınıfına da
+aynı dersleri veriyor: Mat, Fizik, İng.
+
+Toplam 6 ders var: Mat-9A, Fizik-9A, İng-9A, Mat-9B, Fizik-9B, İng-9B.
+
+Sert kısıtlar:
+- Ahmet aynı slotta iki sınıfa Mat veremez (öğretmen çakışması)
+- Burak aynı slotta iki sınıfa Fizik veremez
+- Ceyda aynı slotta iki sınıfa İng veremez
+- 9-A aynı slotta iki ders alamaz
+- 9-B aynı slotta iki ders alamaz
+
+Minimum kaç slot gerekir? 9-A'nın 3 dersi var ve aynı slotta birden
+fazla olamaz, dolayısıyla en az 3 slot. Aynı şekilde 9-B için. Cevap: 3
+slot yeter ve mümkün:
+
+| Slot | Dersler |
+|---|---|
+| 1 | Mat-9A (Ahmet), Fizik-9B (Burak) |
+| 2 | Fizik-9A (Burak), İng-9B (Ceyda) |
+| 3 | İng-9A (Ceyda), Mat-9B (Ahmet) |
+
+Bu programda hiçbir öğretmen aynı slotta iki yerde değil ve hiçbir grup
+aynı slotta iki dersi almıyor. Çözücüye verirsen bunu (veya simetrik bir
+karşılığını) saniyenin altında bulur.
+
+Bu sitenin
+[Ders Programı Üretici](/or-araclari/araclar/ders-programi-uretici) aracında
+"Örnek doldur" butonuna basıp benzer bir örneği kendi gözlerinle de
+deneyebilirsin.
+
+## Akademik araştırma trendleri
+
+Timetabling, yöneylem araştırmasının en aktif araştırma alanlarından biri
+olmaya devam ediyor. Son yıllarda öne çıkan birkaç yön:
+
+**Çoklu hedef (multi-objective) timetabling:** Tek bir "en iyi"
+program değil, farklı kriterler arasında Pareto-optimal çözümler
+sunmak. Karar verici (okul müdürü) bu sınırdan kendine en uygun
+olanı seçer.
+
+**Robust timetabling:** Belirsizlik altında dayanıklı programlar
+oluşturmak. Hangi öğretmenin sezon ortasında ayrılacağı bilinmez;
+program bu duruma karşı dirençli tasarlanmalı.
+
+**Otonom (kendi kendini öğrenen) çözücüler:** Geçmiş sezonlardaki
+manuel düzeltmelerden öğrenen ve bir sonraki sezon için daha iyi
+başlangıç çözümü üreten yapay zekâ destekli sistemler.
+
+**Adil dağılım:** Yumuşak kısıtların adillik perspektifinden ele
+alınması — hangi öğretmenin/grubun bedelini ne kadar çektiği
+ölçülür ve dengelenir.
+
+## Sonuç
+
+Ders ve sınav programı oluşturma, yöneylem araştırmasının pratik etkisinin
+en yüksek olduğu alanlardan biridir. NP-zor karakterine rağmen modern
+algoritmalar binlerce etkinlikli problemleri pratik sürede çözer. Bu
+sitenin
+[Ders Programı Üretici](/or-araclari/araclar/ders-programi-uretici)
+aracı küçük-orta ölçek için iyi bir başlangıç noktasıdır;
+ölçek büyüdükçe
+[Google OR-Tools rehberi](/or-araclari/rehberler/google-or-tools-genel-bakis)
+ve onun CP-SAT modülü doğal devam.
+
+Çizelgeleme problemlerinin daha geniş çerçevesi için
+[Çizelgeleme Problemleri rehberi](/or-araclari/rehberler/cizelgeleme-problemleri)
+de göz atılmaya değer; ders programlama, çizelgeleme ailesinin yalnızca
+bir üyesi. Bu disiplin sürekli yeni problemler ve algoritmalarla
+gelişiyor; takip etmeye değer bir alan olarak yöneylem yolculuğunda yer
+alıyor.
+
+Türkiye gibi ülkelerde özellikle eğitim sektörünün dijital dönüşümü
+hızla ilerliyor; timetabling tabanlı yazılımların kullanımı yaygınlaşıyor.
+Bu alanda uzmanlaşmak isteyen bir yöneylem analisti veya yazılım
+geliştirici için sektörel talep önümüzdeki yıllarda artmaya devam edecek.
+İyi öğrenmeler ve iyi programlamalar dileriz.

@@ -1,0 +1,384 @@
+---
+title: "Macar Algoritması ve Atama Probleminin Çözümü"
+description: "Atama problemi (assignment problem) nedir, Macar algoritması (Hungarian method) nasıl çalışır, hangi durumlarda kullanılır? Adım adım örnekli Türkçe rehber."
+pubDate: 2026-05-06
+relatedTool: "atama-problemi-cozucu"
+keywords:
+  - "atama problemi"
+  - "macar algoritması"
+  - "hungarian algorithm"
+  - "kuhn munkres"
+  - "linear assignment"
+  - "assignment problem"
+readingMinutes: 11
+faq:
+  - question: "Atama problemi gezgin satıcı problemi (TSP) ile aynı şey mi?"
+    answer: "Hayır, farklı problemlerdir. Atama problemi N agent'ın N göreve birebir eşlenmesini optimize eder; her agent tek bir göreve, her görev tek bir agent'a atanır. TSP ise N şehrin tek bir tur içinde ziyaret edileceği rotanın bulunmasıdır. Hesaplama karmaşıklığı açısından da çok farklılar: atama problemi polinomyal zamanda (O(N³)) çözülürken TSP NP-zor sınıfa girer."
+  - question: "Macar algoritması her zaman optimum çözümü bulur mu?"
+    answer: "Evet, garanti olarak. Macar algoritması atama problemi için optimal çözümü polinomyal zamanda bulan ispatlanmış bir algoritmadır. Çıktı, problemin gerçek optimumudur — sezgisel bir 'iyi' çözüm değil, matematiksel olarak en iyisi."
+  - question: "Matrisim kare değilse (örneğin 5 agent, 3 görev) ne yaparım?"
+    answer: "Macar algoritması kare matris bekler, ama dikdörtgen problemler 'phantom' agent veya görev eklenerek kareye tamamlanabilir. Ekstra hücreler büyük bir sabit (sözde sonsuz) maliyetle doldurulur; gerçek optimum bu phantom atamaları seçmez. Bu sitenin atama çözücüsü dikdörtgen matrisleri otomatik olarak doldurarak çalışır."
+  - question: "Maliyet yerine kâr/skor maksimize etmek istersem nasıl yaparım?"
+    answer: "Macar algoritması doğal olarak minimizasyon yapar. Maksimizasyon için iki yaygın yöntem vardır: (1) tüm değerleri ters işaretle (negatif yap), sonuçta toplam negatif çıkar — sonra mutlak değerini al; (2) tüm değerleri matristeki en büyük değerden çıkar (M − x_ij), sonra normal şekilde minimize et. İkinci yöntem matematiksel olarak daha temizdir ve bu sitenin çözücüsü maksimize seçeneğinde bunu otomatik uygular."
+  - question: "Algoritmanın 'Macar' adı nereden geliyor?"
+    answer: "Algoritmayı 1955'te yayımlayan Amerikalı matematikçi Harold Kuhn, çalışmasında iki Macar matematikçi Dénes Kőnig ve Jenő Egerváry'nin önceki teoremlerine yoğun şekilde dayandığı için yöntemini onların onuruna 'Hungarian method' olarak adlandırdı. Sonradan James Munkres 1957'de algoritmayı daha verimli formülasyonla yeniden ifade etti; bu yüzden literatürde 'Kuhn-Munkres algoritması' veya 'Munkres algoritması' adlarıyla da geçer."
+---
+
+İşletmenin sabah toplantısında dört yeni proje belirlendi ve dört uygun
+çalışan var. Ahmet, Burak, Ceyda ve Deniz'in her bir projeyi tamamlama
+süreleri tahmini olarak belirli; sen de bu dört kişinin dört projeyle
+**en hızlı** şekilde eşlenmesini istiyorsun. Her çalışan tek bir projeye,
+her proje tek bir çalışana. Hangi atama optimum?
+
+Bu, yöneylem araştırmasının en zarif klasik problemlerinden biridir:
+**atama problemi**. Çözümü için 1955'te geliştirilmiş **Macar algoritması**
+hâlâ standart yaklaşımdır ve modern uygulamalarda da güncelliğini koruyor.
+Bu rehber, problemi tanıtıp algoritmanın çalışma mantığını adım adım
+açıklıyor.
+
+## Atama problemi nedir?
+
+Atama problemi (İng. *assignment problem*), bir grup **agent**'ın bir grup
+**göreve** birebir eşlenmesi gereken klasik kombinatoryel optimizasyon
+problemidir. Her agent–görev eşleşmesinin bir maliyeti (veya skoru) vardır;
+amaç toplam maliyeti minimize etmek (veya skoru maksimize etmek).
+
+Klasik formülasyonda iki katı kısıt vardır:
+
+- Her agent **tam olarak bir** göreve atanır.
+- Her görev **tam olarak bir** agent'a atanır.
+
+Bu kısıtlar problemi **kombinatoryel** karaktere sokar: $N$ agent ve $N$
+görev varsa, $N!$ olası atama vardır. $N=10$ için bu 3.6 milyon, $N=20$ için
+2.4 trilyon. Naif yaklaşım — tüm olasılıkları dene, en iyiyi seç — küçük
+$N$ için bile pratik değildir.
+
+Şanslıyız ki problem özel bir yapıya sahip ve **polinomyal zamanda**
+(O(N³)) çözülebilir. Bu, atama problemini optimizasyon dünyasındaki en
+"şirin" problemlerden biri yapar: gerçek dünyada sıkça karşılaşılır,
+matematiksel olarak temizdir, ve hızla çözülür.
+
+## Matematiksel formülasyon
+
+Atama problemi tipik olarak ikili (binary) tamsayı programlama olarak
+ifade edilir. Karar değişkenleri:
+
+$$
+x_{ij} = \begin{cases} 1 & \text{eğer agent } i \text{ göreve } j \text{ atanmışsa} \\ 0 & \text{aksi hâlde} \end{cases}
+$$
+
+Amaç fonksiyonu (minimizasyon):
+
+$$
+\text{minimize: } \sum_{i=1}^{N} \sum_{j=1}^{N} c_{ij} \cdot x_{ij}
+$$
+
+Kısıtlar (her agent tek görev, her görev tek agent):
+
+$$
+\sum_{j=1}^{N} x_{ij} = 1 \quad \forall i, \qquad
+\sum_{i=1}^{N} x_{ij} = 1 \quad \forall j
+$$
+
+İkili değişkenler:
+
+$$
+x_{ij} \in \{0, 1\}
+$$
+
+Bu, normalde çözülmesi NP-zor olan bir tamsayı programıdır. Ama atama
+probleminin özel yapısı şu güzelliği sağlar: kısıt matrisi
+**tamamen unimodüler**dir (totally unimodular), bu da $x_{ij} \in \{0,1\}$
+yerine $x_{ij} \ge 0$ kısıtıyla bile aynı optimum çözümün elde edileceği
+anlamına gelir. Yani problem aslında bir LP'dir ve simpleks ile de
+çözülebilir; ama özel algoritması (Macar) çok daha hızlıdır.
+
+## Algoritmanın kısa tarihçesi
+
+Macar algoritmasının arka planı 19. yüzyılın sonlarında Macar
+matematikçilerinin graf teorisi alanındaki çalışmalarına dayanır. **Dénes
+Kőnig** 1916'da çift yönlü graflarda eşleşme teoremlerini formüle etti;
+**Jenő Egerváry** 1931'de ağırlıklı çift yönlü graflarda en küçük örtü
+problemini çözen bir algoritma geliştirdi. Bu iki matematikçinin teorik
+çalışmaları, pratik bir algoritma için zemin hazırladı.
+
+İkinci Dünya Savaşı'nın ardından, Amerikalı matematikçi **Harold W. Kuhn**
+1955'te Princeton Üniversitesi'nde çalışırken, Kőnig ve Egerváry'nin
+sonuçlarını birleştirip pratik bir adım-adım algoritmaya çevirdi.
+Macarcılarına ithafen yöntemini "Hungarian method" olarak adlandırdı —
+o günden beri literatürde bu isimle anılır. **James Munkres** 1957'de
+algoritmayı matris-tabanlı, daha sistematik bir formülasyonla yeniden
+ifade etti; bu, modern uygulamaların temelidir. Bu yüzden bazı kaynaklarda
+algoritma "Kuhn-Munkres" veya kısaca "Munkres" olarak da geçer.
+
+Algoritma, geliştirildiği günden beri yöneylem dünyasının değerli
+araçlarından biri olarak yerini koruyor. 1960'larda bilgisayar
+implementasyonları yaygınlaştı; 1980'lerde **Jonker ve Volgenant**'ın
+JV/JVC varyantı sabit çarpanları azaltarak performansı %30-50 iyileştirdi.
+Bugün hâlâ atama problemlerinin standart çözümü olarak görülüyor.
+
+## Macar algoritması adım adım
+
+Macar algoritmasının arkasındaki sezgi, maliyet matrisinin her hücresine
+**sıfır maliyetli atama** üretecek şekilde sistematik dönüşümler yapmaktır.
+Sıfırların doğru desende hizalandığında, her satırdan ve her sütundan
+birer sıfır seçerek geçerli bir atama elde edilir — ve dönüşümler maliyeti
+koruduğu için bu atama optimaldır.
+
+Klasik 4 adım Munkres formülasyonunda:
+
+**Adım 1: Satır indirgemesi.** Her satırın minimum değerini bul, o satırdaki
+tüm hücrelerden çıkar. Sonuçta her satırda en az bir sıfır olur.
+
+**Adım 2: Sütun indirgemesi.** Her sütunun minimum değerini bul (artık
+indirgenmiş matriste), o sütundaki tüm hücrelerden çıkar. Şimdi her satır
+ve her sütunda en az bir sıfır var.
+
+**Adım 3: Sıfırları işaretle.** Her satır ve sütundan en fazla bir sıfır
+seçerek "yıldızla" (star). Eğer N tane bağımsız yıldız varsa, atama
+tamamlandı. Aksi hâlde Adım 4'e geç.
+
+**Adım 4: Çizgi örtmesi ve ayarlama.** Tüm sıfırları örten **minimum sayıda
+yatay+dikey çizgi** çiz. Çizgi sayısı N'den azsa, örtülmemiş minimum hücreyi
+bul; bu değeri örtülmemiş hücrelerden çıkar, çift örtülmüş hücrelere ekle.
+Sonra Adım 3'e dön.
+
+Bu işlem en kötü durumda O(N³) iterasyonda biter — yani N=100 için 1 milyon
+işlem, modern bir bilgisayarda milisaniyenin altında.
+
+### Küçük örnek: 3×3 matris
+
+Aşağıdaki maliyet matrisini ele alalım (satırlar: Ali, Veli, Ayşe; sütunlar:
+Görev A, B, C):
+
+```
+      A    B    C
+Ali   4    1    3
+Veli  2    0    5
+Ayşe  3    2    2
+```
+
+Adım 1 — satır indirgemesi (her satırın min'i: 1, 0, 2):
+
+```
+      A    B    C
+Ali   3    0    2
+Veli  2    0    5
+Ayşe  1    0    0
+```
+
+Adım 2 — sütun indirgemesi (her sütunun min'i: 1, 0, 0):
+
+```
+      A    B    C
+Ali   2    0    2
+Veli  1    0    5
+Ayşe  0    0    0
+```
+
+Adım 3 — sıfırları yıldızla. Ayşe→A (sıfır), Ali→B (sıfır), Veli'nin tek
+sıfırı B'de ama B kullanıldı. Sadece 2 yıldız var, N=3'ten az.
+
+Adım 4'le devam ederiz; bu küçük örnekte birkaç tur sonunda optimum:
+Ali→B (1), Veli→A (2), Ayşe→C (2) — toplam **5**.
+
+Bu sitenin
+[Atama Problemi Çözücü](/or-araclari/araclar/atama-problemi-cozucu) aracı
+aynı algoritmayı tarayıcında çalıştırarak bu sonucu üretir.
+
+## Algoritmanın karmaşıklığı
+
+Klasik Macar algoritmasının karmaşıklığı O(N³). Modern varyantları
+(Jonker-Volgenant, JVC) aynı asimptotik karmaşıklıkla daha düşük sabit
+çarpan sunar — pratikte ~%30-50 daha hızlı.
+
+| N | İşlem sayısı (≈) | Modern bilgisayar süresi |
+|---|------------------|--------------------------|
+| 10 | 1,000 | < 1 ms |
+| 50 | 125,000 | < 10 ms |
+| 100 | 1,000,000 | ~50 ms |
+| 500 | 125,000,000 | ~5 saniye |
+| 1000 | 1,000,000,000 | ~1 dakika |
+
+Tarayıcı ortamı için pratik üst sınır N≈300 civarı; daha büyük problemler
+için Python NumPy + scipy.optimize.linear_sum_assignment veya OR-Tools'un
+özel atama çözücüsü kullanılır.
+
+## Gerçek dünya uygulamaları
+
+Atama problemi, dış görünüşten çok daha geniş bir uygulama yelpazesine
+sahip olan çekirdek bir kombinatoryel problemdir.
+
+**Personel-görev atama:** Üretim hattında işçilerin makinelere atanması,
+yazılım takımında geliştiricilerin görevlere atanması, hastanede doktorların
+nöbetlere atanması. Çoğu zaman maliyet süre, kalite veya tercih bazlı bir
+puan olur.
+
+**Eğitim/üniversite:** Öğrencilerin tez danışmanlarına atanması, derslerin
+sınıflara atanması, sınavların gözetmenlere atanması. Tercih puanları
+genellikle algoritmanın girdisi.
+
+**Spor:** Hakemlerin maçlara atanması (her hakem bir maça, her maç bir
+hakem), takımların gruplara dağıtılması (kapasite kısıtlarıyla genişletilmiş
+varyant).
+
+**Lojistik:** Kamyonların rotalara atanması (kapasiteli atama), depoların
+tedarik bölgelerine atanması.
+
+**Görüntü işleme:** Çoklu nesne takip algoritmalarında bir karedeki
+nesnelerin sonraki karedeki nesnelere eşlenmesi (Kalman filtre + Macar
+algoritması). Bilgisayarlı görü makine öğrenmesinin yaygın bir bileşeni.
+
+**Eşleme servisleri:** Çift bulma uygulamaları (her tarafın tercih puanları
+varsa stable matching algoritmasıyla genişletilir), bilgisayar oyunlarında
+matchmaking.
+
+**Satış-müşteri:** Satış ekibi üyelerinin müşteri portföylerine atanması,
+çağrı merkezi temsilcilerinin müşteri segmentlerine atanması.
+
+**Robotik ve otonom sistemler:** Çoklu robot sürülerinin (multi-robot
+swarms) görevlere dağıtılması, otonom araç filolarının çağrılara
+yönlendirilmesi, drone teslimatlarında paket-sürücü atama. Bu alanlardaki
+modern uygulamalar atama algoritmasının saniyede onlarca kez çalıştırılmasını
+gerektiriyor; performans kritik bir konu.
+
+**Tıbbi planlama:** Organ nakli kuyruğunda donör-alıcı eşleme (uyumluluk
+matrisi temelli atama), psikiyatrik klinikte doktor-hasta atama, ameliyat
+çizelgelemesinde cerrah-vaka atama bu disiplinin tıp dünyasındaki
+yansımalarıdır.
+
+**Eğitim ve sınav planlama:** ÖSYM benzeri büyük ölçekli sınav
+organizasyonlarında öğrenci-salon-koltuk atama atama probleminin kapasiteli
+varyantıyla çözülür; Türkiye'deki üniversite yerleştirme sürecinin altında
+da benzer bir matematiksel yapı vardır (gerçek uygulama tercih sıralamasını
+da hesaba kattığı için Gale-Shapley'in genişletilmiş bir versiyonunu
+kullanır, ama ana fikir aynıdır).
+
+Türkiye'de bu uygulamaların büyük çoğunluğu özel yazılımlar veya manuel
+süreçlerle yönetilir; ama altta yatan matematik tek ve aynıdır: Macar
+algoritması veya küçük varyantları.
+
+## Algoritmanın varyantları ve genelleştirmeleri
+
+Atama probleminin temel formülasyonu üzerine inşa edilmiş birkaç önemli
+genelleştirme vardır:
+
+**Dengesiz atama:** Agent ve görev sayıları farklı (5 agent, 3 görev).
+Phantom (sözde) agent veya görev ekleyerek kareye dönüştürülür.
+
+**Genel atama problemi (GAP):** Agent'ların kapasiteleri farklı; bir
+agent birden fazla görev alabilir. Daha karmaşık ve genelde NP-zor.
+
+**Kapasiteli atama:** Her görevin kapasitesi belirli; aynı göreve birden
+fazla agent atanabilir. Min-cost flow formülasyonuna eşdeğerdir.
+
+**Stable matching (kararlı eşleme):** Tarafların tercih sıralamaları var,
+her iki taraf da memnun olmalı. Gale-Shapley algoritması (1962) bunu O(N²)
+zamanda çözer ve 2012 Nobel Ekonomi Ödülü'ne konu oldu.
+
+**Çoklu atama:** Bir agent birden çok göreve, bir görev birden çok agent'a
+atanabilir; çapraz kısıtlar vardır. Tipik olarak MILP olarak çözülür.
+
+## Atama problemini öğrenirken yapılan tipik hatalar
+
+Yöneylem öğrencilerinin atama problemine ilk yaklaştıklarında düştükleri
+birkaç tipik hata var.
+
+**Birinci hata — kombinatoryel patlama yanılgısı.** "$N!$ olası atama var,
+bu çok fazla, çözülemez" diye düşünmek doğal ama yanlış. Atama probleminin
+özel yapısı sayesinde tüm olasılıkları kontrol etmeden polinomyal zamanda
+optimum bulunur. Bu, kombinatoryel optimizasyon teorisinin güzel
+örneklerinden biridir.
+
+**İkinci hata — minimizasyon/maksimizasyon karışıklığı.** Maliyet
+matrisinde sayılar küçük "iyi" iken, kâr matrisinde büyük "iyi"dir. Aynı
+algoritmayı her iki yönde de kullanmak için maksimizasyon problemi
+$M - x_{ij}$ dönüşümüyle minimizasyona çevrilir; bu siteyi gibi modern
+araçlar bu dönüşümü perde arkasında otomatik yapar.
+
+**Üçüncü hata — dengesiz matrisi reddetmek.** "5 agent var ama 3 görev,
+algoritma çalışmaz" düşüncesi yanlış. Phantom agent eklemek pratik bir
+düzeltmedir; gerçek atama yine 3 olur, fazla agent boşta kalır. Standart
+çözücüler bu dönüşümü otomatik yapar.
+
+**Dördüncü hata — sezgisel yaklaşımlara güvenmek.** "Önce en ucuz
+eşleşmeyi seç, sonra ikinci en ucuzu, vb." gibi açgözlü yaklaşımlar
+genellikle optimum bulamaz. Macar algoritması ise garanti optimum
+verir — basit görünmesi sebebiyle bunun değerini hafife almamak gerekir.
+
+## Diğer atama algoritmaları ile karşılaştırma
+
+Macar algoritmasının yanı sıra atama problemini çözen başka yöntemler de
+vardır. Bunları kısaca tanıyalım.
+
+**Auction algorithm (Bertsekas, 1979):** "Açık artırma" mantığıyla çalışır;
+agent'lar görevler için bid yapar, görevler en yüksek bid'i alır. Paralel
+hesaplamaya çok uygun; büyük problemler için Macar'dan hızlı olabilir.
+
+**Network simplex:** Atama problemini bir min-cost flow problemine
+dönüştürüp ağ simpleks ile çözmek. Genel ağ akış çözücüsü kullandığın
+için kütüphane bağımsızlığı sunar; performans Macar'a yakındır.
+
+**Doğrudan LP çözücü:** Problemi standart LP olarak yazıp ticari
+(CPLEX, Gurobi) veya açık kaynak (GLPK, HiGHS) çözücüye vermek. Esnek ama
+özel algoritmalardan yavaştır; başka kısıtlar eklemeyi gerektiren genelleme
+durumlarında tercih edilir.
+
+**JV/JVC (Jonker-Volgenant):** Macar algoritmasının daha verimli
+implementasyonu; Python scipy.optimize.linear_sum_assignment bu varyantı
+kullanır.
+
+Pratikte küçük ve orta ölçekli problemler (N ≤ 1000) için Macar veya
+JVC, büyük ölçekli problemler için Auction algoritması veya network
+simpleks tercih edilir.
+
+## Sonuç
+
+Macar algoritması, atama probleminin polinomyal zamanda çözümünü sağlayan,
+70 yılı aşkın süredir hâlâ kullanılan klasik bir araçtır. Sıkça karşılaşılan
+ama kolayca çözülebilen bu problem, yöneylem repertuarının temel
+parçalarından biridir. Bu sitenin
+[Atama Problemi Çözücü](/or-araclari/araclar/atama-problemi-cozucu) aracı,
+küçük ve orta ölçekli atama problemlerini tarayıcında saniyeler içinde
+çözer; daha büyük problemler için Python (scipy.optimize) veya
+[Google OR-Tools](/or-araclari/rehberler/google-or-tools-genel-bakis)
+gibi profesyonel araçlara geçmek doğal bir adımdır.
+
+Yöneylem yolculuğunda atama problemi, kombinatoryel optimizasyonun
+sezgilerini öğrenmek için iyi bir başlangıç noktasıdır. Üzerinde durup
+problemi anlamış biri, sonradan TSP, çizelgeleme veya VRP gibi daha karmaşık
+problemleri kavramak için zihinsel altyapıya sahip olur.
+
+Macar algoritmasının matematiksel zarafeti, yıllar içinde yöneylem
+araştırmasının "klasiklerinin" listesinde sabit bir yere sahip olmasının
+nedenidir. Bilgisayar bilimleri öğrencileri için kombinatoryel optimizasyon
+derslerinde, endüstri mühendisliği öğrencileri için karar bilimi
+laboratuvarlarında, hatta lise düzeyindeki matematik olimpiyatlarında bile
+ortaya çıkar. Bu kadar çok yerde olması bir tesadüf değil; insan zihninin
+"adil dağıtım" sezgisini matematiksel forma soktuğu için pedagojik olarak
+da öğretici bir örnektir. Bir model kurma alıştırması olarak öğrenildikten
+sonra, hayatın her köşesinde benzeri problemler fark edilmeye başlanır:
+restoranda garson-masa atama, ev paylaşımı arkadaş seçiminde oda dağıtımı,
+hatta bir spor kulübünün yıllık sponsor karması — hepsi farklı
+versiyonlarıyla aynı yapıyı paylaşır.
+
+Yöneylem disiplinindeki diğer atama dışı klasik problemler için, bu
+sitedeki diğer araç ve rehberleri keşfetmeye devam et:
+[Lig fikstürü oluşturucu](/or-araclari/araclar/lig-fiksturu-olusturucu)
+çizelgeleme tarafından bir örnek; ileride yayınlanacak knapsack ve TSP
+araçları kombinatoryel optimizasyonun farklı yüzlerini gösterecek.
+[OR-Tools rehberi](/or-araclari/rehberler/google-or-tools-genel-bakis)
+ise daha büyük problemler için profesyonel araçlara nasıl geçileceğini
+anlatıyor. Yöneylem yolunun keyifli, sürpriz dolu ve sürekli yeni
+problemlerle dolu olduğunu unutma; her klasik algoritma, modern
+uygulamaların bir parçasında günümüzde de hizmet vermeye devam ediyor.
+Atama probleminin teknik detayları üzerinde biraz daha derinleşmek
+istersen, Munkres'in 1957 makalesinin orijinali (bedava online erişilebilir)
+ve Bertsekas'ın "Network Optimization" kitabı klasik referanslar olarak
+önerilebilir. İyi öğrenmeler ve iyi
+optimizasyonlar dileriz; herhangi bir problemde yardım istersen iletişim
+sayfası üzerinden ulaşabilir, geri bildirim ve özellik önerilerini de
+GitHub Issues kanalı üzerinden iletebilirsin; bu siteyi açık kaynak olarak büyütüyoruz ve
+toplulukla gelen katkılar her zaman değerli olmaya devam ediyor ve uzun
+yıllar boyunca da etmeye devam edecek; bu, ekosistem için de
+araştırmacılar için de iyiye işaret.

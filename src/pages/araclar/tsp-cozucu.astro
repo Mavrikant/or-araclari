@@ -1,0 +1,214 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import { withBase, SITE } from '../../data/site';
+import { TOOLS } from '../../data/tools';
+
+const tool = TOOLS.find((t) => t.slug === 'tsp-cozucu')!;
+const guideHref = tool.guideSlug ? withBase(`/rehberler/${tool.guideSlug}`) : null;
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: tool.title,
+  applicationCategory: 'WebApplication',
+  operatingSystem: 'Any',
+  description: tool.description,
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'TRY' },
+  inLanguage: SITE.locale,
+  isAccessibleForFree: true,
+};
+---
+
+<BaseLayout title={tool.title} description={tool.description}>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+  </Fragment>
+
+  <Container as="section" size="wide" class="pt-12 sm:pt-16">
+    <p class="text-sm font-medium text-brand-600 dark:text-accent-400">
+      <a href={withBase('/araclar')} class="hover:underline">Araçlar</a>
+      <span class="text-slate-400 dark:text-slate-600"> / </span>
+      <span>Graf & Rota</span>
+    </p>
+    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">{tool.title}</h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
+      Noktaların koordinatlarını gir, en kısa turu nearest-neighbor + 2-opt
+      sezgiseliyle bul. Görsel önizleme dahil.
+      {guideHref && (<a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>)}
+    </p>
+  </Container>
+
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,360px)_1fr]">
+    <form id="tsp-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40" novalidate>
+      <fieldset class="space-y-3">
+        <div class="flex items-center justify-between">
+          <label for="points" class="block font-display text-sm font-semibold text-slate-900 dark:text-white">Noktalar</label>
+          <span id="point-count" class="text-xs text-slate-500 dark:text-slate-400" aria-live="polite">0 nokta</span>
+        </div>
+        <textarea id="points" name="points" rows="9" required autocomplete="off" spellcheck="false"
+          class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm leading-relaxed text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+          placeholder="Her satır: etiket<TAB>x<TAB>y&#10;Türkçe ondalık (1,5) desteklenir.&#10;&#10;İstanbul	28,98	41,01&#10;Ankara	32,85	39,93&#10;İzmir	27,14	38,42"></textarea>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" id="sample-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">7 büyükşehir</button>
+          <button type="button" id="clear-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">Temizle</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">Tur tipi</legend>
+        <div class="mt-3 space-y-2">
+          <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
+            <input type="radio" name="closed" value="true" checked class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
+            <span class="flex-1">
+              <span class="block text-sm font-medium text-slate-900 dark:text-white">Kapalı tur</span>
+              <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Başladığın yere geri dönersin (klasik TSP).</span>
+            </span>
+          </label>
+          <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
+            <input type="radio" name="closed" value="false" class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
+            <span class="flex-1">
+              <span class="block text-sm font-medium text-slate-900 dark:text-white">Açık tur</span>
+              <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Son noktada bitir; başa dönme.</span>
+            </span>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <label class="flex items-center gap-2">
+          <input type="checkbox" id="improve" checked class="size-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+          <span class="text-sm font-medium text-slate-900 dark:text-white">2-opt iyileştirmeyi uygula</span>
+        </label>
+        <p class="ml-6 mt-1 text-xs text-slate-500 dark:text-slate-400">Nearest-neighbor sonucunu yerel arama ile iyileştirir.</p>
+      </fieldset>
+
+      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">Turu hesapla</button>
+
+      <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
+    </form>
+
+    <section id="output" hidden aria-live="polite" class="space-y-6">
+      <header>
+        <h2 class="font-display text-xl font-semibold tracking-tight text-slate-900 dark:text-white">Tur</h2>
+        <p id="summary" class="mt-1 text-sm text-slate-600 dark:text-slate-400"></p>
+      </header>
+      <div id="visualization" class="overflow-hidden rounded-xl border border-slate-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-900/40"></div>
+      <div id="route-list"></div>
+    </section>
+  </Container>
+</BaseLayout>
+
+<script>
+  import { solveTSP, parsePoints, TSPError } from '../../lib/tsp';
+
+  const SAMPLE = 'İstanbul\t28,98\t41,01\nAnkara\t32,85\t39,93\nİzmir\t27,14\t38,42\nBursa\t29,06\t40,18\nAntalya\t30,71\t36,90\nAdana\t35,32\t37,00\nGaziantep\t37,38\t37,07';
+
+  const $ = (id: string): HTMLElement => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el;
+  };
+
+  const form = $('tsp-form') as HTMLFormElement;
+  const ptsInput = $('points') as HTMLTextAreaElement;
+  const ptCount = $('point-count');
+  const improveInput = $('improve') as HTMLInputElement;
+  const errorBox = $('error-box');
+  const output = $('output');
+  const summary = $('summary');
+  const viz = $('visualization');
+  const routeList = $('route-list');
+  const sampleBtn = $('sample-btn');
+  const clearBtn = $('clear-btn');
+
+  function escapeHtml(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function fmt(n: number): string { return n.toFixed(2); }
+
+  function updateCount(): void {
+    const n = ptsInput.value.split(/\r?\n/).filter((l) => l.trim()).length;
+    ptCount.textContent = `${n} nokta`;
+  }
+
+  function renderViz(points: ReturnType<typeof parsePoints>, order: number[], closed: boolean): void {
+    if (points.length === 0) { viz.innerHTML = ''; return; }
+
+    const xs = points.map((p) => p.x);
+    const ys = points.map((p) => p.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const padding = 30;
+    const width = 600, height = 360;
+    const rangeX = Math.max(maxX - minX, 0.001);
+    const rangeY = Math.max(maxY - minY, 0.001);
+    const sx = (x: number) => padding + ((x - minX) / rangeX) * (width - 2 * padding);
+    // Flip y for screen (geographic y increases upward)
+    const sy = (y: number) => height - padding - ((y - minY) / rangeY) * (height - 2 * padding);
+
+    const pathPoints = order.map((i) => `${sx(points[i].x)},${sy(points[i].y)}`);
+    if (closed && pathPoints.length > 1) pathPoints.push(pathPoints[0]);
+
+    const lines = `<polyline points="${pathPoints.join(' ')}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" class="text-accent-500" />`;
+    const dots = points.map((p, i) => {
+      const cx = sx(p.x), cy = sy(p.y);
+      const isStart = i === order[0];
+      return `<circle cx="${cx}" cy="${cy}" r="${isStart ? 6 : 4}" class="${isStart ? 'fill-brand-700 dark:fill-accent-300' : 'fill-slate-700 dark:fill-slate-300'}" /><text x="${cx + 8}" y="${cy - 6}" class="fill-slate-700 dark:fill-slate-300 text-[10px] font-medium">${escapeHtml(p.label)}</text>`;
+    }).join('');
+
+    viz.innerHTML = `<svg viewBox="0 0 ${width} ${height}" class="block w-full h-auto" role="img" aria-label="Tur görselleştirmesi">${lines}${dots}</svg>`;
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    errorBox.hidden = true;
+    try {
+      const points = parsePoints(ptsInput.value);
+      const closed = (form.elements.namedItem('closed') as RadioNodeList).value === 'true';
+      const r = solveTSP({ points, closed, improve: improveInput.checked });
+
+      summary.textContent = [
+        `${points.length} nokta`,
+        `Toplam mesafe: ${fmt(r.totalDistance)}`,
+        closed ? 'kapalı tur' : 'açık tur',
+        r.improvedBy2Opt ? `2-opt ile ${r.swaps} iyileştirme` : null,
+      ].filter(Boolean).join(' · ');
+
+      renderViz(points, r.order, closed);
+
+      const rows = r.order.map((idx, step) => {
+        const next = step < r.order.length - 1 ? r.order[step + 1] : (closed ? r.order[0] : null);
+        const leg = next !== null ? r.legDistances[step] : null;
+        return `<tr class="border-t border-slate-100 dark:border-slate-800"><td class="px-3 py-2 text-xs text-slate-500">${step + 1}</td><td class="px-3 py-2 text-sm text-slate-900 dark:text-slate-100">${escapeHtml(points[idx].label)}</td><td class="px-3 py-2 text-right font-mono text-xs text-slate-600 dark:text-slate-400">${leg !== null ? '+' + fmt(leg) : '—'}</td></tr>`;
+      }).join('');
+
+      routeList.innerHTML = `<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40"><table class="w-full"><thead><tr class="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"><th class="px-3 py-2">#</th><th class="px-3 py-2">Nokta</th><th class="px-3 py-2 text-right">Mesafe</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      output.hidden = false;
+      output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      const msg = err instanceof TSPError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
+      errorBox.textContent = msg;
+      errorBox.hidden = false;
+      output.hidden = true;
+    }
+  });
+
+  ptsInput.addEventListener('input', updateCount);
+
+  sampleBtn.addEventListener('click', () => {
+    ptsInput.value = SAMPLE;
+    updateCount();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    form.reset();
+    updateCount();
+    output.hidden = true;
+    errorBox.hidden = true;
+  });
+
+  updateCount();
+</script>

@@ -1,0 +1,373 @@
+---
+title: "Sırt Çantası (Knapsack) Probleminin Çeşitleri"
+description: "Knapsack probleminin 0/1, fractional, unbounded ve multi-dimensional varyantları, dinamik programlama ve açgözlü çözüm yaklaşımları üzerine kapsamlı Türkçe rehber."
+pubDate: 2026-05-06
+relatedTool: "knapsack-cozucu"
+keywords:
+  - "knapsack problemi"
+  - "sırt çantası"
+  - "0/1 knapsack"
+  - "fractional knapsack"
+  - "dinamik programlama"
+  - "dynamic programming"
+  - "kombinatoryel optimizasyon"
+readingMinutes: 12
+faq:
+  - question: "Knapsack problemi NP-zor mu?"
+    answer: "0/1 knapsack NP-zor sınıfa girer; ancak 'pseudo-polinomyal' zamanda (O(n × W) — burada W kapasite) çözülebilir. Bu, kapasite makul büyüklükteyse pratik olarak hızlı çözüldüğü anlamına gelir. Fractional knapsack ise NP-zor değildir; greedy algoritma ile O(n log n) zamanda çözülür ve her zaman optimum verir."
+  - question: "0/1 ve fractional varyantların pratikte hangisi daha çok kullanılır?"
+    answer: "0/1 knapsack çok daha yaygındır, çünkü gerçek dünya nesneleri (ürünler, projeler, görevler) bölünemez yapıdadır. Fractional varyant ham madde tahsisi gibi sürekli kaynaklı problemlerde anlamlıdır (örn. bir akaryakıt tankından farklı türlerde ne kadar yakıt çekilmeli). 0/1 sezgisel olarak daha sık karşılaşılır."
+  - question: "DP yöntemi yerine açgözlü algoritma 0/1 knapsack için kullanılabilir mi?"
+    answer: "Hayır, açgözlü değer/ağırlık oranıyla 0/1 knapsack'in optimum çözümünü garanti edemez. Klasik kontra-örnek: A=(60,10), B=(100,20), C=(120,30), kapasite=50. Açgözlü A+B+kısmen C der, ama 0/1'de C kısmen alınamaz; gerçek optimum B+C=220'dir. Yalnızca fractional varyantta açgözlü optimaldir."
+  - question: "Çok büyük kapasite (örneğin 1 milyon) için ne yapılır?"
+    answer: "Pseudo-polinomyal DP tabloları o boyutta belleğe sığmaz. Bu durumda alternatif yöntemler kullanılır: dal-sınır (branch and bound), tam çözüm yerine yaklaşıklık şemaları (FPTAS — Fully Polynomial Time Approximation Scheme), veya ticari MILP çözücüler (CPLEX, Gurobi, SCIP). FPTAS, kullanıcının istediği hassasiyet seviyesinde yaklaşık optimal çözüm üretir ve büyük problemlerde tercih edilir."
+  - question: "Knapsack problemi gerçek hayatta nerede karşımıza çıkar?"
+    answer: "Yatırım portföyü oluşturma (sınırlı sermayeyle hangi varlıkları al), proje seçimi (sınırlı bütçeyle hangi projeleri yap), gemi/uçak yükleme, kesme stoğu (cutting stock) optimizasyonu, kriptografi (sırt çantası tabanlı şifreleme — pratikte güvensiz olduğu için artık kullanılmıyor), ve hatta vergi optimizasyonu (sınırlı indirim limitleri içinde hangi gideri düş) bu probleme indirgenebilir. Lojistik, finans ve operasyonel planlamada sürekli karşılaşılır."
+---
+
+Bir hırsızsın (analoji olarak söylüyorum, ahlaksal yargıyı bir kenara bırak)
+ve bir kuyumcu mağazasından kaçmak için sınırlı kapasiteli bir sırt
+çantanız var. Mağazada onlarca farklı değerli eşya — altın külçeleri, gümüş
+tabaklar, mücevherler, antika saatler. Her birinin değeri ve ağırlığı
+farklı. Sırt çantanın dayanabileceği maksimum ağırlık belirli; o sınırı
+aştığında çantanın askısı kopar. Hangi eşyaları yanına almalısın?
+
+Bu, 70 yılı aşkın süredir çalışılan ve hâlâ açık problemleri olan bir
+yöneylem klasiği: **knapsack problemi** (Türkçe karşılığıyla *sırt çantası
+problemi*). Bilgisayar bilimleri kombinatoryel optimizasyon derslerinin
+ilk haftalarında karşılaşılan, basit görünen ama derin matematik
+barındıran bir problemdir.
+
+Bu rehber knapsack problem ailesinin başlıca varyantlarını, çözüm
+algoritmalarını ve gerçek dünya karşılıklarını sistematik olarak ele alır.
+
+## Klasik formülasyon
+
+Standart knapsack problemi şu şekilde tanımlanır: $n$ adet öge var, her
+ögenin bir **değeri** $v_i$ ve bir **ağırlığı** $w_i$ vardır. Ayrıca toplam
+kapasite $W$ verilmiş. Amaç, toplam ağırlığı $W$'yi aşmadan toplam değeri
+maksimize eden bir öge alt kümesi seçmek.
+
+Matematiksel olarak:
+
+$$
+\text{maksimize: } \sum_{i=1}^{n} v_i \cdot x_i
+$$
+
+$$
+\text{kısıt: } \sum_{i=1}^{n} w_i \cdot x_i \le W
+$$
+
+Burada karar değişkeni $x_i$, varyanta göre değişir:
+
+- **0/1 knapsack:** $x_i \in \{0, 1\}$ — öge ya alınır ya alınmaz
+- **Fractional knapsack:** $x_i \in [0, 1]$ — kesirli alınabilir
+- **Unbounded knapsack:** $x_i \in \mathbb{Z}_{\ge 0}$ — her öge sınırsız sayıda alınabilir
+- **Bounded knapsack:** $x_i \in \{0, 1, ..., k_i\}$ — her ögenin maksimum miktarı belirli
+
+Bu farklı varyantların her biri farklı algoritmik karaktere sahiptir.
+
+## Problemin tarihçesi
+
+Knapsack problemi 1897'de Macar matematikçi Tobias Dantzig'in (sayısal
+matematik tarihi alanında ünlü olan) ders kitaplarında ilk kez tarif edildi;
+ancak resmi matematiksel formülasyonu George Dantzig'in (Tobias'ın oğlu,
+simpleks algoritmasının babası) 1957'deki çalışmalarına dayanır. İsim
+"sırt çantası" benzetmesi sezgisel bir öğretim aracı olarak kullanıldı ve
+zamanla problemin standart adı hâline geldi.
+
+20. yüzyılın ikinci yarısında knapsack ailesinin varyantları (0/1, fractional,
+unbounded) bilgisayar bilimleri öğretiminde temel örnek olarak yer aldı. Donald
+Knuth, "The Art of Computer Programming" serisinin ilgili ciltlerinde knapsack
+problemine ayrı bir bölüm ayırarak konunun pedagojik önemini pekiştirdi. 1972'de
+Richard Karp, knapsack'i NP-tam problemler listesine resmi olarak ekledi —
+karmaşıklık teorisi açısından önemli bir an.
+
+Pratik kullanım açısından knapsack 1950'lerin sonundan itibaren askeri
+lojistik (silah/mühimmat yükleme), 1970'lerden itibaren kâğıt/çelik kesme
+stoğu uygulamaları, 1990'lardan itibaren proje seçimi/yatırım portföy
+optimizasyonu gibi alanlarda yoğun kullanıldı. Modern dönemde reklam
+yerleştirme, bulut hesaplama kaynak tahsisi ve cryptocurrency madenciliği
+gibi yeni alanlar eklendi.
+
+## 0/1 knapsack: dinamik programlama çözümü
+
+0/1 knapsack en yaygın varyanttır ve en bilineni olduğu için "knapsack
+problemi" denildiğinde genelde bu kastedilir. NP-zor sınıfta olmasına
+rağmen pseudo-polinomyal zamanda çözülür: O(n × W).
+
+Algoritma **dinamik programlama (DP)** tabanlıdır. Bir tablo $dp[i][w]$
+oluştururuz; bu, ilk $i$ öge ile $w$ kapasiteye sığabilen maksimum
+değeri verir. Yinelemeli ilişki:
+
+$$
+dp[i][w] = \max\big(dp[i-1][w],\; dp[i-1][w - w_i] + v_i\big)
+$$
+
+Birinci terim "öge $i$'yi alma", ikinci terim "öge $i$'yi al" durumudur.
+Sınır koşulları $dp[0][w] = 0$ tüm $w$ için.
+
+Tablo doldurulduktan sonra optimum değer $dp[n][W]$'dir; hangi ögelerin
+alındığını bulmak için tabloyu **geri izleyerek** (backtracking) çıkarmak
+gerekir.
+
+### Bellek optimizasyonu
+
+Klasik DP tablosu O(n × W) bellek kullanır. Bellek kısıtı varsa, sadece
+bir önceki satıra ihtiyaç duyulduğu için tek boyutlu rolling array
+kullanılabilir: O(W) bellek. Geri izleme için yine de "alındı/alınmadı"
+işaretleri saklamak gerekir, ama bu da bit dizisi olarak sıkıştırılabilir.
+
+### 0/1 knapsack'in karmaşıklığı
+
+| n | W | İşlem (≈) | Süre |
+|---|---|-----------|------|
+| 100 | 1000 | 100,000 | < 1 ms |
+| 1000 | 10,000 | 10⁷ | ~10 ms |
+| 10,000 | 100,000 | 10⁹ | ~1-5 sn |
+| 100,000 | 1,000,000 | 10¹¹ | dakikalar |
+
+DP tablosunun boyutu kapasite ile doğrudan büyür. Bu yüzden büyük kapasiteler
+için "pseudo-polinomyal" denir; problem boyutu girdideki sayıların büyüklüğüne
+bağlıdır, sadece $n$'e değil. Bu özelliği nedeniyle knapsack problemi
+karmaşıklık teorisinde önemli bir örnektir.
+
+## Fractional knapsack: greedy çözüm
+
+Fractional varyantta her öge kesirli olarak alınabilir. Bu küçük gevşeklik
+problemi büyük ölçüde basitleştirir; **açgözlü (greedy)** algoritma optimum
+çözümü verir.
+
+Algoritma:
+1. Her ögenin değer/ağırlık oranını hesapla: $r_i = v_i / w_i$.
+2. Ögeleri $r_i$'ye göre azalan sırada sırala.
+3. Sıradan başlayarak her ögeyi tamamen al, kapasite dolduğunda son ögeyi
+   kalan kapasiteye sığacak şekilde kesirli al.
+
+Karmaşıklık: O(n log n) sıralama nedeniyle. n=10000 için bile
+mikrosaniyeler içinde biter.
+
+Fractional varyant, "neden açgözlü her zaman çalışmaz" sorusunun zarif
+bir karşı örneğidir: 0/1'de açgözlü doğru sonuç vermez, ama fractional'da
+matematiksel olarak optimaldir. Bu fark, problem yapısının algoritma
+seçimine doğrudan etkisini gösterir.
+
+## Unbounded knapsack
+
+Unbounded varyantta her ögeden sınırsız sayıda alınabilir. Bu da DP ile
+O(n × W) zamanda çözülür; ancak yineleme bağıntısı biraz farklıdır:
+
+$$
+dp[w] = \max\Big(dp[w],\; \max_{i: w_i \le w} \big(dp[w - w_i] + v_i\big)\Big)
+$$
+
+Bu varyant **kesme stoğu (cutting stock)** problemleriyle yakından
+ilişkilidir: bir ham madde rolünden hangi uzunluklarda kaç parça keseceğin
+gibi sorular. Üretim planlamasında ve perakende yönetimde sıkça
+karşılaşılır.
+
+## Multi-dimensional knapsack
+
+Çoklu boyutlu varyantta tek bir kapasite yerine birden fazla kısıt vardır
+(ağırlık VE hacim, ağırlık VE değer, vs.). Bu, problemi çok daha zorlaştırır;
+DP tablosu boyutları çarpar ve bellek hızla şişer.
+
+Pratikte multi-dimensional knapsack genellikle MILP olarak ifade edilip
+ticari çözücülere verilir. Açık kaynak araçlardan
+[Google OR-Tools'un Linear Solver](/or-araclari/rehberler/google-or-tools-genel-bakis)
+modülü bu problemleri rahatlıkla çözer.
+
+## Yaklaşıklık şemaları (FPTAS)
+
+NP-zor problemler için bazen "tam optimum" yerine "optimumun yakını"
+kabul edilebilir. **Fully Polynomial-Time Approximation Scheme (FPTAS)**,
+kullanıcının istediği yakınlık derecesi $\epsilon$'a göre $1 - \epsilon$
+oranında garanti optimumu polinomyal zamanda bulan algoritmalardır.
+Knapsack için klasik FPTAS algoritmaları vardır (örneğin Ibarra-Kim
+1975).
+
+Pratikte: $\epsilon = 0.01$ ile %99 optimumu, $\epsilon = 0.05$ ile %95
+optimumu hızla bulabilirsin. Çoğu endüstriyel uygulamada bu kabul
+edilebilir ve hatta tercih edilen yaklaşımdır.
+
+## Gerçek dünya uygulamaları
+
+Knapsack problemi modern ekonominin pek çok kararı için zemindir.
+
+**Yatırım portföy seçimi:** Sınırlı sermayeyle hangi yatırım enstrümanlarını
+seçeceğine karar vermek. "Risk-getiri" boyutuyla genişletildiğinde
+multi-dimensional knapsack olur.
+
+**Proje seçimi (capital budgeting):** Bir şirketin sınırlı bütçesiyle
+hangi yatırım projelerini hayata geçireceği. Her projenin maliyeti (ağırlık)
+ve beklenen NPV'si (değer) bilinir.
+
+**Reklam alanı tahsisi:** Sınırlı banner alanı ile hangi reklamların
+gösterileceği — özellikle programatik reklam sistemlerinde gerçek zamanlı
+çözülen bir varyant.
+
+**Lojistik yükleme:** Bir konteynere veya kamyona hangi paketlerin
+sığdırılacağı (3D bin packing'in özel bir hâli olarak).
+
+**Cloud kaynak tahsisi:** Sınırlı sunucu kapasitesi (CPU, RAM, disk)
+ile hangi konteyner uygulamasının çalıştırılacağı. Kubernetes scheduler'ı
+benzer bir karar verme problemiyle yüzleşir.
+
+**Vergi planlaması:** Sınırlı indirim hakkıyla hangi giderlerin
+düşürüleceği.
+
+**Kesme stoğu:** Bir hammadde rolünden farklı uzunluklarda kaç parça
+kesileceği — kâğıt fabrikalarında, çelik üretiminde sürekli karşılaşılır.
+
+Türkiye'de kâğıt, çelik, tekstil sektörlerinde knapsack tabanlı kesme
+stoğu yazılımları yaygındır; bankacılıkta proje seçimi için MILP
+modelleri kullanılır.
+
+## Knapsack ve diğer yöneylem problemleri
+
+Knapsack problemi, daha karmaşık problemlerin de bir alt kütüğü olarak
+karşımıza çıkar:
+
+- **Bin packing:** Birden fazla "knapsack"e ögeleri yerleştirme problemi
+- **Set cover:** Knapsack'ten farklı ama benzer kombinatoryel yapıya sahip
+- **Multiple knapsack:** Birden fazla farklı kapasiteli sırt çantası
+- **Quadratic knapsack:** Öge çiftleri arasında ilişki olan varyant
+- **Stochastic knapsack:** Değerler veya ağırlıklar belirsiz
+
+Yöneylem repertuarındaki bu problemlerin hepsi farklı yapısal özelliklere
+sahip; ama çoğu, knapsack'in temel sezgilerinden faydalanır.
+
+## Pratik bir 0/1 knapsack örneği: yatırım portföyü
+
+Somut bir örnek üzerinden gidelim. Diyelim 100,000 TL yatırım sermayen var
+ve değerlendirebileceğin 7 farklı tahvil seçeneği var. Her birinin
+yatırılacak tutar (ağırlık) ve beklenen yıllık getiri (değer) bilgisi
+elinde:
+
+| Tahvil | Yatırım (₺) | Beklenen getiri (₺) |
+|---|---|---|
+| A | 25,000 | 2,800 |
+| B | 30,000 | 3,500 |
+| C | 20,000 | 2,200 |
+| D | 15,000 | 1,800 |
+| E | 40,000 | 4,800 |
+| F | 35,000 | 4,300 |
+| G | 10,000 | 1,300 |
+
+Bütçeyi aşmadan toplam beklenen getiriyi maksimize etmek istiyorsun.
+Sezgisel yaklaşım "en yüksek getiri/yatırım oranlı tahvilden başla"
+olabilir, ama bu açgözlü çözüm 0/1 yapı için optimum vermez.
+
+DP tablosunu çözücüye verdiğinde optimum karışımı: D + E + G + B = 1800 +
+4800 + 1300 + 3500 = **11,400 ₺** beklenen getiri (toplam yatırım: 95,000
+₺). Sezgisel açgözlü çözüm 11,000 ₺ civarında kalır — küçük ama gerçek bir
+fark. Endüstriyel ölçekte bu farklar milyonları bulabilir.
+
+Bu örneği bu sitenin
+[Knapsack Çözücü](/or-araclari/araclar/knapsack-cozucu) aracında
+"Örnek doldur" butonuna basarak kendin de deneyebilirsin (örnek farklı bir
+veri seti kullanır ama aynı algoritma).
+
+## Algoritma seçimi: hangi durumda hangisi?
+
+| Durum | Önerilen yaklaşım |
+|---|---|
+| Küçük n, küçük W (örn. 100×1000) | DP, tam optimum |
+| Büyük W, küçük n | Branch and bound veya FPTAS |
+| Sürekli (kesirli) ögeler | Greedy (fractional) |
+| Çoklu kısıt | MILP çözücü (CPLEX, Gurobi, OR-Tools) |
+| Çok büyük problem (n > 10000) | Sezgisel + lokal arama |
+| Hızlı yaklaşıklık yeter | FPTAS, ε ayarlı |
+
+Pratik tavsiye: küçük başla, büyüdükçe daha sofistike yöntemlere geç.
+Bu sitedeki [Knapsack Çözücü](/or-araclari/araclar/knapsack-cozucu) aracı
+0/1 ve fractional varyantlarını N≤100 boyutta kapsar; daha büyük ve
+karmaşık varyantlar için OR-Tools öğrenmek yararlı olur.
+
+## Yaygın hatalar ve nasıl önlenir
+
+Knapsack ile çalışırken sıkça yapılan birkaç tipik hata var.
+
+**Birinci hata — yanlış varyant seçimi.** Problem 0/1 yapıdaysa fractional
+çözmek (veya tersi) yanlış sonuç üretir. Gerçek dünyada öge bölünebilir mi?
+Her ögeden birden fazla alınabilir mi? Bu sorulara açık cevap vermek
+modellemenin en başında yapılmalıdır.
+
+**İkinci hata — kapasite ve değer birimlerinin tutarsızlığı.** Ağırlığı
+gram, kapasiteyi kilogram cinsinden vermek model hatasına yol açar. Çözücü
+yanlış sonuç verir ama hata mesajı vermez. Birim kontrolü zorunludur.
+
+**Üçüncü hata — ölçek dışı kapasiteyle DP zorlaması.** Kapasite milyonlarca
+ise DP tablosu belleğe sığmaz; bu durumda branch-and-bound, FPTAS veya
+MILP'e geçiş gerekir. Bu sitedeki çözücü uygun olmayan kapasiteleri
+açık hata mesajıyla reddeder.
+
+**Dördüncü hata — kâr ile ağırlığı karıştırmak.** Maksimize edilen değer mi,
+kapasite kısıtı ağırlık mı? Bu farkı net tutmak şart; bazen aynı şey iki
+farklı role girebilir (örneğin akaryakıt fiyatı hem değer hem maliyet).
+
+**Beşinci hata — DP tablosundan çözümü çıkarmayı unutmak.** DP tablosu
+yalnızca optimal *değeri* verir; hangi ögelerin alındığını öğrenmek için
+backtracking yapmak gerekir. Çözücüden sadece sayı alıp "hangileri" sorusunu
+cevaplayamamak yaygın bir hatadır.
+
+## Knapsack araştırma trendleri
+
+Bu klasik problem hâlâ aktif araştırma alanıdır. Son yıllarda öne çıkan
+birkaç yön var.
+
+**Online knapsack:** Ögeler tek tek (gelecekteki ögeleri bilmeden) gelir
+ve anında "al/atla" kararı verilir. Bu, klasik knapsack'in çevrimiçi
+versiyonu; e-ticaret reklam yerleştirme, finansal trading gibi alanlarda
+kritik. Klasik analitik garantiler için **rastgelelik kullanımı**
+(randomised algorithms) merkezdedir.
+
+**Stochastic knapsack:** Ögelerin değerleri veya ağırlıkları belirsizdir
+(olasılık dağılımıyla verilir). Çözüm beklenen değeri maksimize eder.
+Yatırım portföy optimizasyonunun risk altındaki versiyonudur.
+
+**Quantum knapsack:** Kuantum bilgisayarlarda knapsack çözmek için
+algoritmalar geliştiriliyor. Henüz pratik fayda yok, ama 2030'larda
+kuantum donanımının olgunlaşmasıyla bu alanın açılacağı düşünülüyor.
+
+**Pekiştirmeli öğrenme tabanlı sezgiseller:** Çok büyük problemler için
+RL ajanlarının iyi karar politikalarını öğrenmesi. Hâlâ erken evrede
+ama 2020'lerde önemli ilerlemeler kaydedildi.
+
+**Quantum-inspired heuristic'ler:** Kuantum tavlama (quantum annealing)
+prensiplerini klasik bilgisayarda taklit eden algoritmalar. D-Wave'in
+açık kaynak kütüphaneleriyle deneyim kazanılabilir.
+
+Bu alanlarda Türk araştırmacıların özellikle tedarik zinciri ve enerji
+optimizasyonuyla ilişkili stochastic knapsack çalışmaları artıyor.
+
+## Sonuç
+
+Knapsack problemi, kombinatoryel optimizasyonun en pedagojik klasik
+örneklerinden biridir. Basit ifadeli, derin matematikli, geniş uygulama
+yelpazeli — bir yöneylem öğrencisi için temel taş. Açgözlü, dinamik
+programlama, dal-sınır, sezgisel ve yaklaşıklık şemaları gibi temel
+algoritma türlerini birarada öğrenmek için ideal vaka çalışmasıdır.
+
+Eğer bu rehberi okuyup ilgini çektiyse, [Atama
+Problemi](/or-araclari/rehberler/macar-algoritmasi) ve
+[Çizelgeleme](/or-araclari/rehberler/cizelgeleme-problemleri) rehberleri
+de bir sonraki durakların olabilir; her biri kombinatoryel optimizasyonun
+farklı yüzünü gösteriyor. Yöneylem yolunda iyi keşifler.
+
+Knapsack'in pedagojik gücü — basit ifadesi ile derin algoritmik içeriğinin
+zıtlığı — onu yöneylemin en sevilen "merhaba dünya" problemlerinden biri
+yapıyor. Bilgisayar bilimleri öğrencilerinin DP öğrendiği ilk problem
+genellikle knapsack'tir; iş hayatında karşılaştıkları ilk gerçek
+optimizasyon problemi ise yine knapsack varyantlarıdır. Bu süreklilik
+problemin ne kadar köklü ve uygulamaya dönük olduğunun göstergesi.
+
+Modern yazılım dünyasında knapsack hâlâ aktif olarak çalışılıyor; özellikle
+gerçek zamanlı sistemlerde karar verme hızının ön plana çıktığı uygulamalarda
+yeni algoritmik yaklaşımlar geliştiriliyor. Akademik yan dışında, herhangi
+bir yöneylem analistinin kariyerinde bu problem onlarca farklı varyantıyla
+karşımıza çıkmaya devam ediyor; alanı iyice öğrenmek uzun vadede çok yönlü bir
+yatırım sayılır ve kariyer boyunca getiri sağlamaya devam eder; bu, sahaya
+girmiş herkesin yıllar içinde dile getirdiği ortak bir tespit olarak kalıyor. Bu rehber, sana bu zengin
+ailenin haritasını çıkarmayı amaçladı; içerideki keşif sana kalmış. İyi
+optimize etmeler, iyi yatırımlar ve nice yeni güzel keşifler dileriz.

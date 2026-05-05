@@ -1,0 +1,205 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import { withBase, SITE } from '../../data/site';
+import { TOOLS } from '../../data/tools';
+
+const tool = TOOLS.find((t) => t.slug === 'knapsack-cozucu')!;
+const guideHref = tool.guideSlug ? withBase(`/rehberler/${tool.guideSlug}`) : null;
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: tool.title,
+  applicationCategory: 'WebApplication',
+  operatingSystem: 'Any',
+  description: tool.description,
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'TRY' },
+  inLanguage: SITE.locale,
+  isAccessibleForFree: true,
+};
+---
+
+<BaseLayout title={tool.title} description={tool.description}>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+  </Fragment>
+
+  <Container as="section" size="wide" class="pt-12 sm:pt-16">
+    <p class="text-sm font-medium text-brand-600 dark:text-accent-400">
+      <a href={withBase('/araclar')} class="hover:underline">Araçlar</a>
+      <span class="text-slate-400 dark:text-slate-600"> / </span>
+      <span>Kombinatoryel</span>
+    </p>
+    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">{tool.title}</h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
+      Öge listeni gir, kapasite belirle, hangi ögelerin sırt çantasına gireceğini
+      saniyeler içinde bul. 0/1 ve fractional varyantlar.
+      {guideHref && (<a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>)}
+    </p>
+  </Container>
+
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,360px)_1fr]">
+    <form id="ks-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40" novalidate>
+      <fieldset class="space-y-3">
+        <div class="flex items-center justify-between">
+          <label for="items" class="block font-display text-sm font-semibold text-slate-900 dark:text-white">Ögeler</label>
+          <span id="item-count" class="text-xs text-slate-500 dark:text-slate-400" aria-live="polite">0 öge</span>
+        </div>
+        <textarea id="items" name="items" rows="9" required autocomplete="off" spellcheck="false"
+          class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+          placeholder="Her satıra bir öge: ad<TAB>değer<TAB>ağırlık&#10;Türkçe ondalık (1,5) desteklenir.&#10;&#10;Altın	100	2,5&#10;Gümüş	60	1,5&#10;Kitap	30	0,8"></textarea>
+        <p class="text-xs text-slate-500 dark:text-slate-400">İpucu: Excel'den kopyala-yapıştır otomatik olarak tab ile ayırır.</p>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" id="sample-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">Örnek doldur</button>
+          <button type="button" id="clear-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">Temizle</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <label class="block">
+          <span class="font-display text-sm font-semibold text-slate-900 dark:text-white">Kapasite (toplam ağırlık limiti)</span>
+          <input type="number" id="capacity" name="capacity" min="0.001" step="0.1" value="50" required
+            class="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">Varyant</legend>
+        <div class="mt-3 space-y-2">
+          <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
+            <input type="radio" name="variant" value="binary" checked class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
+            <span class="flex-1">
+              <span class="block text-sm font-medium text-slate-900 dark:text-white">0/1 (binary)</span>
+              <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Her öge ya tamamen alınır ya alınmaz. Klasik knapsack.</span>
+            </span>
+          </label>
+          <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
+            <input type="radio" name="variant" value="fractional" class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
+            <span class="flex-1">
+              <span class="block text-sm font-medium text-slate-900 dark:text-white">Fractional</span>
+              <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Ögeler kesirli alınabilir. Açgözlü çözüm.</span>
+            </span>
+          </label>
+        </div>
+      </fieldset>
+
+      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">Çöz</button>
+
+      <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
+    </form>
+
+    <section id="output" hidden aria-live="polite" class="space-y-6">
+      <header>
+        <h2 class="font-display text-xl font-semibold tracking-tight text-slate-900 dark:text-white">Sonuç</h2>
+        <p id="summary" class="mt-1 text-sm text-slate-600 dark:text-slate-400"></p>
+      </header>
+      <div id="result-table"></div>
+    </section>
+  </Container>
+
+  {guideHref && (
+    <Container as="section" size="wide" class="py-12 sm:py-16">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900/40">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">Konuyu derinleştir</p>
+        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Knapsack varyantları ve algoritmaları</h2>
+        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">0/1, fractional, unbounded ve multi-dimensional knapsack — dinamik programlama, açgözlü ve sezgisel yaklaşımlar.</p>
+        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">Rehberi oku →</a>
+      </div>
+    </Container>
+  )}
+</BaseLayout>
+
+<script>
+  import { solveKnapsack, parseItems, KnapsackError } from '../../lib/knapsack';
+
+  const SAMPLE = 'Altın\t100\t2,5\nGümüş\t60\t1,5\nKitap\t30\t0,8\nTablet\t180\t1,2\nMücevher\t45\t0,3';
+
+  const $ = (id: string): HTMLElement => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el;
+  };
+
+  const form = $('ks-form') as HTMLFormElement;
+  const itemsInput = $('items') as HTMLTextAreaElement;
+  const itemCount = $('item-count');
+  const capacityInput = $('capacity') as HTMLInputElement;
+  const errorBox = $('error-box');
+  const output = $('output');
+  const summary = $('summary');
+  const resultTable = $('result-table');
+  const sampleBtn = $('sample-btn');
+  const clearBtn = $('clear-btn');
+
+  function escapeHtml(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function fmt(n: number): string {
+    return Number.isInteger(n) ? String(n) : n.toFixed(2);
+  }
+
+  function updateCount(): void {
+    try {
+      const items = parseItems(itemsInput.value);
+      itemCount.textContent = `${items.length} öge`;
+    } catch {
+      itemCount.textContent = `${itemsInput.value.split('\n').filter(Boolean).length} satır`;
+    }
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    errorBox.hidden = true;
+    try {
+      const items = parseItems(itemsInput.value);
+      const variant = (form.elements.namedItem('variant') as RadioNodeList).value as 'binary' | 'fractional';
+      const capacity = Number(capacityInput.value);
+      const r = solveKnapsack({ items, capacity, variant });
+
+      summary.textContent = [
+        `${r.selected.length} öge seçildi`,
+        `Toplam değer: ${fmt(r.totalValue)}`,
+        `Toplam ağırlık: ${fmt(r.totalWeight)} / ${fmt(r.capacity)}`,
+        r.scaled ? '(kesirli ağırlıklar otomatik ölçeklendi)' : null,
+      ].filter(Boolean).join(' · ');
+
+      const rows = r.selected.map((s) => {
+        const fracStr = s.fraction === 1 ? '%100' : `%${(s.fraction * 100).toFixed(0)}`;
+        return `<tr class="border-t border-slate-100 dark:border-slate-800"><td class="px-3 py-2 text-sm text-slate-900 dark:text-slate-100">${escapeHtml(s.item.name)}</td><td class="px-3 py-2 text-right font-mono text-sm text-slate-600 dark:text-slate-400">${fmt(s.takenValue)}</td><td class="px-3 py-2 text-right font-mono text-sm text-slate-600 dark:text-slate-400">${fmt(s.takenWeight)}</td><td class="px-3 py-2 text-right text-xs text-slate-500">${fracStr}</td></tr>`;
+      }).join('');
+
+      resultTable.innerHTML = rows
+        ? `<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40"><table class="w-full"><thead><tr class="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"><th class="px-3 py-2">Öge</th><th class="px-3 py-2 text-right">Değer</th><th class="px-3 py-2 text-right">Ağırlık</th><th class="px-3 py-2 text-right">Oran</th></tr></thead><tbody>${rows}</tbody></table></div>`
+        : '<p class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-400">Hiçbir öge sığmadı. Kapasiteyi artırmayı veya daha hafif ögeler eklemeyi dene.</p>';
+
+      output.hidden = false;
+      output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      const msg = err instanceof KnapsackError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
+      errorBox.textContent = msg;
+      errorBox.hidden = false;
+      output.hidden = true;
+    }
+  });
+
+  itemsInput.addEventListener('input', updateCount);
+
+  sampleBtn.addEventListener('click', () => {
+    itemsInput.value = SAMPLE;
+    capacityInput.value = '5';
+    updateCount();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    form.reset();
+    capacityInput.value = '50';
+    updateCount();
+    output.hidden = true;
+    errorBox.hidden = true;
+  });
+
+  updateCount();
+</script>

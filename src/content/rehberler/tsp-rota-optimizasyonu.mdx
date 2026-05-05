@@ -1,0 +1,355 @@
+---
+title: "Gezgin Satıcı Problemi (TSP) ve Rota Optimizasyonu"
+description: "Gezgin Satıcı Problemi (TSP) nedir, neden NP-zor, nearest-neighbor ve 2-opt sezgiselleri nasıl çalışır? Rota optimizasyonunun klasik problemi üzerine kapsamlı Türkçe rehber."
+pubDate: 2026-05-06
+relatedTool: "tsp-cozucu"
+keywords:
+  - "gezgin satıcı problemi"
+  - "tsp"
+  - "traveling salesman"
+  - "rota optimizasyonu"
+  - "nearest neighbor"
+  - "2-opt"
+  - "lin kernighan"
+  - "vrp"
+readingMinutes: 11
+faq:
+  - question: "TSP neden bu kadar ünlü bir problem?"
+    answer: "TSP basit ifadeli ama derin matematik içeren, gerçek dünyada çok geniş uygulama yelpazesine sahip ve NP-zor karmaşıklık sınıfının erken örneklerinden biri olduğu için yöneylem ve algoritma teorisinin ikonik problemidir. Lojistik, üretim, mikroçip tasarımı, DNA dizileme, hatta astronomide teleskop hareket planlaması gibi farklı alanlarda TSP'ye indirgenen problemler vardır."
+  - question: "Nearest-neighbor algoritması optimal sonuç verir mi?"
+    answer: "Hayır. Nearest-neighbor (en yakın komşu) klasik bir açgözlü sezgiseldir ve tipik olarak optimumdan %25-50 daha uzun turlar üretir. Yine de iyi bir başlangıç noktasıdır; 2-opt veya 3-opt gibi yerel arama operatörleriyle iyileştirildiğinde optimuma %5-10 yaklaşır. Tam optimum için Concorde TSP solver gibi özel araçlar kullanılır."
+  - question: "Concorde TSP nedir?"
+    answer: "Concorde, akademisyenler tarafından geliştirilmiş ve dünya rekorları kıran TSP çözücü yazılımıdır. Dal-sınır ve kesme düzlemi yöntemlerinin kombinasyonuyla çalışır; 100,000+ şehirli problemleri çözebildiği bilinmektedir. Bu sitenin TSP çözücüsü daha basit nearest-neighbor + 2-opt yaklaşımını kullanır; Concorde tarafından çözülebilen büyük problemler için özelleşmiş araçlara geçmek gerekir."
+  - question: "TSP ile VRP (Vehicle Routing Problem) arasındaki fark nedir?"
+    answer: "TSP tek bir gezgin için en kısa turu bulur. VRP ise birden fazla araçla birden fazla rota planlar; her aracın kapasite, çalışma saati gibi kısıtları olur. VRP TSP'nin genelleştirilmesidir ve gerçek lojistik şirketlerinin (kargo, e-ticaret) çözmesi gereken esas problemdir. Modern VRP çözücüleri Google OR-Tools'un Routing modülü gibi, TSP altyapısının üzerine inşa edilmiştir."
+  - question: "Gerçek hayatta TSP nerede karşımıza çıkar?"
+    answer: "Şehir içi kurye dağıtımı, posta-kargo dağıtım rotaları, çöp toplama araçları, ev ziyareti hizmetleri (sağlık, internet montajı), kâğıt üzerinde ise mikroçip imalatında lazer kesim sırası, hastane hemşire ev ziyaretleri, müze tur planlama, gen dizileme labında robot kollarının numune alma sırası — TSP gizli bir altyapı olarak hayatımızın pek çok alanında çalışmakta."
+---
+
+Bir kurye, sabah depodan ayrılırken o gün bırakılacak 30 paketin adresine
+sahip. Hepsini ziyaret edip akşam depoya geri dönmesi gerekiyor. Tüm
+paketleri en kısa sürede dağıtması için hangi sırayla gitmesi en iyi olur?
+
+Yöneylem araştırmasının en ünlü problemi: **Gezgin Satıcı Problemi**
+(İng. *Traveling Salesman Problem* — TSP). 1930'lardan beri matematikçilerin
+ve bilgisayar bilimcilerin başlıca uğraş konularından biri; günümüzde
+hâlâ optimal çözüm algoritmaları geliştirilmeye çalışılan bir araştırma
+alanı.
+
+## TSP nedir?
+
+Klasik formülasyonu basittir: $N$ şehrin koordinatları (veya aralarındaki
+mesafeler) verilmiş. Tüm şehirleri tam olarak bir kez ziyaret edip
+başlangıç noktasına dönen **en kısa tur**u bul. Bu, görünüşten daha zor
+bir problemdir.
+
+Karmaşıklık analizi açısından TSP **NP-zor** sınıfa girer. $N$ şehir için
+olası tur sayısı $(N-1)!/2$ — 20 şehir için 60 trilyon, 100 şehir için
+yıldızlar arası bir sayı. Tüm olasılıkları kontrol etmek pratik değildir;
+bu yüzden genellikle **sezgisel (heuristic)** ve **yaklaşıklık
+(approximation)** algoritmaları kullanılır.
+
+İşin ilginç yanı: TSP'nin **özel** durumları (örneğin Öklid TSP — şehirler
+2-boyutlu düzlemde) hâlâ NP-zordur, ama daha iyi yaklaşıklık garantileri
+verilebilir. Genel TSP için yaklaşıklık şeması yokken, Öklid TSP için
+PTAS (polinomyal zamanlı yaklaşıklık şeması) mevcuttur.
+
+## Yöneylem perspektifinden TSP
+
+TSP, yöneylem araştırmasının dört temel "klasik" probleminden birisi
+olarak öğretim müfredatlarında yer alır. Diğer üçü doğrusal programlama,
+atama ve knapsack'tir. Bu klasiklerin her biri kombinatoryel optimizasyon
+düşüncesinin farklı bir yönünü temsil eder ve yöneylem analistinin
+zihninde temel bir referans çerçevesi oluşturur.
+
+TSP'nin diğer klasiklerden ayırıcı özelliği, **"yapı görünür ama çözüm
+zor"** karakteridir. Knapsack pseudo-polinomyal zamanda çözülebilir, atama
+polinomyal zamanda çözülür, LP de polinomyal zamanda. TSP ise NP-zor.
+Bu, modeli kurmanın kolay ama çözmenin zorlu olduğu bir kombinasyon —
+yöneylem öğrencisinin "matematiksel optimizasyon her zaman hızlı değildir"
+gerçeğiyle yüz yüze geldiği problem.
+
+Pratik anlamda TSP'nin hızlı sezgiselleri kombinatoryel optimizasyonun
+endüstriyel uygulanmasının da temelidir. Bir gerçek dünya optimizasyon
+projesinde çoğu zaman tam optimum değil, "uygulanabilir, makul ve hızlı
+hesaplanan" çözüm önemlidir. TSP'nin tarihsel deneyimi (90 yıllık
+sezgisellerinin endüstriyel kullanımı) bu felsefenin doğrulayıcısıdır.
+
+## Tarihçe ve önemi
+
+TSP'nin kökleri 1930'lara uzanır; ilk matematiksel formülasyonu Karl Menger
+tarafından Viyana'da yapıldı. Ama asıl ünü 1947'de **Merrill Flood**'un
+problemini Princeton'da popülerleştirmesiyle başladı. 1954'te George Dantzig,
+Ray Fulkerson ve Selmer Johnson 49 şehirli ABD turunu o zamana göre devasa
+bir başarı olan kesme düzlemi yöntemiyle optimal çözdüler — bu makale
+modern kombinatoryel optimizasyonun temel taşlarından biri sayılır.
+
+1972'de **Richard Karp**, NP-zor problemler listesine TSP'yi resmi olarak
+ekleyerek karmaşıklık teorisindeki yerini sabitledi. Sonraki on yıllarda
+algoritma yarışı devam etti: dal-sınır iyileştirmeleri, Lin-Kernighan
+sezgiselleri (1965), genetic algoritmalar (1970'ler), tabu arama
+(1980'ler), simulated annealing (1980'ler), ve modern olarak **Concorde
+TSP solver** (2000'ler).
+
+Concorde'un başarıları çığır açıcı olmuştur: 2006'da 85,900 şehirli mikroçip
+delik problemini optimal çözdü. Aynı dönemlerde 33,810 şehirli VLSI tasarım
+problemi gibi pratik kombinatoryel sorunlar Concorde sayesinde "matematiksel
+olarak en iyi şekilde" çözülebilir hâle geldi.
+
+## Sezgisel algoritmalar
+
+Pratikte küçük-orta TSP problemleri için (N ≤ 1000) genellikle hızlı
+sezgisel algoritmalar tercih edilir. En yaygın olanları:
+
+### Nearest-neighbor (en yakın komşu)
+
+Algoritmanın mantığı son derece basit: Bir şehirden başla. Bir sonraki
+adımda, ziyaret edilmemiş en yakın şehre git. Tüm şehirler ziyaret edilince
+başlangıca dön. O kadar.
+
+Karmaşıklık: O(N²) — her adımda en yakın komşuyu bulmak için tüm kalanları
+taramak gerekir. N=1000 için yaklaşık 1,000,000 işlem, milisaniyenin
+altında.
+
+Sonuç kalitesi: Genellikle optimumdan %25-50 daha uzun. Bazen kötü
+seçimler "sıkışıp kalmaya" yol açar (sondaki şehirler birbirinden çok uzak
+kalmış olabilir). Ama hızlı bir başlangıç çözümü olarak değerlidir.
+
+### 2-opt
+
+Mevcut bir turu sürekli iyileştiren yerel arama algoritmasıdır. Her
+adımda turu iki yere böl; orta segmenti ters çevir; eğer bu, toplam
+turu kısaltıyorsa kabul et. Hiçbir iyileştirme bulunamayana kadar tekrarla.
+
+Geometrik olarak: Eğer tur kendi kendiyle kesişiyorsa (X şeklinde),
+2-opt bu kesişimi açar. NP-zor olmasına rağmen, tipik girdilerde
+nearest-neighbor sonucunu %5-15 oranında iyileştirir.
+
+Karmaşıklık: O(N²) iterasyon başına; iterasyon sayısı problem yapısına
+bağlı (genelde N²-N³ arası).
+
+### 3-opt ve Or-opt
+
+2-opt'un genelleştirmeleri. 3-opt üç kenarı aynı anda yeniden bağlar; daha
+fazla yerel iyileştirme imkânı sunar ama hesaplama maliyeti artar. Or-opt
+ise küçük segmentleri (1-3 şehir) farklı pozisyonlara taşır.
+
+### Lin-Kernighan
+
+1965'te geliştirilen ve hâlâ pratik en iyi sezgiselli kabul edilen
+algoritma. Değişken-uzunlukta zincirleme iyileştirmeler yapar; karmaşık
+ama çok güçlü. LKH (Lin-Kernighan-Helsgaun) implementasyonu açık kaynak
+olarak mevcut ve büyük problemlerde Concorde'un yaklaşıklık sınırına çok
+yakın sonuçlar verir.
+
+### Genetik algoritmalar ve metasezgiseller
+
+Doğadan ilham alan algoritmalar (genetik, karınca kolonisi, arı kolonisi,
+parçacık sürüsü) TSP için yoğun olarak çalışılmıştır. Çoğu zaman yeterli
+ama optimal olmayan sonuçlar verir; özelleşmiş 2-opt/3-opt yaklaşımlarıyla
+yarışmakta zorlanırlar.
+
+## Tam çözüm yaklaşımları
+
+Pratik tam çözüm yaklaşımı **dal-sınır + kesme düzlemi (branch and cut)**
+yöntemidir. Concorde TSP solver bu yaklaşımın en olgun
+implementasyonudur. Algoritma:
+
+1. LP gevşetmesi ile alt sınırı bul
+2. Geçerli olmayan kesirli çözümleri kesme düzlemleri ile elimine et
+3. İhtiyaç duyulduğunda dallandır (binary değişken sabitle)
+4. Optimum bulunana kadar tekrarla
+
+Bu yöntem küçük problemler için saniyelerde, orta problemler için dakikalarda
+optimum verir. 1000+ şehirli problemler hâlâ saatler/günler alabilir;
+80,000+ şehirli problemler için süre haftalara çıkar.
+
+## Christofides algoritması
+
+Metric TSP (üçgen eşitsizliğine uyan mesafelerle) için Christofides 1976'da
+**1.5-yaklaşıklık** garantili bir algoritma geliştirdi: en kötü durumda
+optimumdan %50 daha kötü olmayan tur üretir. Bu, polinomyal zamanlı
+algoritmalar arasında 2022'ye kadar bilinen en iyi yaklaşıklık oranıydı;
+o yıl Karlin, Klein ve Gharan **1.5 - ε** algoritmasıyla küçük bir
+iyileştirme yayımladı. Yine de pratikte 2-opt + Lin-Kernighan kombinasyonu
+çoğu zaman Christofides'i yener.
+
+## Vehicle Routing Problem (VRP) ile ilişki
+
+VRP, TSP'nin **çoklu araç** versiyonudur ve gerçek lojistik şirketlerinin
+çözmesi gereken asıl problemdir:
+
+- **CVRP (Capacitated VRP):** Her aracın yük kapasitesi var
+- **VRPTW (VRP with Time Windows):** Her müşterinin zaman penceresi var
+- **MDVRP (Multi-Depot VRP):** Birden fazla başlangıç deposu var
+- **PDP (Pickup and Delivery Problem):** Hem alma hem bırakma
+- **HVRP (Heterogeneous VRP):** Araç tipleri farklı
+
+Bu problemler TSP'den hesaplama olarak çok daha zordur ve özelleşmiş
+yazılımlar (OptaPlanner, OR-Tools Routing, ORTEC, Routific) ile çözülür.
+
+## Türkiye'de uygulamalar
+
+TSP ve türevleri Türkiye'de aktif olarak kullanılır:
+
+**Kargo şirketleri:** Yurtiçi Kargo, MNG Kargo, Aras Kargo gibi büyük
+firmaların günlük rota planlama sistemleri VRP altında TSP altyapısı
+kullanır. Şehir içi 200-500 adresli rotaların planlanması için ~5 dakika
+hesaplama yeterli olur.
+
+**E-ticaret last-mile:** Trendyol Express, Hepsijet, Yemeksepeti Mahalle
+gibi platformlar dakikada onlarca rota güncellemesi yapar. Dinamik VRP
+ile çalışırlar; teslim süreleri değiştikçe rotalar yeniden hesaplanır.
+
+**Belediye operasyonları:** Çöp toplama araçları (özellikle İBB), ilaçlama
+araçları, asfalt onarım ekipleri rota planlamada TSP/VRP modelleri
+kullanır.
+
+**Sağlık:** Eve sağlık hizmeti veren ekiplerin günlük ev ziyaretleri TSP
+ile planlanır. Aile sağlığı merkezleri ve özel sağlık hizmetlerinde
+yaygındır.
+
+**Üretim:** Fabrika içinde robot kollarının operasyon sırası, lazer kesim
+makinelerinin delik sırası — bunlar TSP'nin "şehir" yerine "operasyon
+noktası" formundaki versiyonlarıdır.
+
+## Yaygın hatalar ve nasıl önlenir
+
+TSP ile çalışırken sıkça yapılan birkaç tipik hata vardır.
+
+**Birinci hata — yanlış mesafe metriği.** TSP'nin "uzaklık" tanımı problem
+bağlamına göre değişir. Şehir içi rota için Öklid mesafesi yanıltıcıdır;
+gerçek yol mesafesi (Manhattan veya Haversine + yol grafı) gerekir. Bir
+mikroçip delik problemi için Öklid yeterli olabilir. Yanlış metrik seçimi
+modeli sözde-optimal hâle getirir ama gerçek dünyada başarısız olur.
+
+**İkinci hata — küçük örnekte test etmemek.** 100 noktalı bir problem
+yazıp doğrudan çalıştırmak hatalıdır. Önce 5 noktalı bir örnekle algoritmayı
+test edip elinle hesapla. Algoritma %1 kaybediyor mu, %50 kaybediyor mu —
+bunu küçük problemde gör.
+
+**Üçüncü hata — başlangıç noktasının önemini hafife almak.** Nearest-neighbor
+algoritması başlangıç noktasına çok hassastır. Aynı 30 noktalı problemde
+başlangıcı değiştirmek %20-30 farklı sonuç verebilir. İyi pratik: tüm N
+noktayı başlangıç olarak dene, en iyi sonucu sun (multi-start).
+
+**Dördüncü hata — 2-opt'u atlamak.** Sadece nearest-neighbor sonucu pratikte
+yeterli görünebilir; ama 2-opt çoğu zaman %5-15 iyileştirme getirir ve
+hesaplama maliyeti az. Atlamak için iyi bir sebep yoksa açık tut.
+
+**Beşinci hata — tam optimuma takılmak.** TSP NP-zor; küçük problemlerde
+optimum bulmak mümkün ama orta-büyük problemlerde "yeterince iyi" çözümle
+yetinmek gerekir. Optimuma %5 yakın bir tur, çoğu pratik durumda mükemmel
+optimumla aynı iş kararını verdirir; ama hesaplama saatler yerine
+saniyeler sürer.
+
+## TSP'nin matematik dünyasındaki yeri
+
+TSP'nin ünü sadece pratik uygulamalarından gelmez; matematik ve algoritma
+araştırmasında temel bir referans noktası olduğu için de önemlidir. Birkaç
+ilginç bağlantı:
+
+**P vs NP problemi:** Matematik tarihinin en büyük açık sorularından biri.
+TSP NP-tam (decision versiyonu) ve NP-zor (optimization versiyonu) sınıflarda
+yer aldığı için, bu problemin polinomyal çözümünün bulunması $P = NP$
+sonucunu doğurur. Bu nedenle TSP üzerinde çalışan her algoritma araştırmacısı
+bilerek bilmeyerek matematiksel olarak çığır açıcı bir keşfin peşindedir.
+
+**Christofides algoritması ve metrik koşullar:** Üçgen eşitsizliğine uyan
+TSP varyantları için 1.5-yaklaşıklık garantili polinomyal algoritma
+mevcut. 2022'de bu sınır biraz iyileştirildi (1.5 - ε). Bu küçük gibi
+görünen iyileştirme algoritma teorisi camiasında büyük yankı uyandırdı.
+
+**Approximation hardness:** Genel TSP için **hiçbir** sabit yaklaşıklık
+algoritması yoktur (P ≠ NP varsayımı altında). Yani "her zaman optimumdan
+en fazla X kat fazla tur veriyorum" diyen bir polinomyal algoritma yapmak
+imkânsızdır. Bu, TSP'yi karmaşıklık açısından "ekstrem" bir konumda tutar.
+
+**Random TSP:** Rastgele dağılmış noktalarla TSP'nin **beklenen** optimal
+tur uzunluğu için Beardwood-Halton-Hammersley sabiti gibi matematiksel
+sabitler vardır. Bunlar olasılık teorisi ile geometrinin kesişiminde
+ilginç sonuçlar üretir.
+
+## Algoritma seçimi rehberi
+
+| Durum | Öneri |
+|---|---|
+| N ≤ 15, tam optimum | Dinamik programlama (Held-Karp) — O(N² · 2^N) |
+| N ≤ 100, tam optimum | Concorde TSP solver |
+| N ≤ 1000, çok hızlı | Nearest-neighbor + 2-opt |
+| N ≤ 5000, kaliteli | Lin-Kernighan (LKH) |
+| Çoklu araç (VRP) | OR-Tools Routing veya OptaPlanner |
+| Gerçek zamanlı | Online TSP algoritmaları + dinamik 2-opt |
+
+Bu sitenin
+[TSP Çözücü](/or-araclari/araclar/tsp-cozucu) aracı, küçük-orta ölçekli
+problemler için nearest-neighbor + 2-opt sunuyor; daha büyük ve karmaşık
+ihtiyaçlar için OR-Tools'a geçmek önerilir
+([rehber](/or-araclari/rehberler/google-or-tools-genel-bakis)).
+
+## Modern uygulamalar ve yapay zekâ kesişimi
+
+TSP, klasik bir problem olmasına rağmen modern yapay zekâ araştırmasının
+da yoğun bir konusu olmaya devam ediyor. Son yıllarda öne çıkan birkaç
+yön:
+
+**Pekiştirmeli öğrenme tabanlı çözümler:** Bir RL ajanının deneme-yanılma
+yoluyla iyi rotalar üretmeyi öğrendiği yaklaşımlar. Google DeepMind'ın
+2017'de yayımladığı "Pointer Networks" çalışması bu alanın taze ufkunu
+açtı. Henüz Concorde'un kalitesine ulaşamasalar da, dinamik ortamlarda
+(rotalar gerçek zamanda değişiyorsa) avantaj sağlıyorlar.
+
+**Graf nöral ağları (GNN) ile öğrenilen heuristic'ler:** TSP grafının
+yapısal özelliklerinden öğrenen modeller. Klasik 2-opt veya Lin-Kernighan
+gibi insan tasarımı sezgisellerin yerini almak için aktif araştırılıyor.
+
+**Quantum-inspired algoritmalar:** D-Wave ve IBM'in kuantum donanımları
+üzerinde test edilen TSP yaklaşımları. 2025 itibarıyla pratik fayda
+sağlamasalar da, 2030'larda kuantum donanım olgunlaştığında alanı
+dönüştürebilir.
+
+**Hibrit klasik+ML pipelines:** Önce ML modeli olası iyi turun "iskeletini"
+çıkarır, klasik 2-opt + LKH algoritmaları bu iskeleti optimize eder. Bu
+yaklaşım son birkaç yılda lojistik şirketlerinin üretim sistemlerine
+girmeye başladı.
+
+Bu yönelimleri takip etmek isteyen biri için INFORMS Journal on Computing,
+Transportation Science ve European Journal of Operational Research
+periyodikleri en güncel akademik kaynaklar.
+
+## Sonuç
+
+TSP, yöneylem araştırmasının ikonik problemidir. NP-zor karakteri sayesinde
+algoritma teorisinin temel direği olmuş, gerçek dünya uygulamalarında
+sayısız varyantı boy göstermiş ve hâlâ aktif araştırma alanı olarak
+varlığını koruyor. Bu rehber sana problemin ana hatlarını ve çözüm
+araçlarını tanıttı; içerideki keşif sana kalmış.
+
+Yöneylem yolculuğunda TSP, [knapsack](/or-araclari/rehberler/knapsack-cesitleri)
+ve [atama](/or-araclari/rehberler/macar-algoritmasi) ile birlikte
+kombinatoryel optimizasyonun "altın üçgenini" oluşturur. Bu üçü tam
+anlaşıldığında, modern yöneylem yazılımlarının arkasındaki matematik
+neredeyse tamamen erişilebilir hâle gelir. İyi keşifler, iyi rotalar dileriz; bu sitenin TSP çözücüsüyle yapacağın
+ilk denemenin sana sezgisel bir başlangıç noktası vereceğine eminiz, ve
+bu deneyim üzerine inşa edebileceğin algoritmik bilgi birikimi seni daha
+ileri seviyelerdeki problemleri çözmeye hazırlayacak.
+
+Türkiye'de TSP üzerine yapılan akademik çalışmaların özellikle havayolu
+fikstürü, kargo dağıtımı ve şehir içi ulaşım planlaması alanlarında
+yoğunlaştığı görülüyor. Bu alanda doktora yapan veya endüstride yüksek
+ölçekli rota optimizasyonu üzerine çalışmak isteyen biri için tercih
+edilebilecek araştırma grupları İstanbul, Ankara ve İzmir'in büyük
+üniversitelerinde (özellikle endüstri mühendisliği ve sistem mühendisliği
+bölümlerinde) bulunabilir. Ulusal kongrelerden YAEM, uluslararası
+konferanslardan EURO, INFORMS, MIC ve ROADEF takip edilebilecek başlıca
+etkinliklerdir. Ayrıca açık kaynak Concorde TSP solver ve LKH paketleri
+hâlâ aktif olarak güncellenmekte ve indirip kullanmak için ücretsiz —
+büyük problemler üzerinde deney yapmak isteyen biri için iyi başlangıç
+noktası; bu paketleri kurup birkaç saat ayırarak, kendi optimizasyon
+deneyimini bir adım daha ileriye taşıyabilirsin ve algoritma teorisini
+pratik kullanımla harmanlayabilirsin. TSP'nin sunabileceği öğrenme deneyimi
+sınırsız sayılır; her yeni varyant ve uygulama yeni bir bakış açısı sağlar
+ve yöneylem analistini sürekli daha
+ileriye doğru çekmeye devam eder; bu da bu klasik problemi yaşatan ve
+canlı tutan başlıca güçtür ve uzun yıllar daha böyle devam edeceğine adımız gibi
+eminiz.
