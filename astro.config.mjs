@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import mdx from '@astrojs/mdx';
+import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
@@ -11,7 +12,19 @@ export default defineConfig({
   build: {
     format: 'directory',
   },
-  integrations: [mdx()],
+  i18n: {
+    locales: ['tr'],
+    defaultLocale: 'tr',
+    routing: {
+      prefixDefaultLocale: false,
+    },
+  },
+  integrations: [
+    mdx(),
+    sitemap({
+      filter: (page) => !page.includes('/404'),
+    }),
+  ],
   vite: {
     plugins: [tailwindcss()],
   },

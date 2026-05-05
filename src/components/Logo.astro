@@ -1,0 +1,45 @@
+---
+interface Props {
+  size?: 'sm' | 'md' | 'lg';
+  withWordmark?: boolean;
+  class?: string;
+}
+
+const { size = 'md', withWordmark = true, class: className = '' } = Astro.props;
+
+const iconSize =
+  size === 'sm' ? 'size-6' : size === 'lg' ? 'size-9' : 'size-7';
+const textSize =
+  size === 'sm' ? 'text-base' : size === 'lg' ? 'text-2xl' : 'text-lg';
+---
+
+<span class:list={['inline-flex items-center gap-2', className]}>
+  <svg
+    class:list={[iconSize, 'text-brand-700 dark:text-accent-400']}
+    viewBox="0 0 32 32"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <line x1="6" y1="22" x2="16" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+    <line x1="6" y1="22" x2="26" y2="22" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+    <line x1="16" y1="6" x2="26" y2="22" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+    <line x1="16" y1="6" x2="16" y2="22" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2 2" />
+    <circle cx="6" cy="22" r="3" fill="currentColor" />
+    <circle cx="16" cy="6" r="3" fill="currentColor" />
+    <circle cx="26" cy="22" r="3" fill="currentColor" />
+    <circle cx="16" cy="22" r="2.5" fill="currentColor" opacity="0.6" />
+  </svg>
+  {
+    withWordmark && (
+      <span
+        class:list={[
+          'font-display font-semibold tracking-tight text-slate-900 dark:text-white',
+          textSize,
+        ]}
+      >
+        OR Araçları
+      </span>
+    )
+  }
+</span>

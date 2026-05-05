@@ -1,0 +1,103 @@
+---
+import '../styles/global.css';
+import { SITE, base } from '../data/site';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  noindex?: boolean;
+  canonical?: string | URL;
+}
+
+const {
+  title,
+  description = SITE.description,
+  noindex = false,
+  canonical,
+} = Astro.props;
+
+const fullTitle = title ? `${title} — ${SITE.shortName}` : SITE.name;
+const canonicalUrl = (
+  canonical ? new URL(canonical, Astro.site) : new URL(Astro.url.pathname, Astro.site)
+).toString();
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: SITE.name,
+  url: new URL(base, Astro.site).toString(),
+  inLanguage: SITE.locale,
+  description: SITE.description,
+  publisher: {
+    '@type': 'Person',
+    name: SITE.author.name,
+    url: SITE.author.github,
+  },
+};
+---
+
+<!doctype html>
+<html lang={SITE.language} class="h-full bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#061224" />
+
+    <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+    <link rel="alternate icon" href={`${base}favicon.ico`} />
+    <link rel="canonical" href={canonicalUrl} />
+
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex" />}
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:locale" content={SITE.locale.replace('-', '_')} />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+
+    <script is:inline>
+      (() => {
+        try {
+          const stored = localStorage.getItem('theme');
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          const isDark = stored ? stored === 'dark' : prefersDark;
+          if (isDark) document.documentElement.classList.add('dark');
+        } catch (_e) {
+          /* no-op */
+        }
+      })();
+    </script>
+
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
+
+    <slot name="head" />
+  </head>
+  <body class="flex min-h-dvh flex-col font-sans">
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-brand-700 focus:px-3 focus:py-2 focus:text-sm focus:text-white"
+    >
+      Ana içeriğe atla
+    </a>
+
+    <Header />
+
+    <main id="main" class="flex-1">
+      <slot />
+    </main>
+
+    <Footer />
+  </body>
+</html>

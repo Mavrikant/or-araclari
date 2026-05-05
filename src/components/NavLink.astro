@@ -1,0 +1,32 @@
+---
+import { withBase } from '../data/site';
+
+interface Props {
+  href: string;
+  class?: string;
+  exact?: boolean;
+}
+
+const { href, class: className = '', exact = false } = Astro.props;
+
+const target = withBase(href);
+const currentPath = Astro.url.pathname.replace(/\/$/, '');
+const targetPath = target.replace(/\/$/, '');
+const isActive = exact
+  ? currentPath === targetPath
+  : currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
+---
+
+<a
+  href={target}
+  aria-current={isActive ? 'page' : undefined}
+  class:list={[
+    'inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
+    isActive
+      ? 'text-brand-700 dark:text-accent-400'
+      : 'text-slate-600 hover:text-brand-700 dark:text-slate-300 dark:hover:text-accent-300',
+    className,
+  ]}
+>
+  <slot />
+</a>

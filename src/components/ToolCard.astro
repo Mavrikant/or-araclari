@@ -1,0 +1,68 @@
+---
+import { CATEGORY_LABELS, type Tool } from '../data/tools';
+import { withBase } from '../data/site';
+
+interface Props {
+  tool: Tool;
+}
+
+const { tool } = Astro.props;
+const isReady = tool.status === 'ready';
+const href = isReady ? withBase(`/araclar/${tool.slug}`) : undefined;
+
+const Element = isReady ? 'a' : 'div';
+---
+
+<Element
+  href={href}
+  class:list={[
+    'group flex h-full flex-col gap-3 rounded-xl border p-5 transition-colors',
+    isReady
+      ? 'border-slate-200 bg-white hover:border-accent-400 hover:bg-accent-50/40 dark:border-slate-800 dark:bg-slate-900/40 dark:hover:border-accent-500 dark:hover:bg-slate-900'
+      : 'border-dashed border-slate-200 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/20',
+  ]}
+>
+  <div class="flex items-center justify-between gap-3">
+    <span class="text-xs font-medium uppercase tracking-wide text-brand-600 dark:text-accent-400">
+      {CATEGORY_LABELS[tool.category]}
+    </span>
+    {
+      isReady ? (
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-accent-500/10 px-2.5 py-0.5 text-xs font-medium text-accent-700 ring-1 ring-accent-500/20 dark:text-accent-300">
+          <span class="size-1.5 rounded-full bg-accent-500" /> Hazır
+        </span>
+      ) : (
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">
+          Yakında
+        </span>
+      )
+    }
+  </div>
+
+  <h3
+    class:list={[
+      'font-display text-lg font-semibold tracking-tight',
+      isReady
+        ? 'text-slate-900 group-hover:text-brand-700 dark:text-white dark:group-hover:text-accent-300'
+        : 'text-slate-700 dark:text-slate-300',
+    ]}
+  >
+    {tool.title}
+  </h3>
+
+  <p class="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+    {tool.description}
+  </p>
+
+  {
+    isReady && (
+      <span class="mt-auto inline-flex items-center gap-1 pt-2 text-sm font-medium text-brand-600 group-hover:text-brand-700 dark:text-accent-400 dark:group-hover:text-accent-300">
+        Aracı aç
+        <svg class="size-4 transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="5" y1="12" x2="19" y2="12" />
+          <polyline points="12 5 19 12 12 19" />
+        </svg>
+      </span>
+    )
+  }
+</Element>
