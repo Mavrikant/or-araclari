@@ -1,0 +1,455 @@
+---
+title: "Google OR-Tools ile Optimizasyon: Türkçe Genel Bakış"
+description: "Google'ın açık kaynak optimizasyon kütüphanesi OR-Tools nedir, hangi modülleri var, Pyomo ve CPLEX ile nasıl karşılaştırılır? Yeni başlayanlar için kapsamlı Türkçe genel bakış."
+pubDate: 2026-05-06
+keywords:
+  - "google or-tools"
+  - "or-tools türkçe"
+  - "cp-sat"
+  - "constraint programming"
+  - "or-tools python"
+  - "optimizasyon kütüphanesi"
+  - "açık kaynak optimizasyon"
+readingMinutes: 14
+faq:
+  - question: "OR-Tools ile Pyomo arasında hangisini seçmeliyim?"
+    answer: "İki kütüphane farklı felsefelere sahiptir: Pyomo bir 'modelleme dili'dir, çözücüden bağımsız modeller yazarsın ve istediğin çözücüye (CPLEX, Gurobi, GLPK) bağlanırsın; OR-Tools ise 'çözücü ailesi' olarak gelir, kendi içinde LP, MILP, CP-SAT, routing gibi optimize edilmiş motorları barındırır. Saf LP/MILP problemleri için Pyomo + ücretsiz GLPK iyi bir başlangıç; çizelgeleme, routing ve karmaşık kısıt problemleri için OR-Tools daha iyidir. Profesyonel kullanımda iki kütüphaneyi de bilmek bir avantajdır."
+  - question: "CP-SAT mı, Linear Solver mı kullanmalıyım?"
+    answer: "Problemin yapısına bakar. Tüm değişkenler sürekli ve kısıtlar 'eşitsizlik' biçimindeyse Linear Solver (LP) hızlıdır. Tamsayı, ikili veya kategori değişkenleri varsa MILP (yine Linear Solver) kullanılır. Mantıksal kısıtlar (eğer-o-zaman, ya-veya), zamanlama aralıkları (interval variables), permütasyon kısıtları varsa CP-SAT genelde daha iyi performans gösterir. CP-SAT, modern OR-Tools'un en güçlü ve en aktif geliştirilen modülüdür."
+  - question: "OR-Tools tamamen ücretsiz mi kalacak?"
+    answer: "OR-Tools Apache 2.0 lisansı altında açık kaynak ve ticari kullanımı kısıtlamasız serbest. Google bunu uzun vadeli kurumsal angajman olarak sunar; LinkedIn, Uber, Walmart gibi şirketler üretimde kullanır. Kütüphanenin temel altyapısı (kıyıdan-bilgisayara, lisanssız) Google'ın kendi içsel kullanımı için de hayati olduğundan, kapanma riski uzun vadede çok düşüktür. CPLEX veya Gurobi gibi pahalı ticari çözücülere kıyasla en sürdürülebilir ücretsiz seçeneklerden biridir."
+  - question: "OR-Tools C++ mı Python'da mı daha hızlı?"
+    answer: "Algoritmaların kendisi C++ ile yazılmıştır; Python (ve Java, C#, .NET) bağlamaları sadece üst katmandır. Çözücü performansı dil seçiminden bağımsız olarak aynıdır. Python'un avantajı modelleme kolaylığıdır — kısıtlar ve değişkenler okunaklı kodla yazılır. C++ ancak çok büyük problem örnekleriyle çalışıyorsan ve modelleme sırasında bile her milisaniye önemli ise (ki nadirdir) anlamlı bir avantaj sağlar."
+  - question: "OR-Tools öğrenmek için ilk hangi probleme bakmalıyım?"
+    answer: "Klasik 'sığır besleme' (cattle feed) veya 'simit fırını' tarzı küçük bir LP problemi ile başla — Linear Solver kullanarak. Sonra 'N-vezir' (N-queens) problemini CP-SAT ile çöz; constraint programming'in ne kadar zarif olduğunu burada görürsün. Üçüncü adım Vehicle Routing Problem (VRP) örneğine geçmek; OR-Tools'un en olgun modüllerinden Routing'i öğrenirken aynı zamanda gerçek dünya optimizasyon problemine yaklaşırsın. Resmi dokümantasyondaki tutorial'ları takip etmek genelde en hızlı yoldur."
+---
+
+Yöneylem araştırması öğrenen veya endüstride uygulayan biri için "hangi
+çözücüyü kullanırım?" sorusu eninde sonunda gelir. Akademik amaçlı küçük
+problemler için Excel Solver yeterli olabilir; orta ölçek için PuLP veya
+Pyomo + GLPK çoğu zaman iş görür. Ama profesyonel ölçekte, çoklu problem
+türlerini tek bir tutarlı çatı altında çözmek istediğinde, **Google OR-Tools**
+neredeyse her zaman gündeme gelir.
+
+Bu rehber OR-Tools'un ne olduğunu, hangi problemleri çözdüğünü, neden
+yaygınlaştığını ve hangi durumlarda alternatiflerine tercih edildiğini
+Türkçe olarak ele alır. Henüz hiç kullanmadıysan ne ile karşılaşacağına dair
+bir önsezi kazanırsın; aktif kullanan biri için ise kütüphanenin daha geniş
+ekosistemi içindeki yerini görme fırsatı olur.
+
+## OR-Tools nedir?
+
+OR-Tools, Google tarafından geliştirilen ve Apache 2.0 lisansı altında
+açık kaynak olarak yayımlanan bir **optimizasyon kütüphanesidir**. İçinde
+beş ana çözücü ailesi barındırır:
+
+- **Linear Solver:** Lineer programlama (LP) ve karma tamsayı programlama (MILP)
+- **Constraint Programming (CP-SAT):** Mantıksal kısıt programlama, çizelgeleme
+- **Routing:** Araç rotalama (VRP), gezgin satıcı (TSP) ve varyantları
+- **Graph algorithms:** Min cost flow, max flow, atama (assignment)
+- **Bin packing:** Sığdırma problemleri ve varyantları
+
+Kütüphane Python, Java, C++, C# ve .NET dillerinde kullanılabilir; algoritmaların
+çekirdeği C++ ile yazıldığından dilden bağımsız olarak yüksek performans sağlar.
+Pip ile dakikalar içinde kurulabilir (`pip install ortools`), ilk kullanım
+deneyimi tatmin edicidir.
+
+OR-Tools'un öne çıkan özelliği **CP-SAT solver**'ıdır — özellikle çizelgeleme
+ve kombinatoryel optimizasyon problemlerinde sektörde en üst düzey
+performans veren ücretsiz çözücülerden biri olarak kabul edilir. 2020'den bu
+yana MiniZinc Challenge'da düzenli olarak madalya kazanan motoru, akademik
+olarak da onaylanmış bir kalitededir.
+
+## Tarihçe ve felsefe
+
+OR-Tools projesi 2010'da Google'ın iç optimizasyon ihtiyaçları için
+başlatıldı. İlk dönem reklam yerleştirme algoritmalarının optimizasyonu,
+veri merkezi enerji yönetimi gibi Google'a özel sorunları çözmek üzere
+geliştirildi. Zamanla kullanım yelpazesinin geniş olduğu fark edildi ve
+2014'te ilk kez açık kaynak olarak yayımlandı.
+
+Projenin temel felsefesi Google'ın diğer açık kaynak çabalarına benzer:
+**"içeride kullandığımızı dışarıyla paylaşalım, ekosistemi büyütelim"**.
+Bu, hem kütüphanenin kalitesini sürekli yüksek tutar (Google içinde üretim
+kritik kullanımdadır) hem de geniş bir geliştirici topluluğu çevresinde
+gelişmesini sağlar.
+
+OR-Tools'un mimari yaklaşımı **modüler**dir. Her optimizasyon türü için
+optimize edilmiş ayrı bir motor vardır; ortak bir API ile birbirine bağlanırlar.
+Bu, Pyomo veya AMPL gibi "tek bir model dili, çözücü değiştirilebilir"
+yaklaşımından farklıdır; OR-Tools daha çok bir "Swiss army knife" gibi
+çalışır, her aleti farklı bir problem için tasarlanmıştır.
+
+## Modüller detaylı
+
+### Linear Solver (LP/MILP)
+
+OR-Tools'un linear solver modülü, bir cephe arayüzdür: arkasında GLOP (Google
+Linear Optimization Package, Google'ın kendi LP çözücüsü), CP-SAT, GLPK, CLP,
+veya CPLEX/Gurobi (lisans varsa) gibi çeşitli motorları çağırabilir. Tipik
+kullanımda GLOP ücretsiz ve hızlı olduğu için varsayılan tercih olur; problem
+karma tamsayı içeriyorsa CP-SAT kullanılır.
+
+Basit bir LP örneği:
+
+```python
+from ortools.linear_solver import pywraplp
+
+solver = pywraplp.Solver.CreateSolver('GLOP')
+x = solver.NumVar(0, solver.infinity(), 'x')
+y = solver.NumVar(0, solver.infinity(), 'y')
+
+solver.Add(x + 2 * y <= 14)
+solver.Add(3 * x - y >= 0)
+solver.Add(x - y <= 2)
+
+solver.Maximize(3 * x + 4 * y)
+solver.Solve()
+
+print(f'x = {x.solution_value()}, y = {y.solution_value()}')
+```
+
+15 satırlık bu kod, klasik bir LP problemini tanımlayıp çözüyor. Performans
+GLPK'nın WebAssembly versiyonundan (bu sitenin LP çözücüsünde kullanılan)
+çok daha hızlı; binlerce değişkenli problemleri saniyeler içinde halleder.
+
+### CP-SAT (Constraint Programming)
+
+OR-Tools'un en güçlü modülü budur. Adı "Constraint Programming - SAT" iki
+yaklaşımın birleşimini ifade eder: klasik kısıt programlama ile boolean
+satisfiability (SAT) çözücülerinin birleştirilmesi.
+
+CP-SAT'ın güçlü yanı **interval variables**ve **disjunctive resource
+constraints** gibi çizelgeleme problemleri için özel olarak tasarlanmış
+yapı taşlarıdır. Bu, klasik MILP modellemesiyle çok daha verimli ifade
+edilebilen problemler doğurur.
+
+Klasik N-vezir (N-queens) problemi:
+
+```python
+from ortools.sat.python import cp_model
+
+model = cp_model.CpModel()
+N = 8
+queens = [model.NewIntVar(0, N - 1, f'queen_{i}') for i in range(N)]
+
+# Aynı satırdaki vezirler farklı sütunlarda
+model.AddAllDifferent(queens)
+
+# Diyagonal çakışmasızlık
+model.AddAllDifferent([queens[i] + i for i in range(N)])
+model.AddAllDifferent([queens[i] - i for i in range(N)])
+
+solver = cp_model.CpSolver()
+status = solver.Solve(model)
+```
+
+15 satırda 8x8 satranç tahtasında 8 veziri çakışmasız yerleştiren tüm
+çözümlerden birini buluyoruz. Aynı problemi MILP olarak yazmak çok daha
+fazla satır ve çok daha karmaşık model gerektirirdi.
+
+### Routing
+
+Vehicle Routing Problem (VRP), Traveling Salesman Problem (TSP) ve
+varyantları için tasarlanmış özel modüldür. Kapasiteli VRP, zaman pencereli
+VRP, çoklu depo VRP gibi gerçek dünya varyantlarını doğrudan destekler.
+
+Modül, **local search tabanlı** çalışır: ilk çözümü açgözlü bir sezgisel
+ile üretir, ardından 2-opt, 3-opt, Lin-Kernighan, Or-opt gibi yerel arama
+operatörleriyle iyileştirir. Bu yaklaşım optimal çözüm garantisi vermez
+ama 1000+ noktalı problemlerde dakikalar içinde sektör kalitesinde
+çözüm üretir.
+
+### Graph algorithms
+
+Daha klasik graf problemleri için. Min cost flow, max flow, lineer atama
+problemi (Hungarian algoritması) gibi spesifik problemler için optimize
+edilmiş çözücüler vardır. Eğer probleminiz "doğal olarak ağ akış" yapısına
+sahipse (lojistik, atama, eşleme), bu modülü kullanmak genel-amaçlı LP'den
+çok daha hızlı sonuç verebilir.
+
+### Bin packing
+
+Sığdırma (bin packing), kesme stoğu (cutting stock) ve varyantları için.
+Bu küçük modül daha geniş kullanılır, çünkü sığdırma problemleri özel
+heuristic'lerle çok hızlı çözülebilir; OR-Tools'un dahili bin packing
+yardımcıları yaygın senaryoları kapsar.
+
+## Hızlı başlangıç: kurulum ve ilk model
+
+OR-Tools kurulumu basit. Python için:
+
+```bash
+pip install ortools
+```
+
+Bu kadar. Sürecin sonunda yaklaşık 100 MB'lık bir paket kurulur (algoritma
+çekirdeklerinin önceden derlenmiş binary'leri dahil). Kurulum sonrası
+herhangi bir Python dosyasında doğrudan import edip kullanılabilir.
+
+Klasik bir LP örneği — bir simit fırınının üretim planlaması:
+
+```python
+from ortools.linear_solver import pywraplp
+
+# Problem: günde kaç adet susamlı, kaç adet sade simit üretilsin?
+# Susamlı simit: 2 dakika emek, 50 g un, 1 TL kâr
+# Sade simit:   1 dakika emek, 60 g un, 0.6 TL kâr
+# Günlük emek: 480 dakika, günlük un: 30 kg
+
+solver = pywraplp.Solver.CreateSolver('GLOP')
+sesame = solver.IntVar(0, solver.infinity(), 'sesame')
+plain = solver.IntVar(0, solver.infinity(), 'plain')
+
+solver.Add(2 * sesame + 1 * plain <= 480)        # emek
+solver.Add(50 * sesame + 60 * plain <= 30000)    # un (gram)
+
+solver.Maximize(1 * sesame + 0.6 * plain)
+status = solver.Solve()
+
+if status == pywraplp.Solver.OPTIMAL:
+    print(f'Susamlı: {sesame.solution_value()}, Sade: {plain.solution_value()}')
+    print(f'Toplam kâr: {solver.Objective().Value():.2f} TL')
+```
+
+Bu örneği çalıştırdığında saniyenin altında optimal cevabı alırsın.
+Modeli karmaşıklaştırmak (yeni ürün, yeni kısıt, çoklu kapasiteler) sadece
+satır eklemekten ibarettir.
+
+## Performans, ölçek ve mimari notları
+
+OR-Tools'un performans karakteristiklerini anlamak, üretime taşınacak bir
+sistem tasarımı yaparken kritiktir.
+
+**LP/MILP performansı:** GLOP (Google'ın kendi LP çözücüsü) küçük-orta
+ölçekli problemlerde dakikada milyonlarca değişken işleyebilir. SCIP arka
+motoruyla karma tamsayı problemleri çözülürken performans, problem yapısına
+bağlı olarak Gurobi'nin üçte biri ile yarısı arasında değişebilir. Bu açık
+fark, karşılığında ödenen "0 dolar" düşünüldüğünde çoğu pratik amaç için
+kabul edilebilir bir tercih hâline geliyor.
+
+**CP-SAT performansı:** Modern OR-Tools'un en parlak motoru. MiniZinc Challenge
+gibi yarışmalarda son yıllarda madalya kazanan CP-SAT, çizelgeleme ve
+kombinatoryel optimizasyon problemlerinde özelleşmiş ticari çözücülerle
+yarışabilir performans veriyor. 16-çekirdek paralelizmi varsayılan olarak
+açıktır; AWS gibi bulut platformlarında 32-64 çekirdekli sunuculara açıkça
+ölçeklenir.
+
+**Routing performansı:** Vehicle Routing Problem için OR-Tools sektörde
+kullanım kolaylığı ve hız dengesi açısından en popüler ücretsiz seçenektir.
+1000 nokta civarındaki problemlerde dakikalar içinde sektör kalitesinde
+sonuç verir; daha büyük problemler için problem ayrıştırma teknikleri (örn.
+clustering + intra-cluster solving) kullanılır.
+
+**Bellek tüketimi:** Büyük modeller (yüz binlerce değişken) bellekte ciddi
+yer kaplayabilir. Hands-on deneyim: 200,000 değişkenli MILP problemi
+yaklaşık 2-4 GB RAM tüketebilir; 1,000,000 değişkenli problemler 16 GB+
+sunucu gerektirir. Modelin sparse yapısını koruyacak şekilde yazılması bu
+bellek baskısını hafifletir.
+
+**Network etkisi:** OR-Tools yerel kütüphane olarak çalışır, internete
+bağlanmaz. Bu, hassas veriyle çalışıldığı durumlarda önemli bir
+avantaj — ticari bulut çözücüleri (Gurobi Cloud, MOSEK Cloud) verinin
+sunucuya çıkmasını gerektirir, OR-Tools kendi makinende kalır.
+
+## Diğer çözücülerle karşılaştırma
+
+OR-Tools'u rakipleriyle özetle karşılaştırırsak:
+
+**vs. Pyomo:** Pyomo bir modelleme dilidir, OR-Tools bir çözücü ailesidir.
+Pyomo + GLPK kombinasyonu basit LP/MILP için yeterli ve eğitimsel olarak
+güzel; kompleks problemler için OR-Tools'un dâhili çözücülerinin sıkı
+entegrasyonu avantaj.
+
+**vs. PuLP:** PuLP daha basit bir modelleme katmanıdır, GLPK veya COIN-OR
+çözücüleriyle çalışır. Hızlı prototyping için ideal; üretime taşınacak
+sistemlerde OR-Tools daha iyi ölçeklenir.
+
+**vs. CPLEX/Gurobi:** Bu ikisi ticari, profesyonel kalitede çözücüler.
+Akademik ücretsiz lisans verirler; ticari kullanım için yıllık 10-30 bin USD
+arası lisans bedelleri vardır. CP-SAT bazı çizelgeleme problemlerinde
+Gurobi'ye yakın hatta üstün performans gösterir; klasik LP/MILP'te ise
+ticari çözücüler hâlâ daha hızlıdır.
+
+**vs. SCIP:** SCIP akademik kullanım için ücretsiz, ticari için lisanslı bir
+MILP çözücü. Akademik araştırmacıların favori seçeneği. OR-Tools'un Linear
+Solver'ı SCIP'i de arka motor olarak kullanabilir.
+
+Pratik tavsiye: **küçük başla, büyüdükçe geçiş yap**. Eğitim ve prototyping
+için PuLP veya OR-Tools Linear Solver. Üretime taşırken OR-Tools veya
+ticari çözücülere geç. Çizelgeleme ve VRP için doğrudan OR-Tools.
+
+## OR-Tools öğrenme yolu: pratik adımlar
+
+OR-Tools'u sıfırdan öğrenmek isteyen biri için kademeli bir yol önerebilirim;
+her adım birkaç saat ila birkaç gün sürer.
+
+**Adım 1 (1-2 gün) — temel kurulum.** Python'u (yoksa) kur, virtualenv ile
+izole bir geliştirme ortamı oluştur, `pip install ortools` ile kütüphaneyi
+indir. İlk küçük örneği (yukarıdaki simit fırını kodu) yazıp çalıştır,
+çıktının doğru olduğunu elinle kontrol et.
+
+**Adım 2 (3-5 gün) — Linear Solver derinleşmesi.** Resmi dokümantasyondaki
+LP tutorial serisini takip et. Klasik problemler (knapsack, transportation,
+assignment) için modeller yaz. Her birinde optimum çözümü bulmadan önce
+elinle hesaplayıp doğrula.
+
+**Adım 3 (5-7 gün) — CP-SAT'a giriş.** N-vezir, sudoku, magic square gibi
+klasik kısıt problemlerini çöz. Variable türleri (IntVar, BoolVar,
+IntervalVar), kısıt türleri (AllDifferent, Element, Reservoir) ile tanış.
+
+**Adım 4 (7-10 gün) — çizelgeleme problemleri.** Job-shop, flow-shop,
+RCPSP (resource constrained project scheduling) örneklerini CP-SAT ile
+çöz. Bu seviyede gerçek dünya çizelgeleme problemlerini modelleyebilir
+hâle gelirsin.
+
+**Adım 5 (5-7 gün) — Routing modülü.** TSP, CVRP (Capacitated VRP), VRPTW
+(VRP with Time Windows) örneklerini incele. Bu sitenin yakında yayınlanacak
+TSP çözücüsü iyi bir görsel referans olacak.
+
+**Adım 6 (sürekli) — uygulamaya geç.** İş yerindeki gerçek bir problemle
+karşılaş, OR-Tools ile küçük bir prototip yap, ekibine sun. Pratik deneyim,
+dokümantasyon okumakla edinilemeyecek bir derinliği getirir.
+
+Bu yola çıkanların çoğu **6-8 hafta** içinde üretim seviyesinde model yazabilen
+bir yetkinliğe ulaşır. Daha hızlı öğrenmek isteyen biri için Coursera ve
+edX üzerinde Google'ın kendi yayımladığı OR-Tools kurslarına da bakılabilir.
+
+## Türkiye'de OR-Tools kullanımı
+
+Türkiye'de OR-Tools kullanımı son beş yılda hızla yaygınlaştı. Türk Hava
+Yolları operasyon araştırma takımının kullandığı kütüphanelerden biri,
+Trendyol, Hepsiburada gibi e-ticaret platformlarının lojistik
+optimizasyonunda da OR-Tools'un payı var. Üniversite araştırmalarında
+özellikle ITC (uluslararası ders programlama yarışması) çözümleri
+OR-Tools tabanlı yapılıyor.
+
+Türkçe içerik açısından henüz sınırlı; Stack Overflow ve GitHub'daki
+İngilizce kaynaklar baskın. Türkçe video tutorial'lar yavaş yavaş
+çoğalıyor; ders notları ve doktora tezlerinde de OR-Tools örnekleri
+artıyor. Bu siteyi takip ediyorsan yakında daha fazla Türkçe OR-Tools
+örneği yayında olacak.
+
+## İleri kullanım önerileri
+
+OR-Tools'u temel seviyeden ileri seviyeye taşımak isteyenler için birkaç
+öneri:
+
+**Solver hint'leri kullan.** CP-SAT'a "muhtemel iyi çözüm şuna benziyor"
+diye bir başlangıç vermek (warm start) çözüm süresini katlanarak azaltabilir.
+Önceki çözümleri saklayıp benzer probleme tekrar girerken hint olarak vermek
+endüstriyel uygulamalarda yaygın bir pratik.
+
+**Multi-objective optimization.** OR-Tools tek amaç fonksiyonu çözer; ama çoklu
+amaçlı problemler için **lexicographic** veya **scalarization** teknikleriyle
+ardışık çözümler üretilebilir. Çözüm uzayının Pareto cephesini taramak için
+bu teknikler vazgeçilmezdir.
+
+**Distributed solving.** Büyük problemler tek makinede çözülemiyorsa,
+problemi alt-problemlere ayırıp paralel çözmek mümkündür. CP-SAT'ın
+**worker** parametresi ile çoklu çekirdek kullanımı zaten dahili gelir.
+
+**Custom callback'ler.** Özellikle CP-SAT'ta çözüm sırasında yeni kısıtlar
+eklemek (lazy constraints) için callback fonksiyonları yazılabilir.
+Karmaşık endüstriyel problemler için kritiktir.
+
+**Profiling ve debug.** Performans sorunu yaşadığında çözücünün hangi
+adımda zaman harcadığını ölçmek için **CpSolverSolutionCallback** kullan.
+Modelin neden yavaş olduğunu anlamak modelleme becerisinin ileri kısmıdır.
+
+**Modeli düzgün dokümante et.** OR-Tools modelleri kod biçiminde yazıldığı
+için Excel modellerinden çok daha iyi sürdürülebilir; ama bu otomatik gelmez.
+Her kısıtın yanına yorum yazmak, değişkenlerin anlamlarını dokümante etmek,
+ve "model neden böyle?" mantığını ayrı bir ReadMe dosyasında tutmak ileride
+hayat kurtarır. Bir endüstriyel modelin ortalama ömrü 3-5 yıl, ve o sürede
+modeli yazan kişi sıklıkla başka bir takıma geçer.
+
+**Test odaklı modelleme.** Bir matematiksel modeli, sıradan kod gibi unit
+test'lerle korumak mümkün ve gereklidir. Küçük girdi setleri için elle
+hesapladığınız doğru çıktıları test olarak kaydedin; modeli her değiştirdiğinizde
+bu testler çalıştırılsın. Pratikte modelin "doğru" mu "verimli" mi olduğu
+ayrı sorulardır; testler birinciyi garantiler, profiling ikinciyi ölçer.
+
+## Bir endüstri vakası: lojistik şirketinde OR-Tools
+
+OR-Tools'un endüstride nasıl kullanıldığını somutlaştırmak için tipik bir
+lojistik şirketi senaryosunu ele alalım. Türkiye'de orta ölçekli bir kargo
+şirketi, günlük 2.000 kargonun 50 kamyonla 30 ile dağıtılmasını planlıyor.
+Manuel planlama ile rotalar deneyimli operatörler tarafından çiziliyor;
+ortalama 4 saat sürüyor ve sonuç optimum değil.
+
+OR-Tools tabanlı bir VRP çözümünün geliştirme süreci şöyle ilerleyebilir.
+Birinci ay, problem formülasyonu ve veri pipeline'ı: kamyon kapasiteleri,
+sürücü mesai süreleri, müşteri zaman pencereleri, trafik tahminleri sistemden
+çekilir. İkinci ay, OR-Tools Routing modülü ile prototyping: küçük problem
+örnekleriyle algoritma kalibrasyonu. Üçüncü ay, üretime alma: web tabanlı
+arayüz, operatör eğitimleri, mevcut sistemlerle entegrasyon.
+
+Sonuç tipik olarak şöyle olur: planlama süresi 4 saatten 30 dakikaya iner,
+toplam taşıma kilometresi %12-18 azalır (yıllık milyonlarca lira tasarruf),
+sürücü memnuniyeti artan rota tutarlılığı sayesinde yükselir. ROI ilk yıl
+içinde olumlu olur; ikinci yıldan itibaren proje kâra geçer.
+
+OR-Tools'un bu vakada katma değeri, sıfırdan algoritma yazma maliyetinin
+ortadan kalkması ve kurumun odağının "iyi modelleme" üzerinde
+yoğunlaşabilmesidir. 5-10 yıl önce aynı çözüm CPLEX lisansı + custom
+algoritma + entegrasyon mühendisliği ile 200+ bin USD'lık bir proje olurdu;
+OR-Tools ile bu maliyet onda birine düşer.
+
+## Sonuç
+
+OR-Tools, modern yöneylem araştırmasının en güçlü ücretsiz aracı diyebileceğimiz
+bir kütüphanedir. Linear programming'den kısıt programlamaya, araç rotalamadan
+graf algoritmalarına kadar geniş bir yelpazede sınıfının en iyileri arasında
+yer alan motorlar barındırır. CP-SAT'ın çizelgeleme problemlerinde ortaya
+koyduğu performans, ticari çözücülere ciddi bir alternatif olduğunu gösteriyor.
+
+Yeni başlıyorsan, basit bir LP veya constraint problem ile yola çık.
+[Doğrusal Programlama rehberini](/or-araclari/rehberler/dogrusal-programlama-nedir)
+ve [Çizelgeleme Problemleri rehberini](/or-araclari/rehberler/cizelgeleme-problemleri)
+okuduktan sonra OR-Tools dokümantasyonundaki tutorial'lara geçmek doğal
+bir akış olur. Bu sitedeki ileride yayınlanacak araçlar (LP çözücü, TSP,
+atama) içinde de OR-Tools veya benzeri ücretsiz motorlar kullanılacak.
+
+Yöneylem araçlarını öğrenmek bir kez başladığında zincirleme devam eder;
+OR-Tools, o zincirde uzun yıllar yanında olacak bir aletin adıdır.
+
+## Yaygın hatalar ve nasıl önlenir
+
+OR-Tools'a yeni başlayanların düştüğü tipik birkaç tuzak var.
+
+**Birinci tuzak — yanlış solver seçimi.** Kompleks bir çizelgeleme problemini
+Linear Solver'a vermek, kısıt programlama yaklaşımının çok daha doğal
+olduğu bir problem için saatlerce hesaplama beklemek demek olur. Problem
+yapısını analiz etmeden çözücüye atılmaması gerekir.
+
+**İkinci tuzak — gevşek tip kullanımı.** Karar değişkenleri için NumVar
+yerine IntVar veya BoolVar kullanmak gerekiyorsa, doğru tip seçimi
+çözücüyü ciddi şekilde hızlandırır. Yanlış tip seçimi çözüm uzayını
+gereksiz yere büyütür ve performansı düşürür.
+
+**Üçüncü tuzak — çözücü logunu okumamak.** OR-Tools her solve çağrısında
+zengin bir log üretir; bu log model boyutu, çözüm süresi, kullanılan
+heuristic'ler hakkında hayati bilgi verir. Performans sorunu yaşandığında
+ilk başvurulacak yerdir.
+
+**Dördüncü tuzak — küçük problemde test etmemek.** 10000 değişkenli
+problemi doğrudan çözmeye kalkmak hatalıdır; önce 10 değişkenli versiyonda
+modelin mantıksal olarak doğru çalıştığını teyit etmek, sonra ölçeklemek
+güvenli yoldur. Hızlı geri bildirim döngüsü model hatalarını dakikalarda
+yakalar; saat sonra alınan yanlış sonuç gece kabusu olur.
+
+**Beşinci tuzak — kütüphane sürümünü güncellememek.** OR-Tools aktif
+gelişen bir projedir; her birkaç ayda bir CP-SAT'a yeni özellikler ve
+performans iyileştirmeleri ekleniyor. Bir yıl önce kurduğun pip paketiyle
+çalışıyorsan, bugün aynı problem için %30-50 daha hızlı bir versiyon var
+demektir. Üretime alınan sistemlerde kütüphane yükseltme planı baştan
+yapılmalı, sürüm kilidi olmamalıdır.
+
+**Altıncı tuzak — OR-Tools'u "her şeyin çözümü" olarak görmek.** OR-Tools
+güçlü olsa da bazı problem tipleri için doğal çözücü değildir. Özellikle
+büyük ölçekli sürekli optimizasyon (NLP) problemleri için Ipopt veya
+benzeri özel kütüphaneler daha uygundur. Doğru aracı doğru iş için
+kullanma farkındalığı, modern yöneylem analistinin temel becerisidir;
+"alet" değil "yetkinlik" olarak öğrenilmesi gereken çok yönlü bir konudur ve
+zaman alır.
