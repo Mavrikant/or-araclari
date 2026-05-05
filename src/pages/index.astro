@@ -1,90 +1,155 @@
 ---
-import '../styles/global.css';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Container from '../components/Container.astro';
+import ToolCard from '../components/ToolCard.astro';
+import { TOOLS } from '../data/tools';
+import { withBase } from '../data/site';
 
-const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
-
-const phases = [
-  { id: 0, title: 'Repo iskelet & GH Pages deploy', status: 'done' },
-  { id: 1, title: 'Layout, anasayfa, hakkında/gizlilik', status: 'next' },
-  { id: 2, title: 'İlk araç: Lig Fikstürü Oluşturucu', status: 'todo' },
-  { id: 3, title: 'Blog/rehber sistemi + 5 başlangıç yazısı', status: 'todo' },
-  { id: 4, title: 'GA4 + AdSense altyapısı', status: 'todo' },
-  { id: 5, title: 'LP, TSP, Atama, Knapsack, Çizelgeleme araçları', status: 'todo' },
+const valueProps = [
+  {
+    title: 'Tarayıcıda çalışır',
+    body: 'Tüm hesaplamalar senin cihazında. Sunucu yok, hesap yok, veri toplama yok.',
+  },
+  {
+    title: 'Açık kaynak',
+    body: 'Tüm kod GitHub’da. Algoritmaları incele, katkıda bulun, kendi sürümünü çıkar.',
+  },
+  {
+    title: 'Türkçe rehberler',
+    body: 'Her aracın yanında problemi tanıtan, algoritmayı açıklayan uzun-form içerik.',
+  },
+  {
+    title: 'Mobil-öncelikli',
+    body: 'Telefonda da masaüstü kadar rahat. Hızlı yükleme, erişilebilir arayüz.',
+  },
 ];
 ---
 
-<!doctype html>
-<html lang="tr" class="bg-brand-900 text-slate-100">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="generator" content={Astro.generator} />
-    <meta name="robots" content="noindex" />
-    <meta
-      name="description"
-      content="OR Araçları yapım aşamasında. Yöneylem Araştırması (Operations Research) klasik problemleri için tarayıcıda çalışan ücretsiz Türkçe araç koleksiyonu."
-    />
-    <title>OR Araçları — Yapım Aşamasında</title>
-  </head>
-  <body class="min-h-dvh font-sans antialiased">
-    <main class="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center px-6 py-16">
-      <div class="mb-3 inline-flex w-fit items-center gap-2 rounded-full bg-accent-500/10 px-3 py-1 text-xs font-medium text-accent-300 ring-1 ring-accent-500/30">
-        <span class="size-1.5 rounded-full bg-accent-400"></span>
-        Faz 0 — kurulum tamamlandı
-      </div>
-
-      <h1 class="text-4xl font-bold tracking-tight text-white sm:text-5xl">
-        OR Araçları
-      </h1>
-      <p class="mt-4 max-w-prose text-base leading-relaxed text-slate-300 sm:text-lg">
-        Yöneylem Araştırması <span class="text-slate-400">(Operations Research)</span>
-        klasik problemleri için tarayıcıda çalışan ücretsiz, açık kaynak Türkçe
-        araç koleksiyonu. Şu an inşa ediliyor.
-      </p>
-
-      <ol class="mt-10 space-y-2 text-sm">
-        {
-          phases.map((phase) => (
-            <li class="flex items-start gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-4 py-3">
-              <span
-                class:list={[
-                  'mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold',
-                  phase.status === 'done' && 'bg-accent-500 text-brand-900',
-                  phase.status === 'next' && 'bg-brand-200 text-brand-900',
-                  phase.status === 'todo' && 'bg-white/5 text-slate-400',
-                ]}
-              >
-                {phase.id}
-              </span>
-              <span
-                class:list={[
-                  'leading-6',
-                  phase.status === 'done' && 'text-white',
-                  phase.status === 'next' && 'text-slate-200',
-                  phase.status === 'todo' && 'text-slate-400',
-                ]}
-              >
-                {phase.title}
-              </span>
-            </li>
-          ))
-        }
-      </ol>
-
-      <footer class="mt-12 text-xs text-slate-500">
-        <a
-          href="https://github.com/Mavrikant/or-araclari"
-          class="underline-offset-2 hover:text-accent-400 hover:underline"
-          rel="noopener"
+<BaseLayout>
+  <Container as="section" size="wide" class="pt-12 pb-16 sm:pt-20 sm:pb-24">
+    <div class="max-w-3xl">
+      <span
+        class="inline-flex items-center gap-2 rounded-full bg-accent-500/10 px-3 py-1 text-xs font-medium text-accent-700 ring-1 ring-accent-500/30 dark:text-accent-300"
+      >
+        <span class="size-1.5 rounded-full bg-accent-500"></span>
+        Yapım aşamasında — yeni araçlar yolda
+      </span>
+      <h1
+        class="mt-5 font-display text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl dark:text-white"
+      >
+        Yöneylem araçları, <span class="text-brand-600 dark:text-accent-400"
+          >tek tıkla.</span
         >
-          GitHub
+      </h1>
+      <p
+        class="mt-5 max-w-2xl text-lg leading-relaxed text-slate-600 sm:text-xl dark:text-slate-300"
+      >
+        Lig fikstürü, lineer programlama, gezgin satıcı, atama, knapsack ve
+        çizelgeleme problemlerini doğrudan tarayıcıda çöz. Her aracın yanında
+        Türkçe açıklama ve örnekler.
+      </p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a
+          href={withBase('/araclar')}
+          class="inline-flex items-center gap-2 rounded-md bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-800 focus-visible:outline-2 focus-visible:outline-offset-2 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400"
+        >
+          Araçları gör
+          <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="12 5 19 12 12 19" />
+          </svg>
         </a>
-        <span class="mx-2 text-slate-700">·</span>
-        <span>MIT lisansı</span>
-        <span class="mx-2 text-slate-700">·</span>
-        <span>Astro {Astro.generator.split(' ')[1]}</span>
-      </footer>
-    </main>
-  </body>
-</html>
+        <a
+          href={withBase('/rehberler')}
+          class="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800"
+        >
+          Rehberleri keşfet
+        </a>
+      </div>
+    </div>
+  </Container>
+
+  <Container as="section" size="wide" class="py-12 sm:py-16">
+    <div class="mb-8 flex items-end justify-between gap-4">
+      <div>
+        <h2
+          class="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl dark:text-white"
+        >
+          Araçlar
+        </h2>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+          {TOOLS.length} araç planlanıyor. İlki yolda.
+        </p>
+      </div>
+      <a
+        href={withBase('/araclar')}
+        class="hidden text-sm font-medium text-brand-600 hover:text-brand-700 sm:inline-flex dark:text-accent-400 dark:hover:text-accent-300"
+      >
+        Tümünü gör →
+      </a>
+    </div>
+
+    <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {TOOLS.map((tool) => (
+        <li>
+          <ToolCard tool={tool} />
+        </li>
+      ))}
+    </ul>
+  </Container>
+
+  <Container as="section" size="wide" class="py-12 sm:py-16">
+    <h2
+      class="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl dark:text-white"
+    >
+      Niçin OR Araçları?
+    </h2>
+    <ul class="mt-8 grid gap-6 sm:grid-cols-2">
+      {
+        valueProps.map((item) => (
+          <li class="flex items-start gap-4">
+            <span class="mt-1 inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-accent-400">
+              <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </span>
+            <div>
+              <h3 class="font-display font-semibold text-slate-900 dark:text-white">
+                {item.title}
+              </h3>
+              <p class="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                {item.body}
+              </p>
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </Container>
+
+  <Container as="section" size="wide" class="py-12 sm:py-16">
+    <div class="mb-8">
+      <h2
+        class="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl dark:text-white"
+      >
+        Son rehberler
+      </h2>
+      <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+        Yöneylem araştırması üzerine Türkçe yazılar.
+      </p>
+    </div>
+
+    <div
+      class="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-8 text-center dark:border-slate-700 dark:bg-slate-900/30"
+    >
+      <p class="text-sm text-slate-600 dark:text-slate-400">
+        İlk rehberler önümüzdeki haftalarda yayında.
+        <a
+          href={withBase('/rehberler')}
+          class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"
+          >Yol haritasını gör →</a
+        >
+      </p>
+    </div>
+  </Container>
+</BaseLayout>

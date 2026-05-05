@@ -1,0 +1,110 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Container from '../components/Container.astro';
+import { SITE } from '../data/site';
+---
+
+<BaseLayout
+  title="İletişim"
+  description="OR Araçları geliştiricisine nasıl ulaşılacağı, hata bildirimi ve katkı kanalları."
+>
+  <Container as="section" size="narrow" class="py-12 sm:py-16">
+    <header>
+      <p class="text-sm font-medium text-brand-600 dark:text-accent-400">İletişim</p>
+      <h1 class="mt-2 font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+        Geri bildirim, hata, katkı.
+      </h1>
+      <p class="mt-4 max-w-prose text-base leading-relaxed text-slate-600 dark:text-slate-400">
+        Bir araçta hata mı buldun, eksik olan bir özelliği mi öneriyorsun, yeni
+        bir araç fikrin mi var? Aşağıdaki kanallardan herhangi birinden
+        ulaşabilirsin. En hızlı yanıt GitHub üzerinden gelir.
+      </p>
+    </header>
+
+    <ul class="mt-10 space-y-4">
+      <li
+        class="flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40"
+      >
+        <span
+          class="mt-0.5 inline-flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-accent-400"
+        >
+          <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+          </svg>
+        </span>
+        <div class="min-w-0 flex-1">
+          <h2 class="font-display font-semibold text-slate-900 dark:text-white">
+            GitHub Issues
+          </h2>
+          <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Hata bildirimi, özellik önerisi veya pull request için en doğru
+            yer.
+          </p>
+          <a
+            href={`${SITE.repo}/issues`}
+            rel="noopener"
+            class="mt-2 inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"
+          >
+            github.com/Mavrikant/or-araclari/issues →
+          </a>
+        </div>
+      </li>
+
+      <li
+        class="flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40"
+      >
+        <span
+          class="mt-0.5 inline-flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-accent-400"
+        >
+          <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </span>
+        <div class="min-w-0 flex-1">
+          <h2 class="font-display font-semibold text-slate-900 dark:text-white">
+            E-posta
+          </h2>
+          <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Açık kanaldan paylaşamayacağın konular için.
+          </p>
+          <a
+            href={`mailto:${SITE.author.email}`}
+            class="mt-2 inline-flex items-center gap-1 break-all text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"
+          >
+            {SITE.author.email}
+          </a>
+        </div>
+      </li>
+
+      <li
+        class="flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40"
+      >
+        <span
+          class="mt-0.5 inline-flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-accent-400"
+        >
+          <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+        </span>
+        <div class="min-w-0 flex-1">
+          <h2 class="font-display font-semibold text-slate-900 dark:text-white">
+            Açık kaynak
+          </h2>
+          <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Sitenin tüm kodu MIT lisansı altında açık. Fork'la, oyna, gönder.
+          </p>
+          <a
+            href={SITE.repo}
+            rel="noopener"
+            class="mt-2 inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"
+          >
+            github.com/Mavrikant/or-araclari →
+          </a>
+        </div>
+      </li>
+    </ul>
+  </Container>
+</BaseLayout>

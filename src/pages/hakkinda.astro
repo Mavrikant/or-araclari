@@ -1,0 +1,83 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Container from '../components/Container.astro';
+import { SITE, withBase } from '../data/site';
+---
+
+<BaseLayout
+  title="Hakkında"
+  description="OR Araçları'nın amacı, kim tarafından geliştirildiği ve neden var olduğu hakkında."
+>
+  <Container as="article" size="narrow" class="py-12 sm:py-16">
+    <header>
+      <p class="text-sm font-medium text-brand-600 dark:text-accent-400">Hakkında</p>
+      <h1 class="mt-2 font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+        Klasik problemlere modern, ücretsiz Türkçe arayüzler.
+      </h1>
+    </header>
+
+    <div class="prose-tr mt-8">
+      <p>
+        OR Araçları, Yöneylem Araştırması <em>(İng. Operations Research)</em>
+        kapsamındaki klasik problemleri tarayıcıda çözmek için tasarlanmış
+        ücretsiz bir araç koleksiyonudur. Lig fikstürü, doğrusal programlama,
+        gezgin satıcı, atama ve sırt çantası gibi onlarca yıllık problemler
+        bugün hâlâ üniversite müfredatında, mühendislik pratiğinde ve hatta
+        günlük hayatın küçük kararlarında karşımıza çıkıyor. Sitenin amacı bu
+        problemleri kullanışlı hâle getirmek: girdiyi yapıştır, sonucu gör,
+        algoritmanın ne yaptığını yan rehberden öğren.
+      </p>
+
+      <h2>Neden Türkçe?</h2>
+
+      <p>
+        Türkçe yöneylem araştırması içeriği akademik kaynaklarda ya çok teknik
+        ya çok kısa. İnternet aramalarının önemli kısmı İngilizceye yönlendiriyor
+        ve dil engeli, problemi anlamadan formülü ezberleyen bir öğrenci nesli
+        üretiyor. Bu site, problemi anlamayı ön plana koyan, tarayıcıda anında
+        deneyimlemeye izin veren bir alternatif sunmayı hedefliyor.
+      </p>
+
+      <h2>Geliştirici</h2>
+
+      <p>
+        Site, sistem mühendisliği yüksek lisansı sahibi
+        <strong>{SITE.author.name}</strong> tarafından geliştiriliyor. Mesleki
+        arka planı havacılık ve güvenlik-kritik yazılım dünyası olduğundan,
+        kodun titizlikle yazılmasına ve hesap sonuçlarının doğruluğuna ayrı bir
+        özen gösteriliyor. Tüm araçlar yayına alınmadan önce literatürdeki
+        referans sonuçlarla karşılaştırılarak doğrulanır.
+      </p>
+
+      <h2>Tasarım kararları</h2>
+
+      <p>
+        Site tamamen statik. Sunucu yok, veritabanı yok, kullanıcı hesabı yok.
+        Tüm hesaplamalar tarayıcıda; girdiğin veri başka bir yere
+        gönderilmez. Bu, hem gizliliğin hem hızın bedavaya gelmesini sağlıyor.
+        Sayfalar genelde bir saniyenin altında yükleniyor; çoğu araç
+        kapatılmış internet bağlantısıyla bile çalışmaya devam ediyor.
+      </p>
+
+      <h2>Açık kaynak</h2>
+
+      <p>
+        Tüm kaynak kod
+        <a href={SITE.repo} rel="noopener">GitHub'da</a>, MIT lisansı altında
+        açık. Hatalar için issue açabilir, iyileştirmeler için pull request
+        gönderebilirsin. Yeni bir araç önerin varsa,
+        <a href={withBase('/iletisim')}>iletişim sayfasından</a> haberdar et.
+      </p>
+
+      <h2>Yol haritası</h2>
+
+      <p>
+        Site faz faz büyüyor. İlk araç olarak Lig Fikstürü Oluşturucu
+        geliyor; ardından doğrusal programlama, TSP, atama, knapsack ve
+        çizelgeleme araçları. Her araç yayına alındığında yanında 2000+
+        kelimelik bir rehber yazısı bulunuyor. Hedef, yıl sonuna kadar 6+ araç
+        ve 15+ rehberlik bir koleksiyon.
+      </p>
+    </div>
+  </Container>
+</BaseLayout>

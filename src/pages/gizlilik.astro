@@ -1,0 +1,116 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Container from '../components/Container.astro';
+import { SITE, withBase } from '../data/site';
+
+const lastUpdated = '6 Mayıs 2026';
+---
+
+<BaseLayout
+  title="Gizlilik Politikası"
+  description="OR Araçları'nın hangi verileri topladığı, nasıl kullandığı ve haklarınız hakkında şeffaf bir özet."
+>
+  <Container as="article" size="narrow" class="py-12 sm:py-16">
+    <header>
+      <p class="text-sm font-medium text-brand-600 dark:text-accent-400">Yasal</p>
+      <h1 class="mt-2 font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+        Gizlilik Politikası
+      </h1>
+      <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
+        Son güncelleme: {lastUpdated}
+      </p>
+    </header>
+
+    <div class="prose-tr mt-8">
+      <p>
+        OR Araçları kişisel verilerin korunmasını ciddiye alır. Bu politika,
+        siteyi ziyaret ettiğinde hangi verilerin toplandığını, nasıl
+        işlendiğini ve haklarının ne olduğunu açıklar. Politika 6698 sayılı
+        Kişisel Verilerin Korunması Kanunu'na (KVKK) ve Avrupa Birliği Genel
+        Veri Koruma Tüzüğü'ne (GDPR) uyumlu olacak şekilde hazırlanmıştır.
+      </p>
+
+      <h2>Topladığımız veriler</h2>
+
+      <p>
+        Site, herhangi bir kullanıcı hesabı oluşturmaz, kişisel veri formu
+        sunmaz ve girdiğin veriyi sunucuya göndermez. Araçlara yapıştırdığın
+        takım listeleri, matrisler veya koordinatlar tarayıcının kendi
+        belleğinde işlenir; site geliştiricisi dahil hiç kimse bu veriyi
+        göremez.
+      </p>
+
+      <p>Yine de aşağıdaki teknik veriler dolaylı olarak işlenir:</p>
+
+      <ul>
+        <li>
+          <strong>Sunucu logları (GitHub Pages):</strong> Site GitHub Pages
+          üzerinde barındırıldığından, GitHub kendi altyapı logları
+          kapsamında IP adresi, tarayıcı türü ve istek zamanı gibi standart
+          bilgileri kayıt altına alabilir. Bu kayıtların yönetimi
+          <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">GitHub'ın gizlilik politikasına</a>
+          tabidir.
+        </li>
+        <li>
+          <strong>Tarayıcı yerel depolama:</strong> Tema tercihin (açık/koyu)
+          tarayıcının localStorage alanında "theme" anahtarı altında
+          saklanır. Bu veri yalnızca senin cihazında kalır, sunucuya
+          gönderilmez.
+        </li>
+        <li>
+          <strong>Çerezler:</strong> Şu an site doğrudan çerez kullanmaz.
+          Üçüncü taraf hizmetleri (analitik, reklam) ileride eklendiğinde bu
+          politika güncellenir ve ayrıntılar
+          <a href={withBase('/cerezler')}>çerez politikasında</a> belirtilir.
+        </li>
+      </ul>
+
+      <h2>Üçüncü taraf hizmetler</h2>
+
+      <p>
+        Site büyüdükçe trafiği anlamak ve sürdürülebilir hâle getirmek için
+        bazı üçüncü taraf hizmetleri eklenecek. Şu anda planlananlar:
+      </p>
+
+      <ul>
+        <li>
+          <strong>Google Analytics 4:</strong> Anonim ziyaret verisini
+          (sayfa görüntülemeleri, trafik kaynakları) toplamak için. IP
+          adresleri anonimleştirilir; kişisel veri toplanmaz.
+        </li>
+        <li>
+          <strong>Google AdSense:</strong> Sitenin masraflarını karşılamak
+          için bağlamsal reklamlar gösterebilir. AdSense kişiselleştirilmiş
+          reklamlar için kendi çerezlerini kullanabilir; tarayıcı
+          ayarlarından bu çerezleri devre dışı bırakabilirsin.
+        </li>
+      </ul>
+
+      <p>
+        Bu hizmetler etkinleştirildiğinde bu politika güncellenecek ve
+        kullanıcı izni gereken yerlerde açık onay alınacak.
+      </p>
+
+      <h2>Haklarınız</h2>
+
+      <p>
+        KVKK ve GDPR kapsamında verilerinin işlenmesine itiraz etme, silinmesini
+        talep etme ve veri taşınabilirliği gibi haklarına sahipsin. Site
+        kullanıcı veritabanı tutmadığı için silinecek veri ya da taşınacak
+        kayıt bulunmuyor; ancak herhangi bir sorun olduğunu düşünüyorsan
+        <a href={withBase('/iletisim')}>iletişim sayfasındaki</a> e-posta
+        adresinden ulaşabilirsin.
+      </p>
+
+      <h2>Politika değişiklikleri</h2>
+
+      <p>
+        Bu politika, sitenin gelişimine paralel olarak güncellenir. Önemli
+        değişikliklerde sayfanın üst kısmındaki tarih güncellenir; geçmiş
+        sürümler
+        <a href={`${SITE.repo}/commits/main/src/pages/gizlilik.astro`} rel="noopener">repodaki commit geçmişinden</a>
+        izlenebilir.
+      </p>
+    </div>
+  </Container>
+</BaseLayout>

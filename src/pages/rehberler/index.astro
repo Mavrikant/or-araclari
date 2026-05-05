@@ -1,0 +1,84 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import { withBase } from '../../data/site';
+
+const upcomingGuides = [
+  {
+    title: 'Yöneylem Araştırması Nedir? Başlangıç Rehberi',
+    summary:
+      'Disiplinin kısa tarihçesi, ana problem türleri ve günlük hayatta nerede karşımıza çıktığı.',
+  },
+  {
+    title: 'Doğrusal Programlama Nedir, Nasıl Çözülür?',
+    summary:
+      'Amaç fonksiyonu, kısıtlar, simpleks yöntemi ve grafiksel çözüm — örneklerle.',
+  },
+  {
+    title: 'Round-Robin Algoritması: Lig Fikstürü Nasıl Oluşturulur?',
+    summary:
+      'Berger tablosu, tek/çift devre, bay takımlar ve Türkiye ligi pratiği.',
+  },
+  {
+    title: 'Çizelgeleme Problemleri: Türler ve Çözüm Yaklaşımları',
+    summary:
+      'Job-shop, flow-shop, ders/sınav programlama ve hangi araçların hangi probleme uyduğu.',
+  },
+  {
+    title: 'Google OR-Tools ile Optimizasyon: Türkçe Genel Bakış',
+    summary:
+      'Google\'ın açık kaynak optimizasyon kütüphanesinin Türkçe tanıtımı ve örnekleri.',
+  },
+];
+---
+
+<BaseLayout
+  title="Rehberler"
+  description="Yöneylem araştırması üzerine Türkçe uzun-form rehberler — algoritmalar, problem türleri ve gerçek dünya örnekleri."
+>
+  <Container as="section" size="narrow" class="py-12 sm:py-16">
+    <header>
+      <p class="text-sm font-medium text-brand-600 dark:text-accent-400">Rehberler</p>
+      <h1 class="mt-2 font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+        Türkçe yöneylem yazıları
+      </h1>
+      <p class="mt-4 text-base leading-relaxed text-slate-600 dark:text-slate-400">
+        Her aracın yanında o problemi tanıtan, algoritmasını adım adım açıklayan
+        ve gerçek hayatta nerede kullanıldığını gösteren bir yazı bulunur.
+        İlk yazılar önümüzdeki haftalarda yayında.
+      </p>
+    </header>
+
+    <div class="mt-10 rounded-xl border border-dashed border-slate-300 bg-slate-50/40 p-6 dark:border-slate-700 dark:bg-slate-900/30">
+      <h2 class="font-display text-lg font-semibold text-slate-900 dark:text-white">
+        Yakında yayınlanacaklar
+      </h2>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        Planlanan ilk yazı seti:
+      </p>
+      <ul class="mt-5 space-y-4">
+        {
+          upcomingGuides.map((guide) => (
+            <li class="border-l-2 border-slate-300 pl-4 dark:border-slate-700">
+              <p class="font-display font-semibold text-slate-800 dark:text-slate-100">
+                {guide.title}
+              </p>
+              <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                {guide.summary}
+              </p>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <p class="mt-8 text-sm text-slate-500 dark:text-slate-400">
+      Önerin var mı?
+      <a
+        href={withBase('/iletisim')}
+        class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"
+        >Bir başlık öner →</a
+      >
+    </p>
+  </Container>
+</BaseLayout>

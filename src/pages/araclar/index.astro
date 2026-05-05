@@ -1,0 +1,58 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import ToolCard from '../../components/ToolCard.astro';
+import { CATEGORY_LABELS, TOOLS, type ToolCategory } from '../../data/tools';
+
+const groupedTools = TOOLS.reduce<Record<ToolCategory, typeof TOOLS[number][]>>(
+  (acc, tool) => {
+    (acc[tool.category] ??= []).push(tool);
+    return acc;
+  },
+  {} as Record<ToolCategory, typeof TOOLS[number][]>,
+);
+
+const categories = (Object.keys(groupedTools) as ToolCategory[]).sort((a, b) =>
+  CATEGORY_LABELS[a].localeCompare(CATEGORY_LABELS[b], 'tr'),
+);
+
+const readyCount = TOOLS.filter((t) => t.status === 'ready').length;
+---
+
+<BaseLayout
+  title="Tüm Araçlar"
+  description="OR Araçları'nın planlanan ve hazır olan tüm yöneylem araştırması araçlarının dizini. Kategorilere göre gruplanmış."
+>
+  <Container as="section" size="wide" class="py-12 sm:py-16">
+    <header class="max-w-3xl">
+      <p class="text-sm font-medium text-brand-600 dark:text-accent-400">Dizin</p>
+      <h1 class="mt-2 font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+        Tüm Araçlar
+      </h1>
+      <p class="mt-4 text-base leading-relaxed text-slate-600 dark:text-slate-400">
+        Yöneylem araştırması kapsamında planlanan {TOOLS.length} aracın
+        listesi. Şu an
+        {readyCount === 0
+          ? 'henüz araç yayında değil — ilki çok yakında'
+          : `${readyCount} araç hazır`}.
+      </p>
+    </header>
+
+    {
+      categories.map((category) => (
+        <section class="mt-12">
+          <h2 class="font-display text-xl font-semibold tracking-tight text-slate-900 dark:text-white">
+            {CATEGORY_LABELS[category]}
+          </h2>
+          <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {groupedTools[category].map((tool) => (
+              <li>
+                <ToolCard tool={tool} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+  </Container>
+</BaseLayout>

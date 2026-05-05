@@ -1,0 +1,104 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Container from '../components/Container.astro';
+import { withBase } from '../data/site';
+
+const lastUpdated = '6 Mayıs 2026';
+---
+
+<BaseLayout
+  title="Çerez Politikası"
+  description="OR Araçları'nın çerezleri ve tarayıcı yerel depolaması nasıl kullandığına dair açıklamalar."
+>
+  <Container as="article" size="narrow" class="py-12 sm:py-16">
+    <header>
+      <p class="text-sm font-medium text-brand-600 dark:text-accent-400">Yasal</p>
+      <h1 class="mt-2 font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+        Çerez Politikası
+      </h1>
+      <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
+        Son güncelleme: {lastUpdated}
+      </p>
+    </header>
+
+    <div class="prose-tr mt-8">
+      <p>
+        Çerezler ve benzeri yerel depolama mekanizmaları, tarayıcının web
+        sitesi tarafından küçük metin parçalarını cihazına kaydetmesini sağlar.
+        OR Araçları bu mekanizmaları yalnızca kullanıcı deneyimini
+        iyileştirmek ve gerektiğinde anonim trafik ölçümü yapmak için kullanır.
+        Kişisel veri toplamak veya seni başka sitelerde takip etmek için
+        kullanmaz.
+      </p>
+
+      <h2>Şu an kullanılan</h2>
+
+      <ul>
+        <li>
+          <strong>localStorage — <code>theme</code>:</strong> Açık veya koyu
+          tema tercihini hatırlamak için. Yalnızca tarayıcında saklanır,
+          sunucuya gönderilmez. Tarayıcı geçmişi temizlendiğinde silinir.
+        </li>
+      </ul>
+
+      <p>
+        Bunun dışında site şu anda <strong>hiçbir çerez yerleştirmiyor</strong>.
+        Anonim ziyaret istatistikleri için araç da henüz aktif değil.
+      </p>
+
+      <h2>İleride eklenebilecekler</h2>
+
+      <p>
+        Site büyüyüp düzenli trafik almaya başladıktan sonra aşağıdaki üçüncü
+        taraf hizmetler eklenebilir. Etkinleştirildiklerinde bu sayfa
+        güncellenir.
+      </p>
+
+      <ul>
+        <li>
+          <strong>Google Analytics 4:</strong> Sayfa görüntülemeleri ve
+          oturum bilgilerini toplamak için <code>_ga</code> ve
+          <code>_ga_*</code> çerezleri kullanır. IP adresleri Google
+          tarafından anonimleştirilir.
+        </li>
+        <li>
+          <strong>Google AdSense:</strong> Bağlamsal reklam gösterimi
+          ve performans ölçümü için
+          <code>__gads</code>, <code>__gpi</code>, <code>NID</code> gibi
+          çerezler kullanabilir. Reklamlar bağlamsal olarak seçilir;
+          kişiselleştirilmiş reklam tercihini Google'ın
+          <a href="https://adssettings.google.com" rel="noopener">reklam ayarları</a>
+          sayfasından yönetebilirsin.
+        </li>
+      </ul>
+
+      <h2>Çerezleri yönetmek</h2>
+
+      <p>
+        Tarayıcının ayarlar bölümünden tüm çerezleri reddedebilir, yalnızca
+        belirli sitelerden gelen çerezleri engelleyebilir veya geçmişi
+        temizleyerek mevcut çerezleri silebilirsin. Modern tarayıcılar bu
+        ayarları gizlilik bölümünde, "Çerezler ve site verileri" başlığı
+        altında sunar. Reklam kişiselleştirmesini sitenin tamamı için kapatmak
+        istersen
+        <a href="https://www.youronlinechoices.eu/" rel="noopener">Your Online Choices</a>
+        platformunu kullanabilirsin.
+      </p>
+
+      <p>
+        Çerezleri tamamen kapattığında bazı kullanım kolaylıkları (örneğin
+        tema tercihinin hatırlanması) çalışmayabilir; ama site fonksiyonel
+        olarak çalışmaya devam eder.
+      </p>
+
+      <h2>Daha fazla bilgi</h2>
+
+      <p>
+        Bu politika, daha geniş kapsamlı
+        <a href={withBase('/gizlilik')}>gizlilik politikasının</a> bir
+        eklentisidir. Kişisel verilerin nasıl işlendiğine dair sorularını o
+        sayfada cevaplandırmaya çalıştık.
+      </p>
+    </div>
+  </Container>
+</BaseLayout>
