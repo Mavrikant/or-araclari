@@ -1,0 +1,437 @@
+---
+title: "Doğrusal Programlama Nedir, Nasıl Çözülür?"
+description: "Doğrusal programlama (linear programming, LP) nedir, simpleks algoritması nasıl çalışır, hangi problemlerde kullanılır? Yeni başlayanlar için örnekli, görsel bir Türkçe rehber."
+pubDate: 2026-05-06
+relatedTool: "lineer-programlama-cozucu"
+keywords:
+  - "doğrusal programlama"
+  - "lineer programlama"
+  - "linear programming"
+  - "simpleks"
+  - "simplex algoritması"
+  - "LP çözücü"
+  - "amaç fonksiyonu"
+  - "kısıt"
+readingMinutes: 14
+faq:
+  - question: "Doğrusal programlama ile lineer programlama aynı şey mi?"
+    answer: "Evet, aynı şey. 'Linear programming' İngilizce orijinal terimidir; Türkçeye 'lineer programlama' diye doğrudan çevrilebildiği gibi 'doğrusal programlama' diye Türkçeleştirilmiş hâli de yaygındır. Akademik metinlerde her iki kullanım da geçerlidir, anlam farkı yoktur. Bu sitede iki terimi de eş anlamlı kullanıyoruz."
+  - question: "LP ile MILP arasındaki temel fark nedir?"
+    answer: "LP'de tüm değişkenler sürekli (kesirli sayı olabilir); MILP'de en az bir değişken tamsayı veya 0/1 olmak zorundadır. Bu görünüşte küçük fark hesaplama karmaşıklığını uçurum gibi büyütür: LP polinomyal zamanda çözülürken, MILP NP-zor sınıfa girer. Pratikte LP modern bilgisayarda binlerce değişkenle saniyeler içinde çözülürken, büyük MILP'ler saatler veya günler sürebilir."
+  - question: "Excel Solver doğrusal programlama çözer mi?"
+    answer: "Evet, Excel'in Solver eklentisi LP ve MILP problemlerini çözebilir; arka planda Frontline'ın simpleks ve dal-sınır algoritmalarını kullanır. Ücretsiz sürüm 200 değişkene kadar destekler — küçük problemler için yeterli. Daha büyük problemler için OR Araçları'nın LP çözücüsü gibi tarayıcı tabanlı veya Python (PuLP, Pyomo) gibi profesyonel araçlara geçmek gerekir."
+  - question: "Simpleks tek algoritma mı, başka yöntemler de var mı?"
+    answer: "Hayır, simpleks LP'yi çözen tek yöntem değil. 1984'te Karmarkar'ın geliştirdiği iç nokta (interior point) yöntemleri büyük problemlerde simpleksten daha hızlı sonuç verir ve modern ticari çözücüler (CPLEX, Gurobi) genellikle her iki algoritmayı da içerir, problem yapısına göre otomatik seçim yapar. Akademik düzeyde elipsoid yöntemi, primal-dual yöntemler gibi başka teknikler de vardır."
+  - question: "Bir problem 'doğrusal değil' ise ne yapılır?"
+    answer: "Eğer problemin amacı veya kısıtları doğrusal olmayan terimler (çarpım, üs, logaritma, vb.) içeriyorsa, doğrusal olmayan programlama (NLP) tekniklerine geçmek gerekir. Bazı durumlarda doğrusal olmayan problem küçük doğrusal parçalara bölünerek (piecewise linearization) yaklaşık olarak LP ile çözülebilir; bu yaygın bir endüstriyel pratiktir. Tamamen doğrusal değilse Newton-Raphson tabanlı NLP çözücüleri (Ipopt, MINOS) kullanılır."
+---
+
+Bir mobilya atölyesi düşün: günde sınırlı malzemen, sınırlı çalışan saatin
+ve sınırlı raf alanın var. Hangi ürünleri, hangi miktarda üreteceğine karar
+vermen gerek; amacın haftalık kârı maksimize etmek. Bu, sezgi ile çözülmesi
+zor bir problem. Ama matematiksel bir model çıkardığında —bilinmeyenleri,
+sınırları ve hedefi açıkça yazdığında— elinde **doğrusal programlama
+problemi** olur. Ve bir kez bu hâle geldiğinde, bilgisayar mikrosaniyeler
+içinde sana en iyi cevabı verir.
+
+Bu rehber, doğrusal programlamanın ne olduğunu, neden yöneylem araştırmasının
+en yaygın kullanılan aracı olduğunu, simpleks algoritmasının arkasındaki sezgiyi
+ve bugün sektörde nasıl kullanıldığını adım adım anlatır. Lineer cebir
+geçmişin yoksa endişelenme; her kavram örneklerle açıklanacak.
+
+## Doğrusal programlama nedir?
+
+Doğrusal programlama, bir karar problemini şu üç bileşenle ifade etmenin
+kısa adıdır:
+
+1. **Karar değişkenleri** — neyi belirleyeceğini gösteren büyüklükler
+2. **Doğrusal kısıtlar** — uyulması zorunlu kuralları temsil eden eşitsizlikler
+3. **Doğrusal amaç fonksiyonu** — neyi maksimize veya minimize edeceğini belirten denklem
+
+"Doğrusal" sıfatının buradaki anlamı çok dar: hem amaç fonksiyonu hem de
+kısıtlar yalnızca **birinci dereceden** terimler içerir. Yani değişkenler
+çarpılmaz, üs alınmaz, logaritma veya trigonometrik fonksiyonun içine
+girmez. Sadece sabitlerle çarpılıp toplanırlar. Bu kısıtlama görünüşte
+sınırlayıcı gibidir; aslında pratikte hayret verici sayıda problemin doğrusal
+biçimde modellenebildiği ortaya çıkar — ve modellenebildiği zaman çok hızlı
+çözülür.
+
+Bir mobilya atölyesi örneğine geri dönelim. İki ürün varsayalım: sandalye
+ve masa. Karar değişkenleri:
+
+- $x_1$: günlük üretilen sandalye sayısı
+- $x_2$: günlük üretilen masa sayısı
+
+Bunları belirledikten sonra elindeki kısıtlar var. Diyelim ki günde 30 saat
+işçilik kapasiten var; bir sandalye 1 saat, bir masa 3 saat işçilik istiyor.
+Bu, ilk kısıttır:
+
+$$
+x_1 + 3 x_2 \le 30
+$$
+
+Diyelim ki günlük 24 birim ahşap stoğun var; sandalye 4 birim, masa 2 birim
+ahşap kullanır. İkinci kısıt:
+
+$$
+4 x_1 + 2 x_2 \le 24
+$$
+
+Tabii ki üretim sayıları negatif olamaz:
+
+$$
+x_1, x_2 \ge 0
+$$
+
+Sonunda amacın: kâr maksimizasyonu. Sandalye başına 5 TL, masa başına 4 TL kâr
+ettiğini varsayarsak:
+
+$$
+\text{maksimize: } z = 5 x_1 + 4 x_2
+$$
+
+İşte doğrusal programlama problemi. Ne yapacağı belirsiz görünen "ne kadar
+üreteyim?" sorusu, dört satırlık matematiksel ifadeye oturdu. Şimdi bilgisayar
+saniyenin yüzde biri kadar zamanda en uygun $x_1, x_2$ değerlerini bulacak.
+
+## Doğrusal programlamanın kısa tarihçesi
+
+Doğrusal programlama, çok yöneylem disiplini gibi II. Dünya Savaşı'nın
+operasyonel ihtiyaçlarından doğdu. Sovyet matematikçi Leonid Kantorovich
+1939'da yayımladığı "Üretim Organizasyonunun ve Planlamasının Matematiksel
+Yöntemleri" başlıklı broşürde lineer programlamanın temel fikirlerini
+ortaya koydu; ancak bu çalışma uzun yıllar Soğuk Savaş engelleri yüzünden
+Batı'da bilinmedi. 1947'de ABD Hava Kuvvetleri için kaynak tahsisi modeliyle
+çalışan **George Dantzig**, bağımsız olarak benzer bir çerçeveye ulaştı ve
+**simpleks algoritmasını** geliştirdi — pratik olarak çalışan ilk LP çözücü.
+
+İki adım daha vardı yöntemi modern hâline taşıyan. **John von Neumann**,
+1947'de Dantzig ile yaptığı bir konuşmada lineer programlamanın **dualite
+teorisini** önerdi. Dualite, bir LP probleminin "ayna görüntüsü" olan eş
+zamanlı bir başka problem tanımlar; primal ve dual problemlerin optimum
+değerlerinin eşit olduğunu söyleyen bu sonuç, hem teoriyi hem pratik analizi
+köklü biçimde zenginleştirdi.
+
+İkinci adım, 1984'te Hindistan kökenli matematikçi **Narendra Karmarkar**'ın
+geliştirdiği **iç nokta yöntemi**ydi. Karmarkar'ın algoritması simpleksten
+köklü biçimde farklı bir yaklaşım kullandı ve büyük ölçekli problemlerde
+hız avantajı sağladı. AT&T Bell Laboratuvarları bu algoritma için patent
+başvurusunda bulundu — bu olay yöntemin akademik tarihçesinde sıkça konu
+edilen ilginç bir hukuki an oldu.
+
+Bugün modern bir LP çözücüsü, hem simpleks hem iç nokta yöntemini içerir,
+problem yapısına göre otomatik seçim yapar ve pratikte hangisi daha hızlıysa
+onu kullanır. 70 yıllık birikim, basit bir matematik ifadesini saniyenin
+altında çözen bir endüstri standardı yarattı.
+
+## Standart formülasyon: matrissel ifade
+
+LP literatürde matris notasyonuyla daha kompakt bir biçimde yazılır:
+
+$$
+\text{maksimize: } c^T x \\
+\text{kısıtlar: } A x \le b \\
+x \ge 0
+$$
+
+Burada $x$ tüm karar değişkenlerinin sütun vektörü, $c$ amaç katsayılarının
+vektörü, $A$ kısıt katsayıları matrisi, $b$ ise kısıtların sağ taraf
+vektörüdür. Bizim atölye örneğimizde:
+
+$$
+c = \begin{pmatrix} 5 \\ 4 \end{pmatrix}, \quad
+A = \begin{pmatrix} 1 & 3 \\ 4 & 2 \end{pmatrix}, \quad
+b = \begin{pmatrix} 30 \\ 24 \end{pmatrix}
+$$
+
+Matrissel form, problemin boyutu büyüdüğünde —yüzlerce değişken, binlerce
+kısıt— yazımı sadeleştirir ve algoritmaların matematiksel analizini kolaylaştırır.
+
+İki tip dönüşüm hatırlamaya değer. Birincisi: minimizasyon problemi $c^T x$
+yerine $-c^T x$ maksimize edilerek standartlaştırılır; iki yön matematiksel
+olarak eşdeğerdir. İkincisi: $\le$ türü kısıtlar **slack değişkenleri** ekleyerek
+eşitlik biçimine dönüştürülür ($x_1 + 3 x_2 + s_1 = 30$, $s_1 \ge 0$). Bu,
+simpleks algoritmasının çalışma temelidir.
+
+## Geometric sezgi: 2D örnek üzerinde çözüm
+
+Atölye problemimizi geometrik olarak çizebiliriz çünkü iki değişkenli. $x_1$ ve
+$x_2$ eksenli bir koordinat düzleminde her kısıt bir doğru çiziyor; doğrunun
+hangi tarafının "geçerli" olduğunu eşitsizliğin yönü belirliyor:
+
+- $x_1 + 3 x_2 \le 30$ → $(0, 10)$ ve $(30, 0)$ noktalarından geçen doğrunun altı
+- $4 x_1 + 2 x_2 \le 24$ → $(0, 12)$ ve $(6, 0)$ noktalarından geçen doğrunun altı
+- $x_1 \ge 0$ ve $x_2 \ge 0$ → birinci bölge
+
+Bu dört kısıtın kesişim alanı **uygun bölge** (feasible region) diye anılır. Bizim
+örneğimizde dörtgen bir alandır, köşeleri:
+
+$$
+(0, 0), \quad (6, 0), \quad (3, 6), \quad (0, 10)
+$$
+
+LP teorisinin temel sonucu şudur: **doğrusal programlama probleminin optimum
+çözümü, eğer varsa, uygun bölgenin köşelerinden birinde bulunur**. Bu, tüm
+sonsuz olası çözümler arasından sadece birkaç köşeyi kontrol etmenin yeterli
+olduğunu söyleyen güçlü bir teoremdir.
+
+Köşelerdeki amaç fonksiyonu değerleri:
+
+- $(0, 0)$: $z = 5(0) + 4(0) = 0$
+- $(6, 0)$: $z = 5(6) + 4(0) = 30$
+- $(3, 6)$: $z = 5(3) + 4(6) = 39$
+- $(0, 10)$: $z = 5(0) + 4(10) = 40$
+
+En yüksek değer $(0, 10)$ noktasında: 0 sandalye, 10 masa, kâr 40 TL. Optimum
+çözüm bu.
+
+İki değişkenli problem için bu yöntem işe yarar; ama 100 değişkenli bir
+problemde köşe sayısı astronomiktir. Algoritmik bir yöntem gerekir; o yöntem
+de **simpleks**.
+
+## Simpleks algoritması: sezgi ve mekanik
+
+George Dantzig'in 1947'de geliştirdiği simpleks algoritması, geometrik sezgiyi
+sistematik bir aramaya çevirir. Sezgi şudur: bir köşeden başla, komşu köşelere
+bak, amacı iyileştiren komşuya geç, hareket edemediğinde optimumdasın.
+
+Algoritmanın adım adım işleyişi:
+
+**Başlangıç:** Genellikle orijin noktası ($x_1 = x_2 = 0$) seçilir; tüm slack
+değişkenleri başlangıçta uygun bölgenin içindedir.
+
+**İterasyon:** Mevcut köşede bulunan **temel olmayan değişkenler** içinde
+hangisinin değerini artırmanın amacı en çok iyileştireceğine bakılır. Bu
+değişken bir sonraki iterasyonda **temel** hâle gelir; yerini almak üzere
+mevcut temel değişkenlerden biri çıkarılır. Bu işlem **pivot operation**
+olarak bilinir ve matrisel olarak hesaplanır.
+
+**Optimallik testi:** Hiçbir değişkeni artırmak amacı iyileştirmiyorsa, mevcut
+çözüm optimumdur. Algoritma durur.
+
+**Döngü:** Aksi hâlde yeni komşu köşeye geçilir, iterasyon tekrarlanır.
+
+Atölye örneğimiz için simpleks $(0, 0) \to (6, 0) \to (3, 6) \to (0, 10)$ veya
+benzeri bir yol izleyerek 3-4 iterasyonda optimuma ulaşır. Modern bir
+implementation 100 değişkenli orta ölçekli bir problemi yüz milisaniyenin
+altında, 10000 değişkenli endüstriyel bir problemi birkaç saniye içinde çözer.
+
+Simpleks'in pratikteki gücü, beklenen iterasyon sayısının değişken sayısına
+göre **çok yavaş** artmasıdır. Teorik en kötü durumda üstel zaman alabilir
+(Klee-Minty küpü gibi patolojik örnekler), ama gerçek dünya problemlerinde
+neredeyse her zaman polinomyal davranır. Bu, algoritmanın 70+ yıl
+yaşıyor olmasının ana sebebidir.
+
+### Simpleksin daha derin matematik tarafı
+
+Simpleks aslında bir **dualite** çerçevesinde anlaşılır. Her LP probleminin
+bir **dual** problemi vardır; bu, orijinal (primal) problemin değişken-
+kısıt rolü değişmiş aynası gibidir. **Strong duality teoremi**, primal ve
+dual optimum değerlerin eşit olduğunu söyler. Pratikte bu, **gölge fiyatlar**
+(shadow prices) hesaplamayı sağlar: bir kısıtın sağ tarafı 1 birim
+gevşetildiğinde optimal değer ne kadar değişir? Bu hassasiyet analizi,
+yöneylem yorumunun en güçlü araçlarından biridir.
+
+## İç nokta yöntemleri
+
+1980'lerin sonunda Narendra Karmarkar'ın geliştirdiği **iç nokta (interior
+point) yöntemleri**, simpleksin alternatifi oldu. Bu yöntemler köşeleri
+değil, uygun bölgenin **iç noktalarını** dolaşarak optimuma yaklaşır.
+Geometrik olarak düşünürsek, simpleks "duvar boyunca yürüyerek" optimumu
+ararken, iç nokta yöntemi "odanın ortasından kestirme yaparak" gider.
+
+İç nokta yöntemlerinin pratik avantajı, problem boyutu büyüdükçe daha az
+iterasyon gerektirmesidir. 100000 değişkenli bir lineer programlama problemi
+için bir iç nokta çözücüsü genellikle simpleksten daha hızlı çalışır. Bu
+sebeple modern ticari yazılımlar (CPLEX, Gurobi, Mosek) her iki algoritmayı
+da içerir ve problem yapısına göre otomatik seçim yapar.
+
+Akademik ortamda iç nokta yöntemleri lineer cebirle daha derin bir bağ
+kurduğu için doğrusal olmayan optimizasyona genelleştirmesi de daha
+kolaydır; modern doğrusal olmayan çözücülerin çoğu iç nokta tabanlıdır.
+
+## Pratik konular: dejenere, yetersiz, sınırsız
+
+Gerçek dünya problemlerinde simpleks her zaman güzel bir cevap vermez. Üç
+problematik durumla karşılaşılabilir.
+
+**Dejenere durum** (degenerate solution), birden fazla kısıtın aynı köşede
+çakıştığı durumdur. Algoritma sonsuz döngüye girebilir; modern implementasyonlar
+**Bland kuralı** veya benzeri tie-breaking yöntemleriyle bunu önler.
+
+**Yetersiz çözüm** (infeasible), kısıt setinin uygun bir bölge oluşturmadığı
+durumdur. Örneğin "$x \ge 5$ ve $x \le 3$" kısıt seti yetersizdir. Çözücü
+bunu raporlar ve kullanıcının kısıtları yeniden gözden geçirmesi beklenir.
+
+**Sınırsız çözüm** (unbounded), amaç fonksiyonunun sonsuza gidebildiği
+durumdur. Kısıtların eksik olduğunu gösterir; örneğin "$x_1 + x_2$ maksimize et,
+$x_1, x_2 \ge 0$, başka kısıt yok" sınırsız bir problemdir. Bu da bir kısıt
+gözden geçirme uyarısıdır.
+
+İyi bir LP çözücü bu üç durumu açıkça raporlar ve kullanıcıyı doğru yöne
+yönlendirir.
+
+Pratik LP modellemede dikkat edilmesi gereken birkaç başka konu da var.
+**Sayısal kararlılık** problemi: değişken katsayıları büyüklük olarak
+birbirinden çok farklıysa (örneğin biri 0.0001, diğeri 1,000,000), çözücü
+yuvarlama hataları nedeniyle yanlış cevap üretebilir; bu nedenle değişkenleri
+**ölçeklemek** (scaling) iyi bir alışkanlıktır. **Kısıt redundansı**
+problemi: aynı kısıtın iki farklı şekilde yazılması veya başka bir kısıttan
+çıkarılabilen kısıtların eklenmesi modeli yavaşlatır; LP preprocessor'lar
+bu redundansı otomatik tespit eder.
+
+**Modelleme sembollerinin tutarlılığı** önemlidir. Maliyet vektörünü saatlik
+cinsten yazıp kapasiteyi günlük cinsten kullanmak —yaygın bir hata— yanlış
+optimum üretir. Boyut analizi (dimensional analysis) bu hatayı yakalamanın
+en güvenilir yoludur: her terimin birim olarak tutarlı olduğundan emin
+olmak gerekir.
+
+Bir başka pratik tuzak: çıktının yorumlanmasıdır. Çözücü "$x_1 = 7.83$ ve
+$x_2 = 2.17$" diye dönerse, gerçek hayattaki anlamı 7,83 sandalye üretmek
+mümkün değildir. Bu noktada tamsayı programlamaya (MILP) geçmek veya
+sürekli sonucu yuvarlayarak yaklaşık bir karar üretmek gerekir. Yaklaşık
+çözüm her zaman optimal değildir; tamsayılaştırma operasyonel olarak önemli
+olduğunda problemi MILP olarak yeniden modellemek doğru yaklaşımdır. Bu nüans,
+LP'yi "nasıl modellersem ne tür çözüm gelir" düzeyinde tanımayı gerektirir
+ve deneyimle birlikte gelen bir hassasiyettir.
+
+## Modern LP yazılımı
+
+Bugün doğrusal programlama yapmak için yüzlerce yazılım seçeneği var.
+Birkaç ana kategori:
+
+**Ticari çözücüler:** CPLEX (IBM), Gurobi, FICO Xpress — büyük endüstriyel
+problemler için en hızlı seçenekler. Yıllık lisans 5-20 bin USD aralığında;
+akademik kullanım ücretsiz lisansla destekleniyor.
+
+**Açık kaynak çözücüler:** GLPK, COIN-OR CLP, HiGHS — küçük ve orta ölçekli
+problemler için yeterli, MIT veya Eclipse lisansıyla ticari kullanıma da
+açık. Bu sitenin LP çözücüsü tarayıcı içinde GLPK'nın WebAssembly
+versiyonunu (`glpk.js`) çalıştırır; sunucuya hiçbir veri gitmez.
+
+**Modelleme dilleri:** AMPL, GAMS, MathProg — problem matematiksel notasyona
+yakın bir dilde yazılır, çözücü seçimi sonradan yapılır. Karmaşık modeller
+için ekibin koduna açıklık katar.
+
+**Programlama dili kütüphaneleri:** PuLP ve Pyomo (Python), JuMP (Julia)
+en popülerleri. Modeli kodun içinde tanımlarsın, çözücüyü kütüphane
+arka planda çağırır.
+
+Hangi aracı seçersen seç, küçük bir LP problemini elinle modellemenin ve
+çözmenin değeri büyüktür. Algoritmanın ne yaptığını anlamak, sonradan
+endüstriyel ölçekte modelleme yaparken iyi karar vermeni sağlar.
+
+## Türkiye'de LP uygulamaları
+
+Doğrusal programlama Türkiye'de farklı sektörlerde aktif kullanılır:
+
+**Tarım:** Yetiştirilecek ürün karması optimizasyonu, sulama planlaması,
+gübre dağıtımı için TARSİM ve büyük çiftliklerin planlama yazılımları LP
+modelleri içerir.
+
+**Enerji:** Türkiye Elektrik İletim AŞ (TEİAŞ) günlük yük talep tahminine göre
+hangi santralin ne kadar üretim yapacağına LP/MILP modelleri ile karar verir.
+Doğal gaz dağıtımı, petrol rafinerisi planlaması da benzer altyapı kullanır.
+
+**Lojistik:** Aras Kargo, Yurtiçi Kargo, MNG Kargo gibi büyük dağıtım
+şirketleri günlük araç-rota atamasında LP/MILP modelleri kullanır. Türk
+Hava Yolları ve Pegasus uçak-rota eşlemesi için lineer programlama tabanlı
+araçlardan yararlanır.
+
+**Üretim:** Arçelik, Vestel, Bosch Türkiye gibi büyük üreticilerin haftalık
+üretim planlama sistemleri LP modelleri üzerine kuruludur. Hammadde tedariki,
+işçilik tahsisi, makine kapasitesi tahsisi bu modellerin tipik bileşenleridir.
+
+**Sağlık:** Bazı büyük üniversite hastanelerinde ameliyat odası
+çizelgelemesi için lineer programlama tabanlı çözücüler kullanılır.
+Hastane yatak kapasitesi planlaması da benzer şekilde modellenir.
+
+**Kamu sektörü:** Belediyelerin çöp toplama rotaları, itfaiye konumlama,
+toplu ulaşım hat tasarımı için LP modelleri kullanılır. İBB'nin akıllı
+şehir projelerinde optimizasyon motorları yer alır.
+
+## Tipik bir kurumsal LP projesi nasıl ilerler?
+
+Bir endüstriyel LP projesini sıfırdan canlıya geçirme süreci genellikle altı
+adımdan oluşur ve birkaç haftadan birkaç aya kadar sürebilir.
+
+**Birinci hafta — problem tanımı:** Yöneylem analisti karar vericilerle
+oturur, "ne karar verilmeli?" sorusunu netleştirir. Bu, görünüşten daha zor
+bir adımdır; çoğu zaman birden fazla iç paydaş farklı kararları kasteder.
+
+**İkinci-üçüncü hafta — veri toplama:** Mevcut kapasiteler, maliyetler,
+talep tahminleri farklı sistemlerden derlenir. Bu adım toplam sürenin %40'ını
+alır; veri kalitesi modelin kalitesini doğrudan belirler.
+
+**Dördüncü hafta — model kurma:** Toplanan verilere ve tanımlanan probleme
+göre matematiksel model yazılır. Genellikle modelleme dili (PuLP, GAMS) ile
+ilk hâli yazılıp test edilir.
+
+**Beşinci hafta — kalibrasyon:** Modelin çıktısı geçmiş verilerle
+karşılaştırılır; sapma varsa varsayımlar gözden geçirilir. Bu adım modelin
+güvenilirliğinin ölçüldüğü en kritik anlardan biridir.
+
+**Altıncı-sekizinci hafta — uygulamaya alma:** Model yazılım sistemine
+entegre edilir, kullanıcı arayüzü hazırlanır, eğitim verilir. Çoğu proje
+bu adımda darboğazlanır çünkü matematiksel model değil, organizasyonel
+kabul belirleyici olur.
+
+**Sonra — bakım:** Veri kaymaları (data drift), iş değişiklikleri ve yeni
+ihtiyaçlar modelin sürekli güncellenmesini gerektirir. Bir LP modeli üretime
+girdikten sonra ortalama 3-7 yıl boyunca kullanılır.
+
+## LP öğrenmek için kaynaklar
+
+Doğrusal programlama öğrenmek için kademeli bir yol önerilebilir.
+
+**Başlangıç:** Bir endüstri mühendisliği lisans dersi notlarına ya da
+YouTube'da Türkçe "doğrusal programlama" konu anlatımlarına bakılabilir.
+Excel Solver eklentisini açıp kendi yazdığın 2-3 değişkenli problemleri
+çözmek hızlı sezgi kazandırır.
+
+**Orta:** Hillier & Lieberman veya Winston'ın LP bölümlerini baştan sona
+okumak, paralelinde Python PuLP veya Pyomo ile küçük modeller yazmak
+faydalıdır. Simpleks tablosu hesaplarını elinle bir-iki kez yapmak,
+algoritmanın ne yaptığını sezdirir.
+
+**İleri:** Bertsimas ve Tsitsiklis'in "Introduction to Linear Optimization"
+kitabı akademik standardır. Kuramsal yan: dualite, hassasiyet analizi,
+bozulmuş simpleks (degenerate), Klee-Minty örnekleri. Uygulamalı yan:
+büyük ölçekli problem ayrıştırma teknikleri (Dantzig-Wolfe decomposition,
+Benders decomposition), kolon üretme yöntemleri.
+
+Akademik makale takibi için INFORMS Journal on Optimization, Mathematical
+Programming, Operations Research dergileri öne çıkıyor. Türkçe içerik için
+YAEM kongresi bildiri kitapları ve Türk üniversitelerinin doktora tezleri
+zengin bir kaynak.
+
+## Sonuç
+
+Doğrusal programlama, yöneylem araştırmasının en eski, en yaygın ve en güçlü
+aracıdır. Doğru modellendiğinde mikrosaniyeler içinde optimal çözüm verir;
+yanlış modellendiğinde ise sezgi-üstü doğrulukta yanlış cevap üretir. Bu
+nedenle iyi bir LP analisti, model kurma sanatına matematiksel hesap
+yapma becerisi kadar zaman ayırmalıdır.
+
+Bu sitenin
+[Lineer Programlama Çözücü](/or-araclari/araclar/lineer-programlama-cozucu)
+aracı yakında yayında olacak; o zamana kadar küçük problemleri Excel
+Solver veya Python PuLP ile deneyebilirsin. LP'nin tamsayı kuzeni MILP ve
+çizelgeleme problemlerinin geniş yelpazesi için
+[Çizelgeleme Problemleri rehberi](/or-araclari/rehberler/cizelgeleme-problemleri)
+ve [Google OR-Tools rehberi](/or-araclari/rehberler/google-or-tools-genel-bakis)
+de devam okuma listenize eklenebilir.
+
+Doğrusal düşünmek bir kez sezildikten sonra, etrafında bir sürü problemin
+aslında doğrusal olduğunu ve hızla çözülebileceğini fark edeceksin. Yöneylem
+yolculuğunda LP ilk durağındır; ama belki de en sık döneceğin durağı olacak.
+Üretim planlamasından mali denge optimizasyonuna, lojistikten enerji
+dağıtımına, doğrusal programlamanın eli dokunmadığı bir endüstri sektörü
+neredeyse kalmadı. Bu yüzden iyi bir yöneylem analisti için LP "ileri seviyede
+öğrenilecek konu" değil, "günlük çalışma aletinin sapı" gibidir — sürekli
+elinde olmalı, gerektiğinde refleksle kullanılabilmelidir. Bu rehberin
+amacı, sapı tanıman ve onu nasıl tutacağını sezmen oldu. Ne kadar
+ilerleyeceğine sen karar vereceksin; ama biliyoruz ki on yıl sonra dahi
+LP, yöneylemin bel kemiği olarak yerini koruyacak — çünkü modern endüstrinin
+kararlarını analiz etmenin en hızlı, en güvenilir matematiksel çerçevesi
+olarak gücünü hâlâ kanıtlıyor ve kullanılmaya devam ediyor.
