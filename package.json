@@ -23,6 +23,9 @@
     "@fontsource/atkinson-hyperlegible": "^5.2.8",
     "@tailwindcss/vite": "^4.2.4",
     "astro": "^6.2.2",
+    "katex": "^0.16.45",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0",
     "tailwindcss": "^4.2.4"
   },
   "devDependencies": {

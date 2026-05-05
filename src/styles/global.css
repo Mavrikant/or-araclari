@@ -2,6 +2,7 @@
 @import "@fontsource-variable/inter/wght.css";
 @import "@fontsource/atkinson-hyperlegible/latin.css";
 @import "@fontsource/atkinson-hyperlegible/latin-ext.css";
+@import "katex/dist/katex.min.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
