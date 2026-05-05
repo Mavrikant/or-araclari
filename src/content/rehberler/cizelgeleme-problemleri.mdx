@@ -1,0 +1,432 @@
+---
+title: "Çizelgeleme Problemleri: Türler ve Çözüm Yaklaşımları"
+description: "Çizelgeleme problemleri nedir, hangi alt türlere ayrılır, hangi algoritmalar kullanılır? İş atölyesinden ders programına, klasik scheduling problemlerinin Türkçe haritası."
+pubDate: 2026-05-06
+keywords:
+  - "çizelgeleme"
+  - "scheduling"
+  - "iş atölyesi çizelgeleme"
+  - "job shop"
+  - "ders programı oluşturma"
+  - "personel vardiya"
+  - "kısıt programlama"
+readingMinutes: 13
+faq:
+  - question: "Çizelgeleme problemi neden bu kadar zor?"
+    answer: "Çoğu çizelgeleme problemi NP-zor sınıfa girer; yani problem boyutu büyüdükçe optimal çözüm bulma süresi katlanarak artar. Örneğin 20 işli, 5 makineli bir job-shop problemi için en kötü durumda 20!⁵ kombinasyon vardır — dünya üzerindeki tüm bilgisayarlar birlikte çalışsa milyonlarca yıl sürebilir. Bu nedenle pratikte 'optimal' yerine 'yeterince iyi' çözüm üreten sezgisel ve metasezgisel algoritmalar tercih edilir."
+  - question: "Çizelgeleme için LP mi, CP mi (constraint programming) daha uygun?"
+    answer: "Genelde tercih şudur: kısıtlar 'eşitsizlik + amaç fonksiyonu' biçiminde temiz ifade edilebiliyorsa LP/MILP, kısıtlar 'X şu zamanda olmazsa Y şu zamanda olmaz' gibi mantıksal ilişkilerle iç içeyse CP daha doğal bir araçtır. Modern çizelgeleme yazılımları (Google CP-SAT, IBM CP Optimizer) ikisini birleştirir; hibrit yaklaşımlar saf LP veya CP'den daha hızlı sonuca ulaşır."
+  - question: "Excel ile çizelgeleme yapılabilir mi?"
+    answer: "Küçük ölçekli, tek boyutlu çizelgeleme problemleri (10-15 işten az, basit kısıtlarla) Excel Solver'ın MILP yeteneğiyle çözülebilir. Daha karmaşık problemler için (job-shop, ders programı, vardiya) Excel hızla yetersiz kalır; özel çizelgeleme yazılımları, programlama dilleri (Python OR-Tools), hatta el optimize edilmiş sezgisel algoritmalar gerekir. Bu sitedeki Lig Fikstürü Oluşturucu, basit round-robin çizelgelemenin Excel'e bağlı kalmadan tarayıcıda çözülebileceğini gösteriyor."
+  - question: "Çizelgeleme alanında iş bulunur mu, hangi sektörlerde?"
+    answer: "Türkiye'de çizelgeleme uzmanlığı için aktif talep var: havacılık (THY uçuş ekibi vardiyalama), otomotiv (üretim hattı sıralama), perakende (mağaza personel vardiyası), bankacılık (çağrı merkezi atama), hastane (ameliyat odası ve acil servis), eğitim (üniversite ders programı), spor (lig fikstürü). Junior pozisyon için endüstri/sistem mühendisliği lisans diploması yeterli; uzmanlaşmak için optimizasyon ve OR-Tools/CPLEX deneyimi avantaj sağlar."
+  - question: "Akademide çizelgeleme alanında trend olan konular nelerdir?"
+    answer: "Son yıllarda öne çıkan başlıklar: yeşil çizelgeleme (enerji minimizasyonu), gerçek zamanlı dinamik çizelgeleme (talep değiştikçe yeniden planlama), makine öğrenmesiyle güçlendirilmiş sezgiseller (RL ajanları, learned heuristics), çoklu hedef Pareto-optimal çözümler, robust scheduling (belirsizlik altında dirençli planlar), ve dağıtık çizelgeleme (federe sistemler için). Türk araştırmacıların özellikle havacılık ve sağlık çizelgelemesinde uluslararası dergilerde yayınları artıyor."
+---
+
+Bir okul müdürünün haftalık ders programını çizmesi, bir hastane başhemşiresinin
+gece nöbet listesini hazırlaması, bir fabrika sorumlusunun günlük üretim
+sırasını belirlemesi, bir lig federasyonunun fikstür çekilişini düzenlemesi —
+hepsi aynı disiplinin farklı yüzleridir: **çizelgeleme**. Yöneylem
+araştırmasının altı ana problem ailesinden biri olan çizelgeleme,
+"hangi kaynak ne zaman, ne yapacak?" sorusuna sistematik cevap arar.
+
+Bu rehber, çizelgeleme dünyasının haritasını çıkarır: hangi türler vardır,
+hangi algoritmalar hangisini çözer, NP-hardness neden bu alanın belasıdır
+ve gerçek dünyada hangi araçlar kullanılır. Çizelgeleme problemini ilk kez
+duyuyorsan, bu yazının sonunda kafanda net bir taksonomi olacak.
+
+## Çizelgeleme nedir?
+
+En geniş tanımıyla çizelgeleme, **sınırlı kaynakların zaman boyunca
+dağıtılması** problemidir. İki bileşeni vardır:
+
+- **İşler (jobs/tasks):** Yapılması gereken aktiviteler. Süreleri, sırayla
+  bağımlılıkları, kullanacakları kaynaklar bilinir.
+- **Kaynaklar (resources):** İşleri gerçekleştirecek varlıklar. Makineler,
+  insanlar, salonlar, sahalar olabilir.
+
+Çizelge, her işin hangi kaynak tarafından, hangi başlangıç zamanında
+yapılacağını söyleyen bir plandır. İyi bir çizelge en az birkaç koşulu
+sağlamalıdır: kaynaklar aynı anda iki işi yapamaz, sıralı işler doğru sırada
+ilerler, son tarihler geçirilmez.
+
+Bu basit gibi görünen şart listesi, problemin boyutu büyüdüğünde
+patlayan bir kombinatoryel zorluk üretir. 10 iş, 3 makineye sahip basit
+bir flow-shop problemi için bile geçerli çizelge sayısı milyonlardadır;
+hangisinin "en iyi" olduğunu (örneğin tüm işlerin bitiş süresini minimize
+eden) bulmak yöneylemin altın araştırma alanlarından biri olmuştur.
+
+## Klasik çizelgeleme problemleri
+
+Çizelgeleme alanı içindeki birkaç klasik problem türü, hem akademik literatürün
+hem endüstriyel uygulamaların ana eksenidir.
+
+**Round-robin (turnuva çizelgeleme):** Bir grup oyuncunun veya takımın
+birbiriyle eşleştiği sportif organizasyonlar bu kategoriye girer. Lig
+fikstürü, satranç turnuvası, üniversite spor şenliği örnekleridir.
+Detaylı bir tanıtımı için
+[Round-Robin Algoritması rehberimize](/or-araclari/rehberler/fikstur-nasil-olusturulur)
+bakabilirsin; bu sitedeki
+[Lig Fikstürü Oluşturucu](/or-araclari/araclar/lig-fiksturu-olusturucu)
+da round-robin algoritmasının pratik bir uygulamasıdır.
+
+**Job-shop scheduling:** Birden fazla makinenin, her biri farklı operasyon
+sıralarına sahip işleri işlediği klasik üretim çizelgeleme problemidir.
+Örneğin bir araba parçası fabrikasında her parça torna, freze ve delme
+makinelerinden farklı sıralarla geçer. Optimal çizelgenin bulunması
+NP-zor olduğundan büyük problemler sezgisel algoritmalarla çözülür.
+
+**Flow-shop scheduling:** Job-shop'un özel bir varyantı; her iş aynı
+makine sırasından geçer. Bir bisküvi üretim hattı (hamur → şekil verme →
+fırın → paketleme), tipik bir flow-shop örneğidir. Daha düzenli yapısı
+sayesinde daha verimli çözüm yöntemleri vardır.
+
+**Open-shop scheduling:** İşlerin makine sırasının önemsiz olduğu varyant.
+Daha az kısıt, ama hâlâ NP-zor. Otomotiv yedek parça onarım atölyeleri
+gibi alanlarda görülür.
+
+**Project scheduling (CPM/PERT):** Bağımlı aktivitelerin belirli zaman
+sürelerinde tamamlanması gereken inşaat, yazılım geliştirme veya ürün lansmanı
+gibi projeler. **Critical Path Method (CPM)** ve **Program Evaluation and
+Review Technique (PERT)** klasik teknikleridir; günümüzde Microsoft Project
+ve Primavera gibi yazılımların temelinde bu yöntemler vardır.
+
+**Personel vardiya çizelgelemesi:** Hastane hemşire programları, çağrı merkezi
+operatör vardiyaları, polis devriye listeleri bu kategoriye girer. Kısıtlar
+genelde çok katmanlıdır: yasal çalışma saati limitleri, ardışık gece nöbet
+sınırlaması, kişisel tercihler, sertifikasyon zorunlulukları. Bu yüzden
+genelde MILP veya CP teknikleri kullanılır.
+
+**Eğitim çizelgelemesi (timetabling):** Üniversite ders programı, sınav
+takvimi, K-12 okul programı bu başlık altındadır. Çakışmasız programlama
+şarttır: aynı öğrenci grubu aynı saatte iki dersi alamaz, aynı öğretmen
+aynı saatte iki sınıfta ders veremez, aynı sınıf aynı saatte iki gruba
+hizmet edemez. NP-zor bir problemdir ve uluslararası araştırma
+yarışmaları (ITC — International Timetabling Competition) düzenlenir.
+
+**Vehicle routing scheduling:** Bir filonun günlük dağıtım rotalarının
+zaman pencerelerine uyarak planlanması. Kargo şirketleri, aile hekimliği
+ev ziyaretleri, ekipman bakımı planlaması bu kategoriye girer.
+Vehicle Routing Problem (VRP), aslında çizelgeleme ve rotalama problemlerinin
+melezidir.
+
+## Çözüm yaklaşımları
+
+Çizelgeleme problemlerini çözmek için yöneylem repertuarında birkaç araç
+vardır; problem yapısına göre seçim yapılır.
+
+**Açgözlü (greedy) sezgiseller:** En basit yaklaşım. Her adımda lokal
+olarak en iyi görünen kararı alır. Round-robin için circle method, project
+scheduling için critical path, çoğu basit problem için "shortest processing
+time first" gibi kurallar bu kategoriye girer. Hızlı ama optimal değil;
+ne kadar uzakta olduğu problem yapısına bağlıdır.
+
+**Doğrusal/Tamsayı programlama (LP/MILP):** Problem matematiksel modele
+oturtulup ticari veya açık kaynak çözücülere verilir. Küçük ve orta ölçekli
+problemler için optimal çözüm garantisi sunar; büyük problemlerde hesaplama
+süresi pratik olamayacak kadar uzar. Üniversite ders programlama,
+fabrika üretim sıralaması gibi orta ölçekli problemler için yaygın araç.
+
+**Kısıt programlama (Constraint Programming, CP):** Klasik LP'den farklı
+bir paradigma; mantıksal kısıtları (eğer X olursa Y olmamalı, A ile B
+arasında en az 30 dakika boşluk olmalı) doğrudan ifade etmeyi sağlar.
+Modern CP çözücüleri (Google CP-SAT, IBM CP Optimizer, Choco) çizelgeleme
+problemlerinde özellikle güçlüdür çünkü problemin doğası mantıksal-kombinatoryel
+yapıya yakındır.
+
+**Metasezgisel algoritmalar:** Genetik algoritma, tabu arama, simulated
+annealing, large neighborhood search gibi yöntemler. Optimal çözüm garanti
+etmez ama NP-zor problemlerde "yeterince iyi" çözüm üretir. Büyük ölçekli
+endüstriyel çizelgeleme problemlerinin pratikte çözülme yolu çoğunlukla
+metasezgiseldir. Türk akademik literatüründe bu alanda yoğun çalışmalar
+vardır.
+
+**Yapay zekâ tabanlı yaklaşımlar:** Son yıllarda **deep reinforcement
+learning** ile çizelgeleme yapan ajanlar geliştirildi. AlphaScheduler tarzı
+yaklaşımlar, bir RL ajanının deneme-yanılma ile iyi çizelgeleme politikalarını
+öğrenmesine dayanır. Henüz endüstri standardı değil; ama hızla olgunlaşıyor
+ve özellikle dinamik (gerçek zamanlı değişen) çizelgeleme problemlerinde
+gelecek vaat ediyor.
+
+**Hibrit yaklaşımlar:** Modern endüstriyel çözümler nadiren tek bir teknik
+kullanır. Tipik bir hibrit pipeline: bir LP gevşetmesi ile alt sınırı bul,
+heuristic ile ilk çözüm üret, CP-SAT ile iyileştir, metasezgisel ile
+ince ayar yap. Bu pipelinler haftalarca süren mühendislik yatırımları
+sonucu kurulur.
+
+## Bir job-shop probleminin matematiksel formülasyonu
+
+Klasik job-shop scheduling problemini matematiksel olarak ifade etmek,
+çizelgeleme modelinin nasıl yazıldığını somutlaştırmak için faydalı bir
+egzersizdir.
+
+Diyelim ki $n$ iş ve $m$ makine var. Her $i$ işi sıralı operasyonlara sahip:
+$O_{i,1}, O_{i,2}, \ldots, O_{i,m_i}$ — bu operasyonlar belirli makinelerde
+belirli sürelerde işlenmeli. Karar değişkenleri:
+
+- $s_{i,j}$: $i$ işinin $j$-inci operasyonunun başlama zamanı
+- $C_{\text{max}}$: tüm işlerin tamamlanma zamanı (makespan)
+
+Amaç fonksiyonu yaygın olarak makespan minimizasyonudur:
+
+$$
+\text{minimize: } C_{\text{max}}
+$$
+
+Kısıtlar üç ana grupta toplanır:
+
+**Operasyon sırası kısıtları:** Aynı iş içindeki ardışık operasyonlar sırayla
+yapılmalıdır.
+
+$$
+s_{i,j+1} \ge s_{i,j} + p_{i,j} \quad \forall i, j
+$$
+
+Burada $p_{i,j}$, $i$ işinin $j$-inci operasyonunun süresidir.
+
+**Makine çakışma kısıtları:** Aynı makinede iki operasyon aynı anda
+yapılamaz. Bu, ya disjunctive (mantıksal "ya bu ya o") kısıtlarla, ya da
+binary değişkenlerle (eğer $i$ operasyonu $k$ operasyonundan önce ise
+$y_{ik} = 1$, aksi hâlde 0) modellenir.
+
+**Makespan kısıtı:** En son tamamlanan operasyon makespan değerini belirler.
+
+$$
+C_{\text{max}} \ge s_{i,m_i} + p_{i,m_i} \quad \forall i
+$$
+
+Bu formülasyon, MILP olarak doğrudan ticari çözücülere verilebilir; küçük
+problemler (10x10 boyutu) saniyeler içinde optimal çözüme kavuşur. Ama
+20x20 ve üzeri sorunlar için modeli çözücüye atmak yerine **disjunctive
+graph** veya **CP** formülasyonları daha verimli olur. CP-SAT'ın özel
+**no_overlap interval** kısıtı, makine çakışma problemini doğrudan
+ifade etmeyi sağlar ve MILP'den çok daha hızlı sonuç verir.
+
+## Karmaşıklık ve NP-hardness
+
+Çizelgeleme alanının karakteristik bir özelliği var: hemen hemen tüm ilginç
+problemleri **NP-zor** sınıfa girer. Bu, problem boyutu büyüdükçe optimal
+çözüm bulma süresinin **üstel** artması anlamına gelir.
+
+Job-shop scheduling problemini ele alalım. Belirli bir bitiş zamanını sağlayan
+bir çizelge var mı? sorusu **NP-tam** problemdir. Yani polinomyal zamanda
+çözen bir algoritma bulunamamış (ve büyük olasılıkla bulunamayacak)
+demektir. Pratikte bu, 20 işli problemler için optimum çözümün bulunmasının
+saatler veya günler sürebilmesi anlamına gelir; 100 işli problemler için
+optimumu garanti etmek pratik olarak imkânsızdır.
+
+Bu zorluk karşısında üç stratejik seçenek vardır:
+
+1. **Optimaliteden taviz ver:** "Yeterince iyi" çözüm yeterse, sezgisel
+   ve metasezgisel yöntemler kullanılır. Çoğu endüstriyel çözüm bu yoldur.
+2. **Problemi küçült:** Sıkı zaman pencereli olanlar gibi alt-problemleri
+   ayrıştırarak sırayla çöz. Bu, *decomposition* yaklaşımıdır.
+3. **Özel yapılı varyantları ara:** Bazı problem yapıları (single machine,
+   identical parallel machines) polinomyal zamanda çözülebilir. Problemin
+   bu yapıya uyup uymadığını kontrol et.
+
+NP-hardness, çizelgeleme araştırmacıları için çile değil meslek vesilesidir:
+yeni sezgiseller, daha akıllı modelleme teknikleri, yeni hibrit yaklaşımlar
+sürekli gelişmektedir.
+
+## Endüstriyel uygulamalar ve sektörel örnekler
+
+Türkiye'de çizelgeleme alanında yoğun kurumsal uygulamalar var.
+
+**Havacılık:** Türk Hava Yolları'nın günlük uçuş ekibi vardiyalama sistemi,
+binlerce pilot ve kabin görevlisinin yasal dinlenme sürelerine uyarak
+hangi uçuşlarda görev alacağını planlayan büyük ölçekli MILP modelidir.
+Pegasus ve Sun Express benzer yapıları kullanır. Uçak rotasyonu (hangi uçak,
+hangi rotayı, hangi sırayla uçacak) ayrı bir çizelgeleme problemidir.
+
+**Otomotiv üretim:** Tofaş, Ford Otosan, Toyota Türkiye gibi büyük otomotiv
+fabrikalarında üretim hattı çizelgelemesi günlük yapılır. Hangi modelin,
+hangi sırayla, hangi vardiyada üretileceği MILP veya hibrit metasezgiseller
+ile optimize edilir.
+
+**Sağlık:** Acıbadem, Memorial gibi büyük özel hastane gruplarında ameliyat
+odası planlaması için yöneylem yazılımları kullanılır. Devlet hastanelerinde
+muayene randevu sistemi (MHRS) çizelgeleme algoritmalarıyla doluluk dengesi
+sağlamaya çalışır.
+
+**Perakende:** A101, Migros, BİM gibi büyük perakende zincirlerinde mağaza
+personel vardiyalama merkezi bir yazılımdan yapılır. Talep tahmini
+(hangi saat ne kadar müşteri bekleniyor) ile vardiya optimizasyonu
+birleşir.
+
+**Bankacılık:** Çağrı merkezi operatör vardiya çizelgelemesi her büyük
+bankada özel bir takım tarafından yönetilir. Erlang C formülü ile talep
+tahmini, ardından MILP/CP ile vardiya atama yaygın yaklaşımdır.
+
+**Eğitim:** Türkiye'deki büyük üniversiteler (ODTÜ, İTÜ, Boğaziçi, Bilkent)
+sömestir başında ders programlama için yöneylem temelli yazılımlar
+kullanır. Bu, ITC standardı problemler içinde ele alınmıştır.
+
+**Spor:** Türkiye Süper Lig fikstürü, basketbol ve voleybol liglerinin
+fikstürleri, üniversite spor şenlikleri çizelgeleme algoritmalarıyla
+hazırlanır. Bu sitenin Lig Fikstürü Oluşturucu aracı, amatör düzeydeki
+ihtiyaçlar için bu altyapının erişilebilir bir versiyonudur.
+
+## Belirsizlik altında çizelgeleme: robust ve stokastik yaklaşımlar
+
+Klasik çizelgeleme literatürünün büyük kısmı **deterministik** varsayım
+yapar: tüm iş süreleri, kapasiteler, talepler kesin bilinir. Pratikte ise
+gerçek değerler tahminden farklı çıkabilir; bir işin tahmin edilen 4 saatten
+6 saate uzaması, çizelgenin tamamını sarsabilir. Modern çizelgeleme
+araştırması bu belirsizliği nasıl ele alacağına dair iki ana yön geliştirdi.
+
+**Robust scheduling**, en kötü duruma karşı dayanıklı bir çizelge üretmeyi
+amaçlar. "Süreler tahminden %20 sapabilir" gibi bir belirsizlik bütçesi
+verilir; çözücü, bu bütçeye karşı en kötü senaryoda bile makespan'ı belirli
+bir sınırın altında tutan çizelgeyi üretir. Sonuç tipik olarak biraz "aşırı
+muhafazakâr" olur — beklenen koşullarda biraz daha kötü, ama beklenmeyen
+koşullarda çok daha iyi.
+
+**Stokastik scheduling**, sürelerin olasılık dağılımına sahip olduğunu
+varsayar ve **beklenen** makespan'ı minimize eder. Bu, robust yaklaşımdan
+farklıdır: en kötü durum yerine ortalama davranışı optimize eder. Stokastik
+modeller genellikle **two-stage** veya **multi-stage** programlama
+çerçevelerinde çözülür ve hesaplama zorluğu deterministik versiyondan çok
+daha yüksektir.
+
+**Reactive scheduling** veya **dinamik çizelgeleme**, başlangıçta üretilen
+bir çizelgenin gerçek zamanda olaylara (gecikme, arıza, yeni iş gelişi)
+göre yeniden düzenlenmesidir. Genellikle **rolling horizon** yaklaşımıyla
+çalışır: bir kısmi çizelge çözülür, bir miktar zaman geçince güncellenmiş
+verilerle yeniden çözülür. Modern havayolu operasyon merkezleri bu
+yaklaşımla saatte bir uçuş çizelgelerini günceller.
+
+## Yaygın hatalar ve nasıl önlenir
+
+Çizelgeleme projelerinde sıkça yapılan birkaç tipik hata vardır.
+
+**Birinci hata — yeterince ısı vermeden modele girmek.** Yöneylem analisti,
+çizelgeleme problemini doğrudan matematiksel modele geçirmeden önce iş
+süreçlerini detaylı incelemeli, gerçek kısıtları paydaşlardan dinlemeli,
+veri tutarlılığını test etmelidir. Atlanan bu adım sonradan modelin "yanlış
+ama hızlı" cevap üretmesine yol açar.
+
+**İkinci hata — gereğinden karmaşık modelleme.** Her kuralı modele
+sokmak cazip gelse de, gerçekten önemli olan kısıtları ayırt etmek
+gerekir. Bir vardiya çizelgeleme modelinde "personel tercihen çocukların
+okul saatlerine göre" gibi yumuşak kısıtları zor kısıtlar gibi modellemek,
+çözücüyü gereksiz yere yavaşlatır. Yumuşak kısıtlar **ceza terimleri**
+olarak amaç fonksiyonuna eklenmeli, sert kısıtlardan ayrılmalıdır.
+
+**Üçüncü hata — performans testi yapmadan üretime alma.** Geliştirme
+ortamında 50 işli problemleri çözen bir model, üretimdeki 500 işli
+problemlerde donabilir. Ölçeklenebilirlik testi proje teslim edilmeden
+önce mutlaka yapılmalıdır.
+
+**Dördüncü hata — çıktıya güvenmek.** Çizelgeleme çözücüsü tüm kısıtları
+sağlayan bir çözüm verir, ama bu çözüm pratikte kabul edilemeyebilir
+(makul olmayan görev atamaları, alışılmadık vardiya sıraları). Çözüm
+mutlaka deneyimli kullanıcı tarafından gözden geçirilmeli, gerekirse
+ek "yumuşak kısıtlar" ile yönlendirilmelidir.
+
+**Beşinci hata — tek seferlik proje varsayımı.** Çizelgeleme sistemleri
+bir kez kurulup unutulmaz; iş süreçleri değiştikçe, yeni kısıtlar geldikçe
+sürekli güncellenmelidir. Üretime alınan bir model için bakım planı baştan
+oluşturulmalıdır.
+
+## Yeni başlayan için yol haritası
+
+Çizelgeleme alanında çalışmak isteyen biri için kademeli bir yol önerebilirim.
+
+**Birinci basamak — temelleri öğren:** Önce yöneylem temellerini ve doğrusal
+programlamayı kavra. Bu sitedeki
+[Yöneylem Araştırması Nedir?](/or-araclari/rehberler/yoneylem-arastirmasi-nedir)
+ve
+[Doğrusal Programlama](/or-araclari/rehberler/dogrusal-programlama-nedir)
+rehberleri başlangıç noktası olabilir. Klasik scheduling ders kitabı olarak
+Pinedo'nun "Scheduling: Theory, Algorithms, and Systems" temel kaynaktır.
+
+**İkinci basamak — basit problemler çöz:** Round-robin, single-machine
+scheduling gibi temiz problemleri elinle modelleyip çöz. Excel Solver veya
+Python PuLP ile başlayabilirsin. Bu sitenin Lig Fikstürü Oluşturucu aracını
+kullanarak round-robin'i pratik anlamda hisset.
+
+**Üçüncü basamak — gerçek araç öğren:** Google OR-Tools'un CP-SAT solver'ı
+ile başla. Job-shop, ders programı, personel vardiya gibi orta ölçekli
+problemleri çözmeye çalış. [OR-Tools rehberi](/or-araclari/rehberler/google-or-tools-genel-bakis)
+bu adımda yol gösterici olabilir.
+
+**Dördüncü basamak — uzmanlaş:** Bir alt domaini seç (havacılık, sağlık,
+üretim, eğitim). O alandaki büyük problemleri inceleyen akademik makaleleri
+oku, ticari yazılımları (Aimms, FICO, Solver) tanı. INFORMS ve EURO konferans
+bildirilerini takip et.
+
+**Beşinci basamak — katkıda bulun:** Açık kaynak çizelgeleme kütüphanelerine
+(OR-Tools, OptaPlanner, Choco) katkı yap, akademik makale yaz, kendi sezgiselini
+geliştir. Türkiye'de YAEM kongresi sunumları için iyi bir aşamasın.
+
+Çizelgeleme öğreniminde altın kural şudur: **kâğıt-kalem ile küçük örnekleri
+elinle çözmek**. 5 işli, 3 makineli bir flow-shop probleminin Gantt çizelgesini
+elinle çizmek, algoritmaların ne yaptığını sezmek için saatlerce ders dinlemekten
+daha öğreticidir. Modern çözücüleri kullanmadan önce klasik temelleri (örneğin
+Johnson kuralı 2-makine flow-shop için) elinle uygulamış olmak, ileride
+karmaşık problemleri parçalara ayırırken kazandığı sezgi paha biçilmezdir.
+
+## Akademik literatürde son trendler
+
+Çizelgeleme, yöneylem araştırmasının en aktif araştırma alanlarından biri
+olmaya devam ediyor. Son beş yılda öne çıkan birkaç ana eğilim var.
+
+**Yeşil çizelgeleme** (green scheduling) — enerji tüketimi, karbon ayak izi
+veya su kullanımı gibi çevresel kriterlerin çoklu hedef olarak modele dâhil
+edilmesi. Bir veri merkezinin sunucu çalıştırma çizelgesini elektrik
+fiyatlarına ve karbon yoğunluğuna göre optimize etmek bu kategorinin
+canlı bir örneğidir.
+
+**Federe öğrenme tabanlı çizelgeleme** — birden fazla bağımsız aktörün
+(rakip lojistik şirketleri, paylaşılan üretim ağları) tüm verisini paylaşmadan
+ortak bir çizelgeleme problemini çözmesi. Privacy-preserving optimization
+adıyla anılan bu alt başlık, blokchain ile birlikte çalışıyor.
+
+**Quantum-inspired heuristic'ler** — kuantum bilgisayarların henüz pratik
+olmadığı bugünlerde, kuantum tavlama (quantum annealing) prensiplerini
+klasik bilgisayarda taklit eden algoritmalar. D-Wave'in açık kaynak
+sürümleri bu alanda öne çıkıyor.
+
+Bu üç yön de Türk üniversitelerinin endüstri-akademi işbirliklerinde
+yer almaya başladı; doktora seviyesinde çalışmak isteyen biri için verimli
+araştırma alanları olabilir.
+
+## Sonuç
+
+Çizelgeleme, yöneylem araştırmasının pratikte en çok karşılaşılan ama aynı
+zamanda en zorlu alt başlıklarından biridir. NP-zor karakteri klasik teorinin
+sınırlarını dayatır; bu yüzden alanda sürekli yeni teknikler, hibrit
+yaklaşımlar ve yapay zekâ entegrasyonları gelişmeye devam eder.
+
+Bu rehberde tanıttığımız problemlerden biri sana özellikle ilginç geldiyse,
+o yöne derinleş. Lig fikstürü tarafında ilerlemek istersen
+[Lig Fikstürü Oluşturucu](/or-araclari/araclar/lig-fiksturu-olusturucu)
+hazır; iş atölyesi ve ders programı için ileride özel araçlar ekleyeceğiz.
+Çizelgelemenin temel matematik altyapısı için
+[Doğrusal Programlama rehberi](/or-araclari/rehberler/dogrusal-programlama-nedir),
+modern çözücü teknolojisi için
+[Google OR-Tools rehberi](/or-araclari/rehberler/google-or-tools-genel-bakis)
+devam okuma noktan olabilir.
+
+Çizelgeleme yapmak, kâğıt üstünde temiz bir matematiksel optimizasyon
+problemi gibi görünür; uygulamada ise insanları, kuralları ve kararları
+düzenleme sanatıdır. Bu sanatın matematiksel kısmını öğrenmek bir başlangıç;
+geri kalanı, gerçek dünya deneyimi ile geliyor. Her başarılı çizelgeleme
+projesi, bir teknik takımın değil, bir teknik takım ile alan uzmanlarının
+birlikte ortaya çıkardığı bir sentezdir; bir vardiya çizelgesinin uzun
+vadede çalışmasını belirleyen şey, modeldeki kısıt sayısı değil, kullanıcıların
+sisteme ne kadar güvenip onu nasıl benimsediğidir. Bu yumuşak boyutu hesaba
+katmadan kurulan en parlak teknik çözüm bile altı ay içinde çöpe atılabilir;
+işin asıl başarısı bu nüansa hâkim olmaktan geçer. Türkiye'de çizelgeleme
+alanında yetişen yeni nesil yöneylem analistlerinin önünde geniş bir kariyer
+yelpazesi bulunduğunu söylemek mübalağa olmaz; alana adım atma zamanı için
+bugün kötü bir an değil. Sektörel büyüme, dijital dönüşüm projelerinin
+hızlanması ve yapay zekâ ile klasik çizelgelemenin entegrasyonu, önümüzdeki
+on yıl boyunca alanı sürekli yenileyecek dinamikler sunuyor. Bu rehber, o
+yenilenmenin ana çizgilerine bir başlangıç haritası olmayı hedefledi;
+sonraki adımlar artık bu haritanın hangi köşesini keşfedeceğine bağlı. İyi
+keşifler dileyelim ve bu siteyi araç-rehber döngüsüyle takip etmeye devam et;
+yeni içerikler önümüzdeki haftalarda yayında olacak ve her biri çizelgeleme
+dünyasının başka bir kapısını aralayacak.
