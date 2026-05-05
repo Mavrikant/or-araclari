@@ -29,9 +29,9 @@ export const TOOLS: readonly Tool[] = [
     title: 'Lig Fikstürü Oluşturucu',
     shortTitle: 'Lig Fikstürü',
     description:
-      'Tek veya çift devreli lig fikstürünü round-robin algoritmasıyla saniyeler içinde üret. Excel/CSV indirme ve paylaşılabilir link.',
+      'Tek veya çift devreli lig fikstürünü round-robin algoritmasıyla saniyeler içinde üret. CSV indirme, yazdırma ve paylaşılabilir bağlantı.',
     category: 'cizelgeleme',
-    status: 'soon',
+    status: 'ready',
     guideSlug: 'fikstur-nasil-olusturulur',
   },
   {
