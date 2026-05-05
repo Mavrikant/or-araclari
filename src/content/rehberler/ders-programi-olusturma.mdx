@@ -290,3 +290,86 @@ hızla ilerliyor; timetabling tabanlı yazılımların kullanımı yaygınlaşı
 Bu alanda uzmanlaşmak isteyen bir yöneylem analisti veya yazılım
 geliştirici için sektörel talep önümüzdeki yıllarda artmaya devam edecek.
 İyi öğrenmeler ve iyi programlamalar dileriz.
+
+## Sınav programı varyantı
+
+Ders programı ile sınav programı yapısal olarak benzer ama ayrı problem
+sınıflarıdır. Sınav programlamanın özellikleri şunlardır:
+
+- **Tek seferlik** organizasyon (her sınav dönemi başında)
+- **Öğrenci-sınav çakışmazlığı** ön planda (bir öğrenci aynı saatte iki
+  sınavda olamaz)
+- **Salon kapasitesi** kritik kısıt (öğrenci sayısı salonu aşamaz)
+- **Sınav süresi** değişken olabilir (60, 90, 120 dakika)
+- **Sınavlar arası dinlenme** zamanı yumuşak kısıt olarak öne çıkar
+- **Gözetmen tahsisi** genellikle ikincil bir atama problemi olarak
+  birleştirilir
+
+Sınav programlama akademik literatürde **examination timetabling** olarak
+ayrı bir alt başlıktır ve ITC'nin kendine özgü bir yarışma kategorisidir.
+Türkiye'de ÖSYM'nin yıllık sınav organizasyonu (YKS, KPSS, ALES, vb.)
+büyük ölçekli sınav programlamanın profesyonel uygulamalarındandır;
+binlerce salon, milyonlarca aday, yüzlerce sınav. Bu seviyedeki organizasyon
+özelleşmiş yazılımlar ve büyük operasyon ekipleriyle yönetilir.
+
+ÖSYM tarafında salon-aday eşleme problemi binary integer programming
+olarak modellenir; her aday-salon çifti bir ikili değişkendir. Salon
+kapasitesi, aday tercihi (örneğin yakındaki salon), engelli aday
+gereksinimleri (asansör, alt kat) gibi kısıtların hepsi modele eklenir.
+Sınav günü hesaplama saatler sürmez; çözücü gece boyunca çalışıp sabah
+optimum yerleşimi sunabilir. Türkiye'nin sınav altyapısının bu kadar
+büyük ölçekte düzgün çalışması, arkasındaki yöneylem optimizasyonunun
+sessiz bir başarısıdır.
+
+## Endüstriyel kullanım: yerli ve yabancı yazılımlar
+
+Türkiye'deki eğitim kurumlarının kullandığı timetabling yazılımları arasında
+hem yerli hem yabancı seçenekler var. Yabancı tarafta **Untis** (Avusturya
+kökenli, K-12 okullar için baskın), **FET** (açık kaynak), **Mimosa**
+(üniversiteler için) öne çıkıyor. Yerli olarak büyük üniversitelerin
+kendi geliştirdiği özel yazılımlar (ODTÜ, Boğaziçi, Bilkent) ve eğitim
+yazılımı şirketlerinin (sebit, vitamin) ders programı modülleri
+kullanılıyor.
+
+K-12 düzeyindeki büyük okul zincirleri (Doğa, Bahçeşehir, Final, ANS)
+genelde Untis veya benzeri yabancı yazılımları kullanıyor; üniversiteler
+ise daha sık özel geliştirme tercih ediyor. Açık kaynak FET, küçük
+ölçekli okullar ve özel eğitim merkezleri için ekonomik bir seçenek.
+
+Yazılım seçiminde dikkat edilecek başlıca kriterler şunlardır: problem
+ölçeği (kaç ders / kaç slot), kısıt karmaşıklığı (sadece sert kısıtlar mı
+yoksa yumuşak kısıtlar da var mı), entegrasyon ihtiyacı (öğrenci yönetim
+sistemi ile bağ), kullanıcı arayüzü dili (Türkçe destek), bütçe ve
+teknik destek beklentisi. Doğru seçim için pilot uygulama yapmak ve
+mevcut manuel programla karşılaştırarak kalibre etmek altın kuraldır.
+
+## Açık problemler ve sürmekte olan araştırmalar
+
+Timetabling alanında hâlâ açık olan birkaç araştırma sorusu var:
+
+**Otonom öğrenen sistemler:** Geçmiş sezonlardaki manuel düzeltmelerden
+otomatik öğrenip bir sonraki sezonun çıktısını iyileştiren sistemler.
+Reinforcement learning bu yönde umut vaat ediyor.
+
+**Adillik metrikleri:** Hangi öğretmenin/grubun yumuşak kısıt ihlallerinde
+"yükü" çektiğini ölçen ve dengeleyen sistemler. Pratik etiği önemli bir
+boyut.
+
+**Çoklu hedef Pareto-optimal çözümler:** Tek "en iyi" yerine farklı
+trade-off'lar arasında bir aralık sunmak. Karar verici bu aralıktan
+seçer.
+
+**Gerçek zamanlı yeniden planlama:** Sezon ortasında öğretmen değiştiğinde
+veya yeni dersler eklendiğinde tüm programı baştan üretmek yerine küçük
+yerel düzeltmeler yapmak.
+
+**Çoklu kurum koordinasyonu:** Birden fazla okul/üniversitenin paylaşılan
+öğretmen veya derslik kaynaklarını koordineli planlaması — özellikle
+küçük şehirlerde devlet okulları arası kaynak paylaşımı için ilgi
+çekici bir konu.
+
+Bu yönlerden biri seni çekiyorsa, akademik bir yüksek lisans veya
+doktora konusu olabilecek zenginlikte bir alan. Türkiye'deki büyük
+üniversitelerin endüstri mühendisliği bölümlerinde aktif çalışan
+araştırma grupları mevcut ve çıktıları INFORMS ve EURO konferanslarında
+dünya literatürüne katkı sağlamakta.
