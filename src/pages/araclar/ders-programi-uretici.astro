@@ -32,138 +32,895 @@ const softwareJsonLd = {
       <span class="text-slate-400 dark:text-slate-600"> / </span>
       <span>Çizelgeleme</span>
     </p>
-    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">{tool.title}</h1>
+    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">
+      {tool.title}
+    </h1>
     <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
-      Ders listeni gir, slot sayısını belirle, çakışmasız haftalık programı
-      backtracking algoritmasıyla bul. Aynı öğretmen veya aynı grup aynı
-      slotta iki ders almaz.
-      {guideHref && (<a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>)}
+      Önce hafta yapısını ayarla, öğretmen ve sınıfları ekle, sonra dersleri
+      bunlara bağla. Çakışmasız haftalık takvim saniyeler içinde renklendirilmiş
+      olarak çıkar.
+      {guideHref && (
+        <a
+          href={guideHref}
+          class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"
+        > Rehbere git →</a>
+      )}
     </p>
   </Container>
 
-  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,360px)_1fr]">
-    <form id="tt-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40" novalidate>
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,360px)_1fr] print:block">
+    <form id="tt-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="sample-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Örnek doldur
+        </button>
+        <button type="button" id="reset-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+          Sıfırla
+        </button>
+      </div>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Hafta yapısı
+        </legend>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Gün sayısı</span>
+            <input type="number" id="days-count" min="3" max="7" step="1" value="5"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Günlük saat</span>
+            <input type="number" id="periods-per-day" min="1" max="12" step="1" value="6"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+        </div>
+        <p id="frame-preview" class="text-xs text-slate-500 dark:text-slate-400" aria-live="polite">
+          5 gün × 6 saat = 30 slot
+        </p>
+      </fieldset>
+
       <fieldset class="space-y-3">
         <div class="flex items-center justify-between">
-          <label for="lessons" class="block font-display text-sm font-semibold text-slate-900 dark:text-white">Dersler</label>
-          <span id="lesson-count" class="text-xs text-slate-500 dark:text-slate-400" aria-live="polite">0 ders</span>
+          <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+            Öğretmenler
+          </legend>
+          <span id="teacher-count" class="text-xs text-slate-500 dark:text-slate-400">0</span>
         </div>
-        <textarea id="lessons" name="lessons" rows="9" required autocomplete="off" spellcheck="false"
-          class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm leading-relaxed text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-          placeholder="Her satır: ders<TAB>öğretmen<TAB>grup&#10;&#10;Mat 9A	Ahmet	9A&#10;Fizik 9A	Burak	9A&#10;Mat 9B	Ahmet	9B"></textarea>
-        <div class="flex flex-wrap gap-2">
-          <button type="button" id="sample-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">Örnek doldur</button>
-          <button type="button" id="clear-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">Temizle</button>
+        <div class="flex gap-2">
+          <input type="text" id="teacher-input" placeholder="Ör: Ahmet" autocomplete="off"
+            class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          <button type="button" id="teacher-add-btn" class="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+            Ekle
+          </button>
         </div>
+        <ul id="teacher-list" class="flex flex-wrap gap-2 text-sm" aria-live="polite"></ul>
       </fieldset>
 
-      <fieldset>
-        <label class="block">
-          <span class="font-display text-sm font-semibold text-slate-900 dark:text-white">Slot sayısı (haftalık toplam)</span>
-          <input type="number" id="slots" name="slots" min="1" max="60" step="1" value="10" required
-            class="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
-          <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">Örnek: 5 gün × 6 slot = 30.</span>
-        </label>
+      <fieldset class="space-y-3">
+        <div class="flex items-center justify-between">
+          <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+            Sınıflar
+          </legend>
+          <span id="group-count" class="text-xs text-slate-500 dark:text-slate-400">0</span>
+        </div>
+        <div class="flex gap-2">
+          <input type="text" id="group-input" placeholder="Ör: 9-A" autocomplete="off"
+            class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          <button type="button" id="group-add-btn" class="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+            Ekle
+          </button>
+        </div>
+        <ul id="group-list" class="flex flex-wrap gap-2 text-sm" aria-live="polite"></ul>
       </fieldset>
 
-      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">Programı oluştur</button>
+      <fieldset class="space-y-3">
+        <div class="flex items-center justify-between">
+          <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+            Dersler
+          </legend>
+          <span id="lesson-count" class="text-xs text-slate-500 dark:text-slate-400">0 ders</span>
+        </div>
+
+        <div class="space-y-2 rounded-lg border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <input type="text" id="lesson-label" placeholder="Ders adı (Ör: Matematik)" autocomplete="off"
+            class="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          <div class="grid grid-cols-2 gap-2">
+            <select id="lesson-teacher"
+              class="block w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+              <option value="">Öğretmen…</option>
+            </select>
+            <select id="lesson-group"
+              class="block w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+              <option value="">Sınıf…</option>
+            </select>
+          </div>
+          <div class="flex gap-2">
+            <label class="flex flex-1 items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+              Haftalık saat:
+              <input type="number" id="lesson-hours" min="1" max="12" step="1" value="1"
+                class="block w-16 rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+            </label>
+            <button type="button" id="lesson-add-btn" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+              Ekle
+            </button>
+          </div>
+        </div>
+
+        <ul id="lesson-list" class="space-y-1.5 text-sm" aria-live="polite"></ul>
+      </fieldset>
+
+      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">
+        Programı oluştur
+      </button>
 
       <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
     </form>
 
     <section id="output" hidden aria-live="polite" class="space-y-6">
-      <header>
-        <h2 class="font-display text-xl font-semibold tracking-tight text-slate-900 dark:text-white">Program</h2>
-        <p id="summary" class="mt-1 text-sm text-slate-600 dark:text-slate-400"></p>
+      <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between print:block">
+        <div>
+          <h2 class="font-display text-xl font-semibold tracking-tight text-slate-900 dark:text-white">
+            Haftalık program
+          </h2>
+          <p id="summary" class="mt-1 text-sm text-slate-600 dark:text-slate-400"></p>
+        </div>
+        <div class="flex flex-wrap gap-2 print:hidden">
+          <button type="button" id="csv-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+            CSV indir
+          </button>
+          <button type="button" id="print-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+            Yazdır
+          </button>
+        </div>
       </header>
-      <div id="result-table"></div>
+
+      <div role="tablist" class="flex gap-1 overflow-x-auto border-b border-slate-200 print:hidden dark:border-slate-800">
+        <button type="button" role="tab" id="tab-all" aria-selected="true" aria-controls="view-all"
+          class="border-b-2 border-brand-600 px-3 pb-2 text-sm font-medium text-brand-700 dark:border-accent-400 dark:text-accent-300">
+          Genel takvim
+        </button>
+        <button type="button" role="tab" id="tab-group" aria-selected="false" aria-controls="view-group"
+          class="border-b-2 border-transparent px-3 pb-2 text-sm font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200">
+          Sınıf bazlı
+        </button>
+        <button type="button" role="tab" id="tab-teacher" aria-selected="false" aria-controls="view-teacher"
+          class="border-b-2 border-transparent px-3 pb-2 text-sm font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200">
+          Öğretmen bazlı
+        </button>
+      </div>
+
+      <div id="view-all" role="tabpanel" aria-labelledby="tab-all"></div>
+      <div id="view-group" role="tabpanel" aria-labelledby="tab-group" hidden class="space-y-6"></div>
+      <div id="view-teacher" role="tabpanel" aria-labelledby="tab-teacher" hidden class="space-y-6"></div>
     </section>
   </Container>
+
+  {guideHref && (
+    <Container as="section" size="wide" class="py-12 sm:py-16">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900/40">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">
+          Konuyu derinleştir
+        </p>
+        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          Ders programlama nasıl çalışır?
+        </h2>
+        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+          Backtracking, kısıt programlama ve çok-haneli timetabling üzerine
+          kapsamlı Türkçe rehber.
+        </p>
+        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">
+          Rehberi oku →
+        </a>
+      </div>
+    </Container>
+  )}
 </BaseLayout>
 
 <script>
-  import { solveTimetable, parseLessons, TimetableError } from '../../lib/timetable';
+  import { solveTimetable, TimetableError, type Lesson } from '../../lib/timetable';
 
-  const SAMPLE = 'Mat 9A\tAhmet\t9A\nFizik 9A\tBurak\t9A\nİng 9A\tCeyda\t9A\nMat 9B\tAhmet\t9B\nFizik 9B\tBurak\t9B\nİng 9B\tCeyda\t9B\nMat 10A\tAhmet\t10A\nFizik 10A\tBurak\t10A';
+  /* ---------- types & constants ---------- */
 
-  const $ = (id: string): HTMLElement => {
-    const el = document.getElementById(id);
-    if (!el) throw new Error(`Missing #${id}`);
-    return el;
+  interface FormState {
+    daysCount: number;
+    periodsPerDay: number;
+    teachers: string[];
+    groups: string[];
+    lessons: Array<{ label: string; teacher: string; group: string; weeklyHours: number }>;
+  }
+
+  const STORAGE_KEY = 'tt-state-v2';
+
+  const DAY_LABELS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+
+  /* WCAG AA palette: white text on each colour passes for normal weight. */
+  const TEACHER_COLORS = [
+    '#2563eb', '#db2777', '#b45309', '#047857',
+    '#7c3aed', '#dc2626', '#0e7490', '#c2410c',
+    '#4d7c0f', '#4f46e5', '#a21caf', '#0f766e',
+  ];
+
+  const SAMPLE_STATE: FormState = {
+    daysCount: 5,
+    periodsPerDay: 6,
+    teachers: ['Ahmet', 'Burak', 'Ceyda'],
+    groups: ['9-A', '9-B', '10-A'],
+    lessons: [
+      { label: 'Matematik', teacher: 'Ahmet', group: '9-A', weeklyHours: 4 },
+      { label: 'Matematik', teacher: 'Ahmet', group: '9-B', weeklyHours: 4 },
+      { label: 'Matematik', teacher: 'Ahmet', group: '10-A', weeklyHours: 3 },
+      { label: 'Fizik', teacher: 'Burak', group: '9-A', weeklyHours: 3 },
+      { label: 'Fizik', teacher: 'Burak', group: '9-B', weeklyHours: 3 },
+      { label: 'Fizik', teacher: 'Burak', group: '10-A', weeklyHours: 3 },
+      { label: 'İngilizce', teacher: 'Ceyda', group: '9-A', weeklyHours: 4 },
+      { label: 'İngilizce', teacher: 'Ceyda', group: '9-B', weeklyHours: 4 },
+    ],
   };
 
-  const form = $('tt-form') as HTMLFormElement;
-  const lessonsInput = $('lessons') as HTMLTextAreaElement;
+  function emptyState(): FormState {
+    return {
+      daysCount: 5,
+      periodsPerDay: 6,
+      teachers: [],
+      groups: [],
+      lessons: [],
+    };
+  }
+
+  /* ---------- DOM helpers ---------- */
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el as T;
+  };
+
+  function escapeHtml(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function teacherColor(state: FormState, name: string): string {
+    const idx = state.teachers.indexOf(name);
+    if (idx === -1) return '#64748b'; // slate-500 fallback
+    return TEACHER_COLORS[idx % TEACHER_COLORS.length];
+  }
+
+  function teacherInitials(name: string): string {
+    return name
+      .trim()
+      .split(/\s+/)
+      .map((p) => p[0]?.toLocaleUpperCase('tr') ?? '')
+      .join('')
+      .slice(0, 3);
+  }
+
+  function dayLabel(dayIdx: number): string {
+    return DAY_LABELS[dayIdx] ?? `G${dayIdx + 1}`;
+  }
+
+  function periodLabel(periodIdx: number): string {
+    return `${periodIdx + 1}. saat`;
+  }
+
+  function slotToCell(slot: number, periodsPerDay: number): { day: number; period: number } {
+    return { day: Math.floor(slot / periodsPerDay), period: slot % periodsPerDay };
+  }
+
+  function slotLabels(daysCount: number, periodsPerDay: number): string[] {
+    const out: string[] = [];
+    for (let d = 0; d < daysCount; d++) {
+      for (let p = 0; p < periodsPerDay; p++) {
+        out.push(`${DAY_LABELS[d] ?? `G${d + 1}`} ${p + 1}`);
+      }
+    }
+    return out;
+  }
+
+  /* ---------- state persistence ---------- */
+
+  function saveState(state: FormState): void {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (_e) {
+      /* storage unavailable; in-memory state still works */
+    }
+  }
+
+  function loadState(): FormState {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return emptyState();
+      const parsed = JSON.parse(raw) as Partial<FormState>;
+      return {
+        daysCount: parsed.daysCount ?? 5,
+        periodsPerDay: parsed.periodsPerDay ?? 6,
+        teachers: Array.isArray(parsed.teachers) ? parsed.teachers : [],
+        groups: Array.isArray(parsed.groups) ? parsed.groups : [],
+        lessons: Array.isArray(parsed.lessons)
+          ? parsed.lessons.filter(
+              (l): l is FormState['lessons'][number] =>
+                !!l &&
+                typeof l.label === 'string' &&
+                typeof l.teacher === 'string' &&
+                typeof l.group === 'string' &&
+                typeof l.weeklyHours === 'number',
+            )
+          : [],
+      };
+    } catch {
+      return emptyState();
+    }
+  }
+
+  /* ---------- in-memory state ---------- */
+
+  const state: FormState = loadState();
+
+  /* ---------- element refs ---------- */
+
+  const form = $<HTMLFormElement>('tt-form');
+  const sampleBtn = $('sample-btn');
+  const resetBtn = $('reset-btn');
+
+  const daysCountInput = $<HTMLInputElement>('days-count');
+  const periodsPerDayInput = $<HTMLInputElement>('periods-per-day');
+  const framePreview = $('frame-preview');
+
+  const teacherInput = $<HTMLInputElement>('teacher-input');
+  const teacherAddBtn = $('teacher-add-btn');
+  const teacherList = $<HTMLUListElement>('teacher-list');
+  const teacherCount = $('teacher-count');
+
+  const groupInput = $<HTMLInputElement>('group-input');
+  const groupAddBtn = $('group-add-btn');
+  const groupList = $<HTMLUListElement>('group-list');
+  const groupCount = $('group-count');
+
+  const lessonLabel = $<HTMLInputElement>('lesson-label');
+  const lessonTeacher = $<HTMLSelectElement>('lesson-teacher');
+  const lessonGroup = $<HTMLSelectElement>('lesson-group');
+  const lessonHours = $<HTMLInputElement>('lesson-hours');
+  const lessonAddBtn = $('lesson-add-btn');
+  const lessonList = $<HTMLUListElement>('lesson-list');
   const lessonCount = $('lesson-count');
-  const slotsInput = $('slots') as HTMLInputElement;
+
   const errorBox = $('error-box');
   const output = $('output');
   const summary = $('summary');
-  const resultTable = $('result-table');
-  const sampleBtn = $('sample-btn');
-  const clearBtn = $('clear-btn');
+  const csvBtn = $<HTMLButtonElement>('csv-btn');
+  const printBtn = $<HTMLButtonElement>('print-btn');
 
-  function escapeHtml(s: string): string {
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const tabAll = $<HTMLButtonElement>('tab-all');
+  const tabGroup = $<HTMLButtonElement>('tab-group');
+  const tabTeacher = $<HTMLButtonElement>('tab-teacher');
+  const viewAll = $('view-all');
+  const viewGroup = $('view-group');
+  const viewTeacher = $('view-teacher');
+
+  /* ---------- last solve cache (for CSV / re-render on tab switch) ---------- */
+
+  let lastResult: ReturnType<typeof solveTimetable> | null = null;
+  let lastDays = state.daysCount;
+  let lastPeriods = state.periodsPerDay;
+
+  /* ---------- renderers ---------- */
+
+  function renderFramePreview(): void {
+    const total = state.daysCount * state.periodsPerDay;
+    framePreview.textContent = `${state.daysCount} gün × ${state.periodsPerDay} saat = ${total} slot`;
   }
 
-  function updateCount(): void {
-    const n = lessonsInput.value.split(/\r?\n/).filter((l) => l.trim()).length;
-    lessonCount.textContent = `${n} ders`;
+  function renderTeacherList(): void {
+    teacherCount.textContent = String(state.teachers.length);
+    teacherList.innerHTML = state.teachers.length
+      ? state.teachers
+          .map((name, i) => {
+            const color = TEACHER_COLORS[i % TEACHER_COLORS.length];
+            return `<li class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2.5 py-1 text-xs dark:bg-slate-800">
+              <span class="inline-block size-3 rounded-full" style="background:${color}"></span>
+              <span class="font-medium text-slate-800 dark:text-slate-200">${escapeHtml(name)}</span>
+              <button type="button" data-remove-teacher="${escapeHtml(name)}" aria-label="Öğretmen ${escapeHtml(name)}, kaldır" class="-mr-1 rounded p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-white">
+                <svg class="size-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6"/></svg>
+              </button>
+            </li>`;
+          })
+          .join('')
+      : '<li class="text-xs italic text-slate-400">Henüz öğretmen yok.</li>';
   }
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    errorBox.hidden = true;
-    try {
-      const lessons = parseLessons(lessonsInput.value);
-      const slots = Number(slotsInput.value);
-      const r = solveTimetable({ lessons, slots });
+  function renderGroupList(): void {
+    groupCount.textContent = String(state.groups.length);
+    groupList.innerHTML = state.groups.length
+      ? state.groups
+          .map(
+            (name) => `<li class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2.5 py-1 text-xs dark:bg-slate-800">
+              <span class="font-medium text-slate-800 dark:text-slate-200">${escapeHtml(name)}</span>
+              <button type="button" data-remove-group="${escapeHtml(name)}" aria-label="Sınıf ${escapeHtml(name)}, kaldır" class="-mr-1 rounded p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-700 dark:hover:text-white">
+                <svg class="size-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6"/></svg>
+              </button>
+            </li>`,
+          )
+          .join('')
+      : '<li class="text-xs italic text-slate-400">Henüz sınıf yok.</li>';
+  }
 
-      summary.textContent = `${r.assignments.length} ders ${r.slots} slot içine yerleştirildi (çakışmasız).`;
+  function renderLessonSelects(): void {
+    const tOpts = ['<option value="">Öğretmen…</option>']
+      .concat(state.teachers.map((t) => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`))
+      .join('');
+    const gOpts = ['<option value="">Sınıf…</option>']
+      .concat(state.groups.map((g) => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`))
+      .join('');
+    lessonTeacher.innerHTML = tOpts;
+    lessonGroup.innerHTML = gOpts;
+  }
 
-      // Group assignments by slot for grid display.
-      const bySlot: Map<number, typeof r.assignments> = new Map();
-      for (const a of r.assignments) {
-        if (!bySlot.has(a.slot)) bySlot.set(a.slot, []);
-        bySlot.get(a.slot)!.push(a);
-      }
+  function renderLessonList(): void {
+    const totalHours = state.lessons.reduce((s, l) => s + l.weeklyHours, 0);
+    lessonCount.textContent = `${state.lessons.length} ders · ${totalHours} saat`;
+    lessonList.innerHTML = state.lessons.length
+      ? state.lessons
+          .map((l, i) => {
+            const color = teacherColor(state, l.teacher);
+            const orphan = !state.teachers.includes(l.teacher) || !state.groups.includes(l.group);
+            return `<li class="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900/40 ${orphan ? 'border-amber-400/50' : ''}">
+              <span class="inline-block size-2.5 shrink-0 rounded-full" style="background:${color}" aria-hidden="true"></span>
+              <span class="min-w-0 flex-1">
+                <span class="block truncate text-slate-900 dark:text-slate-100">${escapeHtml(l.label)}</span>
+                <span class="block truncate text-xs text-slate-500 dark:text-slate-400">
+                  ${escapeHtml(l.teacher)} · ${escapeHtml(l.group)} · ${l.weeklyHours} sa
+                  ${orphan ? '<span class="ml-1 text-amber-600 dark:text-amber-400">(eksik kaynak)</span>' : ''}
+                </span>
+              </span>
+              <button type="button" data-remove-lesson="${i}" aria-label="${escapeHtml(l.label)} dersini kaldır" class="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200">
+                <svg class="size-3.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6"/></svg>
+              </button>
+            </li>`;
+          })
+          .join('')
+      : '<li class="rounded-md border border-dashed border-slate-200 px-3 py-3 text-xs italic text-slate-400 dark:border-slate-800">Henüz ders eklenmedi.</li>';
+  }
 
-      const slotRows = Array.from({ length: slots }, (_, slotIdx) => {
-        const items = bySlot.get(slotIdx) ?? [];
-        const cells = items.length
-          ? items.map((a) => `<div class="text-sm text-slate-900 dark:text-slate-100"><span class="font-medium">${escapeHtml(a.lesson.label)}</span><span class="ml-2 text-xs text-slate-500">${escapeHtml(a.lesson.teacher)} · ${escapeHtml(a.lesson.group)}</span></div>`).join('<br>')
-          : '<span class="text-xs text-slate-400 italic">boş</span>';
-        return `<tr class="border-t border-slate-100 dark:border-slate-800"><td class="px-3 py-2 text-xs text-slate-500 align-top">Slot ${slotIdx + 1}</td><td class="px-3 py-2">${cells}</td></tr>`;
+  function renderAll(): void {
+    daysCountInput.value = String(state.daysCount);
+    periodsPerDayInput.value = String(state.periodsPerDay);
+    renderFramePreview();
+    renderTeacherList();
+    renderGroupList();
+    renderLessonSelects();
+    renderLessonList();
+  }
+
+  /* ---------- calendar grid ---------- */
+
+  type CellEntry = {
+    label: string;
+    teacher: string;
+    group: string;
+    occurrence?: { index: number; total: number };
+    color: string;
+  };
+
+  function buildGrid(
+    days: number,
+    periods: number,
+    entries: Array<CellEntry & { day: number; period: number }>,
+  ): string {
+    const dayHeader =
+      '<div class="sticky left-0 z-10 bg-slate-50 dark:bg-slate-900" aria-hidden="true"></div>' +
+      Array.from({ length: days }, (_, d) => {
+        return `<div role="columnheader" class="bg-slate-50 px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider text-slate-600 dark:bg-slate-900 dark:text-slate-400">${escapeHtml(DAY_LABELS[d] ?? `G${d + 1}`)}</div>`;
       }).join('');
 
-      resultTable.innerHTML = `<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40"><table class="w-full"><thead><tr class="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"><th class="px-3 py-2 w-24">Slot</th><th class="px-3 py-2">Dersler</th></tr></thead><tbody>${slotRows}</tbody></table></div>`;
+    const rows = Array.from({ length: periods }, (_, p) => {
+      const rowHeader = `<div role="rowheader" class="sticky left-0 z-10 flex items-center bg-slate-50 px-2 py-2 text-xs font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-400">${p + 1}.</div>`;
+      const cells = Array.from({ length: days }, (_, d) => {
+        const cellEntries = entries.filter((e) => e.day === d && e.period === p);
+        if (cellEntries.length === 0) {
+          return `<div role="gridcell" class="min-h-[3.5rem] border border-dashed border-slate-200 dark:border-slate-800"></div>`;
+        }
+        const inner = cellEntries
+          .map((e) => {
+            const occText = e.occurrence && e.occurrence.total > 1
+              ? `<span class="ml-1 text-[10px] font-normal opacity-80">${e.occurrence.index}/${e.occurrence.total}</span>`
+              : '';
+            return `<div class="rounded-md px-2 py-1.5 text-left" style="background:${e.color};color:#fff" title="${escapeHtml(e.teacher)} — ${escapeHtml(e.group)}">
+              <div class="text-[11px] font-semibold leading-tight">${escapeHtml(e.label)}${occText}</div>
+              <div class="mt-0.5 text-[10px] opacity-90">${escapeHtml(e.group)} · ${escapeHtml(teacherInitials(e.teacher))}</div>
+            </div>`;
+          })
+          .join('<div class="h-0.5"></div>');
+        return `<div role="gridcell" class="flex min-h-[3.5rem] flex-col gap-0.5 border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900/40">${inner}</div>`;
+      }).join('');
+      return rowHeader + cells;
+    }).join('');
 
+    return `<div role="grid" class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+      <div class="grid min-w-fit text-sm" style="grid-template-columns: 4rem repeat(${days}, minmax(7rem, 1fr));">
+        ${dayHeader}
+        ${rows}
+      </div>
+    </div>`;
+  }
+
+  function renderAllView(
+    days: number,
+    periods: number,
+    assignments: ReturnType<typeof solveTimetable>['assignments'],
+  ): void {
+    const entries = assignments.map((a) => {
+      const cell = slotToCell(a.slot, periods);
+      return {
+        ...cell,
+        label: a.lesson.label,
+        teacher: a.lesson.teacher,
+        group: a.lesson.group,
+        occurrence: a.occurrence,
+        color: teacherColor(state, a.lesson.teacher),
+      };
+    });
+    viewAll.innerHTML = buildGrid(days, periods, entries);
+  }
+
+  function renderGroupedView(
+    days: number,
+    periods: number,
+    assignments: ReturnType<typeof solveTimetable>['assignments'],
+    groupBy: 'group' | 'teacher',
+  ): string {
+    const buckets = new Map<string, typeof assignments>();
+    for (const a of assignments) {
+      const key = groupBy === 'group' ? a.lesson.group : a.lesson.teacher;
+      if (!buckets.has(key)) buckets.set(key, []);
+      buckets.get(key)!.push(a);
+    }
+    const sortedKeys = [...buckets.keys()].sort((a, b) => a.localeCompare(b, 'tr'));
+    return sortedKeys
+      .map((key) => {
+        const entries = buckets.get(key)!.map((a) => {
+          const cell = slotToCell(a.slot, periods);
+          return {
+            ...cell,
+            label: a.lesson.label,
+            teacher: a.lesson.teacher,
+            group: a.lesson.group,
+            occurrence: a.occurrence,
+            color: teacherColor(state, a.lesson.teacher),
+          };
+        });
+        const headerColor = groupBy === 'teacher' ? teacherColor(state, key) : null;
+        const swatch = headerColor
+          ? `<span class="inline-block size-3 rounded-full" style="background:${headerColor}" aria-hidden="true"></span>`
+          : '';
+        return `<section class="space-y-3">
+          <h3 class="flex items-center gap-2 font-display text-base font-semibold text-slate-900 dark:text-white">
+            ${swatch}<span>${escapeHtml(key)}</span>
+            <span class="text-xs font-normal text-slate-500">(${entries.length} saat)</span>
+          </h3>
+          ${buildGrid(days, periods, entries)}
+        </section>`;
+      })
+      .join('');
+  }
+
+  function setActiveTab(which: 'all' | 'group' | 'teacher'): void {
+    const tabs: Array<[HTMLButtonElement, HTMLElement]> = [
+      [tabAll, viewAll],
+      [tabGroup, viewGroup],
+      [tabTeacher, viewTeacher],
+    ];
+    const map = { all: 0, group: 1, teacher: 2 };
+    const activeIdx = map[which];
+    tabs.forEach(([btn, view], i) => {
+      const isActive = i === activeIdx;
+      btn.setAttribute('aria-selected', String(isActive));
+      btn.className = isActive
+        ? 'border-b-2 border-brand-600 px-3 pb-2 text-sm font-medium text-brand-700 dark:border-accent-400 dark:text-accent-300'
+        : 'border-b-2 border-transparent px-3 pb-2 text-sm font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200';
+      view.hidden = !isActive;
+    });
+  }
+
+  /* ---------- solve & display ---------- */
+
+  function showError(msg: string): void {
+    errorBox.textContent = msg;
+    errorBox.hidden = false;
+    output.hidden = true;
+    lastResult = null;
+  }
+
+  function clearError(): void {
+    errorBox.hidden = true;
+    errorBox.textContent = '';
+  }
+
+  function solve(): void {
+    clearError();
+    if (state.lessons.length === 0) {
+      showError('En az bir ders ekle.');
+      return;
+    }
+    const days = state.daysCount;
+    const periods = state.periodsPerDay;
+    const slots = days * periods;
+
+    /* Filter out lessons whose teacher or group was deleted from state. */
+    const validLessons: Lesson[] = state.lessons
+      .filter((l) => state.teachers.includes(l.teacher) && state.groups.includes(l.group))
+      .map((l) => ({
+        label: l.label,
+        teacher: l.teacher,
+        group: l.group,
+        weeklyHours: l.weeklyHours,
+      }));
+
+    if (validLessons.length === 0) {
+      showError('Eklenen derslerin öğretmen veya sınıfları silinmiş — geçerli ders kalmadı.');
+      return;
+    }
+
+    try {
+      const result = solveTimetable({
+        lessons: validLessons,
+        slots,
+        slotLabels: slotLabels(days, periods),
+      });
+      lastResult = result;
+      lastDays = days;
+      lastPeriods = periods;
+
+      const totalHours = result.assignments.length;
+      const totalLessons = validLessons.length;
+      summary.textContent = `${totalLessons} ders, ${totalHours} saat ${days} gün × ${periods} saat içine yerleştirildi (çakışmasız).`;
+
+      renderAllView(days, periods, result.assignments);
+      viewGroup.innerHTML = renderGroupedView(days, periods, result.assignments, 'group');
+      viewTeacher.innerHTML = renderGroupedView(days, periods, result.assignments, 'teacher');
+      setActiveTab('all');
       output.hidden = false;
       output.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (err) {
-      const msg = err instanceof TimetableError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
-      errorBox.textContent = msg;
-      errorBox.hidden = false;
-      output.hidden = true;
+      const msg =
+        err instanceof TimetableError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Bilinmeyen hata.';
+      showError(msg);
+    }
+  }
+
+  /* ---------- CSV export ---------- */
+
+  function downloadCsv(): void {
+    if (!lastResult) return;
+    const header = ['Slot', 'Gün', 'Saat', 'Ders', 'Öğretmen', 'Sınıf', 'Tekrar'];
+    const escape = (v: string): string => {
+      if (v.includes(',') || v.includes('"') || v.includes('\n')) {
+        return `"${v.replace(/"/g, '""')}"`;
+      }
+      return v;
+    };
+    const rows = lastResult.assignments
+      .slice()
+      .sort((a, b) => a.slot - b.slot)
+      .map((a) => {
+        const cell = slotToCell(a.slot, lastPeriods);
+        return [
+          String(a.slot + 1),
+          dayLabel(cell.day),
+          periodLabel(cell.period),
+          a.lesson.label,
+          a.lesson.teacher,
+          a.lesson.group,
+          a.occurrence.total > 1 ? `${a.occurrence.index}/${a.occurrence.total}` : '',
+        ];
+      });
+    const csv =
+      [header.join(',')]
+        .concat(rows.map((r) => r.map(escape).join(',')))
+        .join('\n') + '\n';
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ders-programi.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  /* ---------- input handlers ---------- */
+
+  function commitState(): void {
+    saveState(state);
+  }
+
+  daysCountInput.addEventListener('input', () => {
+    const v = Math.max(3, Math.min(7, Number(daysCountInput.value) || 5));
+    state.daysCount = v;
+    renderFramePreview();
+    commitState();
+  });
+
+  periodsPerDayInput.addEventListener('input', () => {
+    const v = Math.max(1, Math.min(12, Number(periodsPerDayInput.value) || 6));
+    state.periodsPerDay = v;
+    renderFramePreview();
+    commitState();
+  });
+
+  function addTeacher(): void {
+    const name = teacherInput.value.trim();
+    if (!name) return;
+    if (state.teachers.some((t) => t.toLocaleLowerCase('tr') === name.toLocaleLowerCase('tr'))) {
+      teacherInput.value = '';
+      return;
+    }
+    state.teachers.push(name);
+    teacherInput.value = '';
+    renderTeacherList();
+    renderLessonSelects();
+    renderLessonList(); // refresh colour swatches
+    commitState();
+  }
+
+  teacherAddBtn.addEventListener('click', addTeacher);
+  teacherInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addTeacher();
     }
   });
 
-  lessonsInput.addEventListener('input', updateCount);
+  teacherList.addEventListener('click', (e) => {
+    const t = (e.target as HTMLElement).closest<HTMLElement>('[data-remove-teacher]');
+    if (!t) return;
+    const name = t.dataset.removeTeacher!;
+    state.teachers = state.teachers.filter((x) => x !== name);
+    renderTeacherList();
+    renderLessonSelects();
+    renderLessonList();
+    commitState();
+  });
+
+  function addGroup(): void {
+    const name = groupInput.value.trim();
+    if (!name) return;
+    if (state.groups.some((g) => g.toLocaleLowerCase('tr') === name.toLocaleLowerCase('tr'))) {
+      groupInput.value = '';
+      return;
+    }
+    state.groups.push(name);
+    groupInput.value = '';
+    renderGroupList();
+    renderLessonSelects();
+    renderLessonList();
+    commitState();
+  }
+
+  groupAddBtn.addEventListener('click', addGroup);
+  groupInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addGroup();
+    }
+  });
+
+  groupList.addEventListener('click', (e) => {
+    const t = (e.target as HTMLElement).closest<HTMLElement>('[data-remove-group]');
+    if (!t) return;
+    const name = t.dataset.removeGroup!;
+    state.groups = state.groups.filter((x) => x !== name);
+    renderGroupList();
+    renderLessonSelects();
+    renderLessonList();
+    commitState();
+  });
+
+  function addLesson(): void {
+    const label = lessonLabel.value.trim();
+    const teacher = lessonTeacher.value;
+    const group = lessonGroup.value;
+    const hours = Math.max(1, Math.min(12, Number(lessonHours.value) || 1));
+    if (!label || !teacher || !group) {
+      showError('Ders adı, öğretmen ve sınıf alanlarını doldurmalısın.');
+      return;
+    }
+    clearError();
+    state.lessons.push({ label, teacher, group, weeklyHours: hours });
+    lessonLabel.value = '';
+    lessonHours.value = '1';
+    lessonLabel.focus();
+    renderLessonList();
+    commitState();
+  }
+
+  lessonAddBtn.addEventListener('click', addLesson);
+  [lessonLabel, lessonHours].forEach((el) => {
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addLesson();
+      }
+    });
+  });
+
+  lessonList.addEventListener('click', (e) => {
+    const t = (e.target as HTMLElement).closest<HTMLElement>('[data-remove-lesson]');
+    if (!t) return;
+    const idx = Number(t.dataset.removeLesson);
+    state.lessons.splice(idx, 1);
+    renderLessonList();
+    commitState();
+  });
+
+  /* ---------- form submit & top-level buttons ---------- */
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    solve();
+  });
 
   sampleBtn.addEventListener('click', () => {
-    lessonsInput.value = SAMPLE;
-    slotsInput.value = '6';
-    updateCount();
-  });
-
-  clearBtn.addEventListener('click', () => {
-    form.reset();
-    slotsInput.value = '10';
-    updateCount();
+    Object.assign(state, structuredClone(SAMPLE_STATE));
+    renderAll();
+    commitState();
+    clearError();
     output.hidden = true;
-    errorBox.hidden = true;
   });
 
-  updateCount();
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('Tüm form verisi silinecek. Devam edilsin mi?')) return;
+    Object.assign(state, emptyState());
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    renderAll();
+    clearError();
+    output.hidden = true;
+    lastResult = null;
+  });
+
+  /* ---------- output controls ---------- */
+
+  csvBtn.addEventListener('click', downloadCsv);
+  printBtn.addEventListener('click', () => window.print());
+
+  tabAll.addEventListener('click', () => setActiveTab('all'));
+  tabGroup.addEventListener('click', () => setActiveTab('group'));
+  tabTeacher.addEventListener('click', () => setActiveTab('teacher'));
+
+  /* ---------- boot ---------- */
+
+  renderAll();
 </script>
+
+<style>
+  @media print {
+    @page {
+      margin: 1cm;
+      size: landscape;
+    }
+    body {
+      background: white !important;
+    }
+    /* Show every tab panel so the user gets all views in print. */
+    [role='tabpanel'] {
+      display: block !important;
+    }
+    [role='tabpanel'][hidden] {
+      display: block !important;
+      page-break-before: always;
+    }
+  }
+</style>

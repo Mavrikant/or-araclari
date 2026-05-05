@@ -79,7 +79,7 @@ export const TOOLS: readonly Tool[] = [
     title: 'Sınav / Ders Programı Üretici',
     shortTitle: 'Ders Programı',
     description:
-      'Öğretmen ve grup çakışma kısıtlarına göre çakışmasız haftalık program üret. Backtracking + forward-checking.',
+      'Öğretmen, sınıf ve haftalık saat kısıtlarına göre çakışmasız haftalık takvim üret. Görsel hafta ızgarası, öğretmenler renk kodlu.',
     category: 'cizelgeleme',
     status: 'ready',
     guideSlug: 'ders-programi-olusturma',
