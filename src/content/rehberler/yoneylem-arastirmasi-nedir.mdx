@@ -1,0 +1,462 @@
+---
+title: "Yöneylem Araştırması Nedir? Başlangıç Rehberi"
+description: "Yöneylem araştırması (Operations Research) nedir, nereden gelir, hangi problemleri çözer ve günlük hayatta nerede karşımıza çıkar? Yeni başlayanlar için kapsamlı Türkçe rehber."
+pubDate: 2026-05-06
+keywords:
+  - "yöneylem araştırması"
+  - "operations research"
+  - "OR nedir"
+  - "yöneylem nedir"
+  - "optimizasyon"
+  - "matematiksel modelleme"
+readingMinutes: 15
+faq:
+  - question: "Yöneylem araştırması ile operasyon araştırması aynı şey mi?"
+    answer: "Evet, ikisi aynı disiplinin Türkçe karşılığıdır. 'Yöneylem' kelimesi Türk Dil Kurumu'nun önerdiği ve akademik literatürde yerleşmiş terim olduğu için bu metinde tercih edilmiştir; 'operasyon araştırması' veya doğrudan 'OR' (operations research) ifadeleri de aynı anlama gelir ve eş anlamlı kullanılabilir."
+  - question: "Yöneylem araştırması mezunu hangi alanlarda iş bulur?"
+    answer: "Yöneylem araştırması mezunları geniş bir yelpazede istihdam edilir: lojistik ve tedarik zinciri yönetimi, ulaştırma planlaması, üretim çizelgeleme, sağlık operasyonları, finans (portföy optimizasyonu, risk yönetimi), enerji şebeke planlaması, telekomünikasyon kapasitesi tasarımı, savunma sanayii ve son yıllarda makine öğrenmesi/yapay zekâ takımları. Türkiye'de havayolu, otomotiv, perakende ve banka sektörleri sürekli yöneylem analisti arar."
+  - question: "Yöneylem öğrenmek için ileri seviye matematik şart mı?"
+    answer: "Lise seviyesi cebir ve temel olasılık bilgisi başlangıç için yeterlidir. İleri seviye konular (lineer programlama duality, stokastik optimizasyon, kombinatoryel teoremler) için lineer cebir, çok değişkenli kalkülüs ve olasılık-istatistik temelleri faydalıdır. Modern yöneylem yazılımları matematiksel detayların büyük kısmını soyutlar; problemin doğru modellenmesi matematiksel manipülasyondan daha kritiktir."
+  - question: "Başlamak için hangi kitabı önerirsin?"
+    answer: "Türkçe kaynak için Halim Doğrusöz'ün 'Yöneylem Araştırması' kitabı klasik bir başlangıçtır. İngilizce için Hillier & Lieberman'ın 'Introduction to Operations Research' geniş kapsamlı standart ders kitabıdır; Winston'ın 'Operations Research: Applications and Algorithms' uygulamaya daha yakındır. Online ücretsiz kaynak isteyenler MIT OpenCourseWare üzerindeki Operations Research derslerine bakabilir."
+  - question: "Yöneylem araştırması ile veri bilimi arasındaki fark nedir?"
+    answer: "İki alan büyük ölçüde örtüşür ama farklı sorulara odaklanır. Veri bilimi 'verideki kalıbı bul, gelecekteki davranışı tahmin et' (descriptive + predictive) sorularına yönelirken, yöneylem 'kısıtlar altında en iyi kararı seç' (prescriptive) sorusuna odaklanır. Modern uygulamalarda iki disiplin sıkça birleşir: tahmin modeli üretilen tahmin değerini yöneylem modelinin girdi parametresi olarak kullanır."
+---
+
+Bir hastanenin acil servisinde gece nöbetinde kaç doktor olmalı? Bir kargo
+şirketinin İstanbul-Ankara arası dağıtım merkezleri kaç adet ve nerede olmalı?
+Bir okulun haftalık ders programı nasıl yapılmalı ki hem öğretmenler boş ders
+yığılmasın hem öğrenciler tek bir günde tüm zor derslere yakalanmasın?
+
+Bu sorular yüzeyden farklı görünebilir, ama hepsi aynı disiplinin penceresinden
+yaklaşıldığında çözülür. **Yöneylem araştırması** —İngilizce tabiriyle
+*Operations Research* veya kısaca *OR*— birbiriyle çelişen amaçlar, sınırlı
+kaynaklar ve binlerce olası karar arasında "en iyi" olanı bulma sanatıdır.
+Hem matematiksel bir disiplindir hem de mühendislik gibi pratik bir yaklaşımdır;
+kuramsal ile uygulamayı sürekli bir döngü içinde tutar.
+
+Bu rehber, yöneylem araştırmasının ne olduğunu, nereden geldiğini, hangi
+problemleri çözdüğünü ve bugün dünyada nerelerde gizli kahraman gibi çalıştığını
+yeni başlayan okurlar için anlatır. Yöneylem terminolojisine yabancıysan,
+bu yazıyı bir harita olarak düşün — ileride okuyacağın daha derin yazılar bu
+haritadaki noktaları tek tek büyütecek.
+
+## Tanım: Yöneylem araştırması nedir?
+
+En kısa tanımı ile yöneylem araştırması, **karar verme problemlerinin
+matematiksel modeller kullanılarak optimize edilmesi disiplinidir**. Üç anahtar
+kelime üzerinde duralım:
+
+**Karar problemi**, "ne yapılmalı?" sorusunun cevap beklediği herhangi bir durumdur.
+Bir lojistik firmasının "hangi depodan hangi mağazaya ne kadar ürün gönderelim?",
+bir hastanenin "yarın kaç hemşire çağıralım?", bir bireyin "elimdeki 100 bin
+lirayı hangi yatırım araçlarına nasıl bölüştüreyim?" gibi sorular karar
+problemleridir. Karar problemini sıradan sorulardan ayıran şey, birden çok
+geçerli cevabın olması ve aralarından birinin diğerlerinden "daha iyi" olduğudur.
+
+**Matematiksel model**, bu kararın yapısını sayılarla ifade etme biçimidir.
+Bir model üç bileşenden oluşur: değişkenler (kararı temsil eden büyüklükler,
+örneğin "depo A'dan mağaza B'ye gönderilecek ürün miktarı"), kısıtlar (uyulması
+zorunlu kurallar, örneğin "depo kapasitesi 1000 birim, daha fazlasını gönderemezsin")
+ve amaç fonksiyonu (en iyiyi nasıl tarif ettiğimiz, örneğin "toplam taşıma
+maliyetini minimize et"). Bu üçü bir araya geldiğinde problemin matematiksel
+karşılığı çıkar.
+
+**Optimizasyon**, geçerli tüm cevaplar arasından amaç fonksiyonunu en uygun
+hâle getirenin sistematik olarak bulunmasıdır. "Sistematik" kelimesinin altını
+çizelim: deneme-yanılma değil, ispatlanabilir doğrulukta yöntemler kullanılır.
+Bir lineer programlama probleminin optimum çözümü bulunduğunda, daha iyi bir
+çözüm olamayacağını matematiksel olarak gösterebilirsin.
+
+Bu üç kelimenin oluşturduğu disiplin, 70 yılı aşkın akademik birikimle birlikte
+bugün modern dünyanın görünmez altyapılarından biridir.
+
+## Tarihçe: Savaştan akademik disipline
+
+Yöneylem araştırmasının kökenleri II. Dünya Savaşı yıllarına uzanır. 1930'ların
+sonunda Britanya, Almanya'nın hava saldırılarına karşı yeni geliştirdiği radar
+teknolojisini etkin kullanmak için bir grup matematikçi ve fizikçiyi bir araya
+getirdi. Bu ekibin görevi yeni cihazın teknik geliştirmesi değil,
+**operasyonel kullanımının optimize edilmesiydi**: hangi noktalara kaç radar
+istasyonu konulmalı, gelen sinyaller nasıl önceliklendirilmeli, kaç savaş uçağı
+hangi sektöre ne sıklıkla yönlendirilmeli. Adına başta "operational research"
+denilen bu çalışma alanı, savaş sırasında konvoy planlamasından denizaltı
+avlama taktiklerine, bombardıman uçaklarının formasyon optimizasyonundan
+mühimmat envanterine kadar yayıldı.
+
+Savaşın bitimiyle birlikte askeri amaçlı geliştirilen bu teknikler sivil
+uygulamalara yöneltildi. 1947'de George Dantzig'in lineer programlama için
+geliştirdiği **simpleks algoritması**, doğrusal kısıtlar altında en iyi kararı
+hesaplamayı pratik kılan bir devrim niteliğinde adımdı. Aynı dönemde Tjalling
+Koopmans ve Leonid Kantorovich'in kaynak tahsisi üzerine çalışmaları (sonradan
+1975 Nobel Ekonomi Ödülü'nü beraberce kazandılar), yöneylemin ekonomi ile
+kesişimini başlattı.
+
+1950'ler ve 60'lar disiplinin akademik kurumsallaşma yıllarıdır. ABD'de Operations
+Research Society of America (ORSA) ve Britanya'da Operational Research Society
+kuruldu; üniversitelerde ayrı bölümler açıldı. Bilgisayarın zaman içinde
+ucuzlaması, daha önce kalemle çözülemeyecek büyüklükteki problemlerin yöneylem
+modellerine girmesinin önünü açtı. 1970'ler, **kombinatoryel optimizasyon**
+başlığında dinamik programlama, dal-sınır ve sezgisel algoritmaların
+yerleşmesine sahne oldu. 1980'ler ve 90'lar, ticari çözücülerin (CPLEX, Gurobi,
+LINDO) doğuşuyla yöneylemin endüstride yaygınlaştığı dönem oldu.
+
+Türkiye'de yöneylem araştırması ilk olarak 1950'lerin sonunda Orta Doğu Teknik
+Üniversitesi ve Boğaziçi Üniversitesi gibi kurumların endüstri mühendisliği
+programlarında yer aldı. Halim Doğrusöz, İbrahim Kavrakoğlu gibi öncüler
+Türkiye'de OR'ın akademik temellerini attı; Yöneylem Araştırması ve Endüstri
+Mühendisliği Derneği (YAEM) bugün hâlâ alanın sivil çatısıdır.
+
+2000'li yıllar yöneylem araştırması için ikinci bir dönüşüm dönemi oldu.
+Bilgisayar gücünün ucuzlaması ve özellikle ticari çözücülerin (CPLEX 1990'larda,
+Gurobi 2008'de, ücretsiz kütüphaneler GLPK ve OR-Tools 2010'larda) modern
+arayüzler kazanması, daha önce ulaşılamaz görünen büyük problemlerin masaüstü
+seviyesinde çözülebilmesinin önünü açtı. Aynı dönemde **bulut hesaplama**
+yöneylemin "tek bilgisayara sığmayan" problemlerini hizmet olarak çözebilen
+platformların doğmasını sağladı; bugün AWS, Google Cloud ve Azure üzerinden
+saatlik kiralanabilen optimizasyon hesap motorları endüstri standardı hâline
+geldi. Yöneylem disiplini, doğduğu radar laboratuvarından çıkıp veri merkezine
+yerleşti.
+
+## Problem türleri: Yöneylemin altı ana sınıfı
+
+Yöneylem araştırması homojen bir konu değildir; içinde altı ana problem ailesi
+barındırır. Çoğu gerçek dünya problemi bu ailelerin birden fazlasının
+karışımıdır.
+
+**Doğrusal programlama (LP)**, hem amaç fonksiyonunun hem kısıtların doğrusal
+fonksiyonlarla ifade edildiği problem ailesidir. "x kg buğday + y kg arpa
+üretimini maksimize et; ama tarla 100 dönümden büyük olamaz, su tüketimi günde
+1000 m³'ü geçmez" tarzı problemler. LP, yöneylemin temelidir; basitliği,
+hesaplama gücünün modern bilgisayarda neredeyse anlık olması ve geniş ölçeklere
+çıkabilmesi onu en yaygın kullanılan araç hâline getirir. Detaylı bir tanıtım
+için
+[Doğrusal Programlama Nedir, Nasıl Çözülür?](/or-araclari/rehberler/dogrusal-programlama-nedir)
+yazımıza bakabilirsin.
+
+**Tamsayı ve karma tamsayı programlama (IP/MILP)**, değişkenlerin tamsayı
+veya 0/1 değerleri alması gereken durumları kapsar. "Şu binayı yapayım mı,
+yapmayayım mı?" gibi ikili kararlar, "kaç tane kamyon satın alalım?" gibi
+sayım kararları bu sınıfa girer. LP'den çok daha zorlayıcı (NP-zor) olduğu
+için ölçeklenmesi sorunludur ve aktif araştırma alanıdır.
+
+**Ağ akış ve çizge problemleri**, problem yapısının düğümler ve aralarındaki
+bağlantılarla ifade edildiği durumlardır. En kısa yol (navigasyon), maksimum
+akış (boru hattı kapasitesi), atama problemi (çalışan-iş eşlemesi), gezgin
+satıcı problemi (TSP — en kısa tur) bu sınıfın klasik örnekleridir. Ağ
+problemleri özel yapıları sayesinde genel LP'den çok daha hızlı çözülebilir.
+
+**Çizelgeleme problemleri**, kaynakların zaman boyunca tahsisini içerir. Lig
+fikstürü, ders programı, üretim hattı sıralama, hastane personel nöbet
+çizelgesi bu aileye girer. Round-robin'den iş atölyesi (job-shop) çizelgelemesine
+kadar geniş bir yelpazede yöntemler vardır;
+[Çizelgeleme Problemleri rehberi](/or-araclari/rehberler/cizelgeleme-problemleri)
+bu konuyu derinlemesine inceler.
+
+**Stokastik ve simülasyon problemleri**, belirsizlik altında karar vermeyi içerir.
+"Müşteri talebi tahminim ortalama 100 ama %20 sapması var; üretimi nasıl
+planlayalım?" gibi sorular için kullanılır. Monte Carlo simülasyonu, kuyruk
+teorisi, stokastik dinamik programlama bu başlık altındadır. Bir bankanın
+şube ATM doluluğu planlaması veya bir e-ticaret sitesinin sunucu kapasitesi
+tahmini bu yöntemlerle yapılır.
+
+**Karar analizi ve oyun teorisi**, birden fazla aktörün etkileşim içinde
+olduğu, klasik optimizasyondan farklı bir biçimde "rasyonel davranan rakip"
+varsayımıyla çalışılan alandır. Açık artırma tasarımı, regülasyon politikası,
+müzakere stratejisi gibi problemler bu kapsama girer. Oyun teorisi yöneylem
+disiplini ile ekonomi-siyaset bilimi arasındaki köprüdür.
+
+Bu altı aileye ek olarak son 30 yılda gelişen daha özel başlıklar da vardır:
+**robust optimizasyon** (parametre belirsizliğine dayanıklı çözümler), **çok
+amaçlı optimizasyon** (Pareto sınırı, denge çözümleri), **çift seviyeli
+programlama** (lider–izleyen yapıları), **hesaplama merkezli yöneylem**
+(yapay zekâ ve büyük veri ile entegre yöntemler) bunlar arasındadır. Modern
+yöneylem analisti, bu özelleşmiş başlıkların en az birinde derinleşmek
+zorundadır; tek bir alt başlığın bütünüyle hâkim olmak bir kariyerin
+malzemesidir.
+
+## Yöneylem metodolojisi: Model, çöz, yorumla
+
+Hangi problem ailesine girerse girsin, yöneylem yaklaşımı belirgin bir
+metodoloji izler. Bu metodoloji genelde dört adımdan oluşur ve sırasıyla
+takip edilir.
+
+**Birinci adım: problemi tanımla.** Soru "ne karar verilmeli?" diye sorulduğunda
+cevabın net olduğundan emin olmak gerekir. Sıkça yapılan hata, gerçek karar
+problemini değil, onun bir görünümünü çözmek. Örneğin "stoklarımız neden
+artıyor?" sorusu bir karar problemi değildir; arkasındaki "ne kadar sipariş
+vereyim, ne sıklıkla?" karar problemidir.
+
+**İkinci adım: matematiksel modeli kur.** Problemde değişkenler, kısıtlar ve
+amaç fonksiyonu açıkça yazılır. Bu adım yöneylemin en zorlu kısmıdır çünkü
+gerçek dünyanın bulanıklığını sayısal denklemler hâline getirmek hem teknik
+beceri hem alan bilgisi gerektirir. İyi modelin alâmeti farikası şudur: modelin
+bir parametresini değiştirdiğinde sonucun nasıl değişeceğini önceden
+sezgisel olarak öngörebiliyorsundur.
+
+**Üçüncü adım: çöz.** Modele uygun bir algoritma seçilir ve çalıştırılır. Küçük
+problemler kâğıt-kalem veya Excel ile, orta ölçekliler bu sitedeki gibi
+ücretsiz çözücülerle, büyük endüstriyel problemler ticari çözücülerle (CPLEX,
+Gurobi, FICO Xpress) çözülür. Çözücünün arkasındaki algoritmayı tam anlamak
+şart değildir; ama bilmek, sorun çıkardığında müdahale edebilmeyi sağlar.
+
+**Dördüncü adım: yorumla ve uygula.** Çözücünün ürettiği sayıların pratikteki
+karşılığı yazılır, paydaşlarla paylaşılır, modelin hangi varsayımlar altında
+geçerli olduğu açıklanır. Çoğu yöneylem projesi bu adımda başarısız olur:
+matematiksel olarak doğru çözüm pratikte uygulanamayacak şekilde sunulduğunda
+modelin değeri sıfıra iner.
+
+Bu dört adımın hiçbiri tek başına yeterli değildir. Yöneylem analisti, hem
+matematiği hem alan bilgisini hem iletişimi bir arada götüren çok yönlü bir
+profilin çalışmalı olmasını gerektirir.
+
+## Gerçek dünya uygulamaları
+
+Yöneylem araştırması bugün hayatın her köşesinde, çoğu zaman görünmez bir
+şekilde çalışır. Birkaç somut örnek üzerinden bakalım.
+
+**Ulaştırma ve lojistik:** UPS'in dağıtım kamyonlarının rotaları, FedEx'in
+hava paket merkezleri, Amazon'un depo yerleşimi — hepsi büyük ölçekli yöneylem
+optimizasyon modellerinin çıktısıdır. UPS'in 2012'de uyguladığı ORION sistemi
+yıllık yüz milyon dolar mertebesinde yakıt tasarrufu sağladığını duyurmuştu;
+optimize edilen kararların büyük kısmı doğrudan dağıtım rotaları üzerinde.
+
+**Sağlık operasyonları:** Hastane ameliyat odası çizelgelemesi, acil servis
+hemşire vardiya planlaması, organ nakli kuyruğu yönetimi yöneylem
+modellerinin ekmeği-suyudur. Türkiye'de Sağlık Bakanlığı'nın MERNİS tabanlı
+hasta yönlendirme sistemleri benzer optimizasyon mantığını kullanır.
+
+**Enerji şebekesi:** Elektrik üretim santrallerinin saatlik devrimleri (unit
+commitment problemi), yenilenebilir enerji kaynaklarının değişken üretiminin
+talebe uyumlandırılması, dağıtım hattı kapasite planlaması — yöneylemin yoğun
+matematik kullandığı alanlardan biri. TEİAŞ ve özel elektrik üreticileri
+kendi optimizasyon modellerini koşturur.
+
+**Finans:** Portföy seçim teorisi (Markowitz'in 1952'deki çalışması temeldir),
+kredi riski yönetimi, türev ürün fiyatlama gibi alanlarda yöneylem teknikleri
+kullanılır. Kuantitatif fonlar yöneylemin endüstrideki en yoğun istihdam
+edenlerinden biridir.
+
+**Spor:** Profesyonel ligler için fikstür çekilişi (yukarıda bahsettiğimiz),
+NBA için maç günü planlaması, takımların draft seçim stratejileri yöneylem
+optimizasyonu kullanılarak yapılır. UEFA'nın Şampiyonlar Ligi grup aşaması
+çekilişlerinde bilgisayar destekli kombinasyon üretimi onlarca yıldır
+kullanılmaktadır.
+
+**Acil müdahale:** İtfaiye istasyonu yer seçimi, ambulans konuşlandırma
+politikaları, doğal afet sonrası yardım dağıtımı çift hayat etkisi olan
+yöneylem problemleridir. Türkiye gibi deprem riski yüksek bir ülkede bu
+modellerin önemi her geçen yıl artmaktadır.
+
+## Türkiye'de yöneylem araştırması
+
+Türkiye'de yöneylem araştırması temel olarak endüstri mühendisliği bölümlerinin
+çatısı altında öğretilir. ODTÜ, Boğaziçi, İTÜ, Bilkent, Sabancı, Koç gibi
+üniversitelerin endüstri/sistem mühendisliği lisans ve lisansüstü programlarında
+ana ders olarak yer alır. Son yıllarda işletme mühendisliği, yöneylem yönetimi
+gibi yan başlıklarda da yöneylem dersleri yaygınlaşıyor.
+
+Sektörde Türk Hava Yolları, Arçelik, Vestel, Turkcell, Garanti BBVA gibi
+büyük kurumlar düzenli olarak yöneylem analisti istihdam eder. Otomotiv ve
+beyaz eşya üretiminde MES (Manufacturing Execution System) entegrasyonları
+yöneylem optimizasyon motorları içerir. Bankacılıkta kredi tahsis
+optimizasyonu, sigorta'da prim hesaplama, perakendede mağaza yerleşim
+planlaması yaygın uygulamalardır.
+
+Akademik ortamda Yöneylem Araştırması ve Endüstri Mühendisliği Derneği (YAEM)
+yıllık kongresi, doktora ve yüksek lisans öğrencileri için Türkçe dilinde en
+büyük toplanma noktasıdır. Uluslararası alanda Türk araştırmacılar INFORMS
+(Amerika) ve EURO (Avrupa) toplulukları içinde aktif rol oynar.
+
+Türk üniversitelerinin yöneylem araştırması yayınlarına bakıldığında belli
+başlı tematik kümeler göze çarpar: lojistik ve dağıtım optimizasyonu (özellikle
+İstanbul-Anadolu eksen problemleri), enerji şebekesi planlaması (yenilenebilir
+entegrasyonu), sağlık operasyonları (deprem sonrası acil tıbbi müdahale), ve
+spor çizelgeleme (Süper Lig fikstür problemleri akademik makale konusudur).
+Bu yerel odak alanları Türkiye coğrafyasının ve sektörel önceliklerinin
+yansımasıdır; bir yöneylem araştırmacısının kariyerinde ele alabileceği
+gerçek dünya problemleri için verimli bir zemin sunar.
+
+## Yöneylem ile ilgili yaygın yanlış anlamalar
+
+Yöneylem araştırmasını yeni öğrenen veya dışından bakan biriyle konuşurken
+sıklıkla karşılaşılan birkaç yaygın yanlış anlama vardır. Bunları açıklığa
+kavuşturmak işin doğasını anlamak açısından faydalı.
+
+**"Optimum çözüm her zaman uygulanır."** Yanlış. Modelin ürettiği matematiksel
+optimum, modelin temsil ettiği gerçeklikte optimumdur. Modelin ihmâl ettiği
+ya da yanlış varsaydığı detaylar, çözümün uygulanmasını sınırlar veya
+imkânsız kılar. Yöneylem analistinin gerçek görevi "doğru sayıyı vermek"
+değil, "doğru kararın verilmesine yardım etmek" — bu nüans önemlidir.
+
+**"Yöneylem sadece üretim/lojistik için kullanılır."** Bu, disiplinin doğuş
+yıllarındaki ağırlığı yansıtır ama bugün geçerli değil. Sağlık, finans,
+spor, eğitim, kamu politikası, askeri planlama, çevre yönetimi — yöneylem
+modellerinin uygulandığı alanlar her on yılda genişliyor.
+
+**"Yapay zekâ yöneylemi gereksizleştirecek."** Bu sıklıkla duyulan ama
+detayına girilmeden tekrarlanan bir iddiadır. Gerçekte AI/ML teknikleri
+yöneylemin **karar verme katmanını** zenginleştiriyor (özellikle deneme-
+yanılma yapılabilen ortamlarda), ama klasik optimizasyon yöntemlerinin
+ispatlanabilir doğruluk garantisi sağlama özelliğinin yerini almıyor.
+Bir bankanın kredi risk modeli AI olabilir, ama o riskin yönetimi için
+verilecek kararlar (sermaye dağıtımı, kredi limitleri) hâlâ optimizasyonla
+çözülür ve bu durum yakın gelecekte değişmeyecek.
+
+**"Yöneylem işi çok teorik, pratiği yok."** Tam tersi. Yöneylem belki de
+mühendisliğin en uygulamalı alt disiplinlerinden biridir. Akademik teori önemli
+olmakla birlikte, sektörde günü kurtaran pratik problem çözme yeteneğidir.
+Bir yöneylem analistinin işinin %80'i model kurmak değil, doğru insanlarla
+iletişim kurmak, veri toplamak, sonucu yöneticiye anlatmak ve uygulama
+detaylarını takip etmektir.
+
+**"Excel ile yapılabilir, ayrı bir yazılıma gerek yok."** Küçük problemler
+için Excel'in Solver eklentisi gerçekten yeterli olabilir. Ama 50'den fazla
+değişkenli problemler için Excel ölçeklenmez ve hata yapma riski hızla artar.
+Profesyonel araçlar (LP/MILP çözücüleri, çizelgeleme yazılımları, simülasyon
+platformları) hem performans hem güvenilirlik açısından şarttır.
+
+**"Yöneylem sadece sayılar üzerine."** Yöneylemin sıkça unutulan bir tarafı,
+**niteliksel kararların** modellenmesidir. Bir kararın "iyi" sayılması için
+matematiksel olarak ölçülebilir olması zorunlu değil; kullanıcı memnuniyeti,
+adillik, çevresel etki gibi soyut kriterler de modellenebilir. Bunun için
+çok kriterli karar verme (MCDM) ve yarımyıl-stat analiz teknikleri kullanılır.
+
+## Nasıl öğrenirim?
+
+Yöneylem araştırmasına başlamak için önerebileceğimiz bir kademeli yol var:
+
+**Sıfırdan başlayanlar için:** Bir endüstri mühendisliği veya işletme
+mühendisliği lisans dersi notları, YouTube'daki Türkçe ve İngilizce eğitim
+serileri, MIT OpenCourseWare'in OR derslerine bakılabilir. İlk olarak doğrusal
+programlamayı kavramak temel. Bir küçük problemi (mesela bir mahalle simit
+fırınının üretim planı) elinle Excel'de modellemek anlamayı hızlandırır.
+
+**Orta seviye:** Hillier & Lieberman veya Winston'ın ders kitaplarından bir
+tanesini baştan sona okumak, ardından bir programlama dili (Python en yaygın)
+ile küçük çözücü kullanım denemeleri yapmak (PuLP, Pyomo, OR-Tools)
+faydalıdır. Bu seviyede [Google OR-Tools rehberimiz](/or-araclari/rehberler/google-or-tools-genel-bakis)
+de bir başlangıç noktası olabilir.
+
+**İleri:** Kombinatoryel optimizasyon, stokastik programlama, robust optimizasyon
+gibi özelleşmiş başlıklara geçilir. Akademik makale takibi (INFORMS Journal on
+Computing, Operations Research), uluslararası konferanslara katılım, açık kaynak
+projelere katkı bu seviyede önerilir.
+
+Yöneylemde teorik ilerlemenin tek başına yeterli olmadığı bir gerçek var:
+endüstri ile bağlantı kurmadan öğrenilen yöneylem, akademik bir alıştırmadan
+öteye geçemez. Bir staj, bir küçük danışmanlık projesi, bir Kaggle yarışmasının
+optimizasyon kategorisi — herhangi biri "bu modelin gerçek dünyada karşılığı
+neydi?" sorusunun cevaplandığı bir deneyim sunar. Türkiye'de büyük şirketlerin
+araştırma birimleri (Vestel R&D, Türk Telekom Argela, Aselsan TEAM) zaman
+zaman yöneylem stajyerleri kabul eder; başvurulara açık tutmakta fayda var.
+
+## Yöneylem ile veri bilimi ve yapay zekânın ilişkisi
+
+Son yıllarda **veri bilimi**, **makine öğrenmesi** ve **yapay zekâ** terimleri
+yöneylem araştırmasının daha eski "veri analitiği" başlığını gölgelemiş gibi
+görünür. Ama gerçekte üç disiplin birbirini ikame etmez; tamamlar.
+
+Veri bilimi ve makine öğrenmesinin temel sorusu **"verideki kalıpları bul,
+gelecekte ne olacağını tahmin et"** dir. Bu **descriptive** ve **predictive**
+analitik olarak adlandırılır. Bir e-ticaret sitesinde gelecek hafta hangi
+ürünün ne kadar talep göreceğini tahmin etmek bu kategoriye girer.
+
+Yöneylem araştırmasının temel sorusu ise **"kısıtlar altında en iyi kararı seç"** —
+yani **prescriptive** analitik. Tahmin edilen talebe göre depo arasındaki
+sevkiyatın nasıl planlanacağı yöneylem sorusudur. Bir başka deyişle, ML
+geleceği görmeye yarar; OR ise gördüğümüz gelecek karşısında ne yapacağımıza
+karar verir.
+
+Modern uygulamalarda iki disiplin sıkça birleşir. **Predictive-prescriptive
+pipeline** olarak adlandırılan bir yaklaşımda, ML modeli tahmin üretir, OR
+modeli o tahmini kısıt veya parametre olarak alır ve karar verir. Üretim
+planlama, tedarik zinciri, dinamik fiyatlama, taksi/yolcu eşleme gibi
+sistemler bu birleşik yapının pratik örnekleridir. Uber'in sürücü-yolcu
+eşleme algoritmaları, Netflix'in içerik öneri sıralaması, Spotify'ın
+kişiselleştirme motorları hem ML hem OR teknikleri kullanır.
+
+Yapay zekâ tarafında ise **takviyeli öğrenme (reinforcement learning)** ile
+yöneylemin kesişimi giderek belirginleşiyor. RL ajanı, klasik OR'ın
+analitik çözücüsünün yetersiz kaldığı dinamik ortamlarda (tahmin edilemeyen
+trafik, değişken talep, çoklu rakip) deneme-yanılmayla en iyi politikayı
+öğrenir. AlphaGo'nun stratejik kararları, OpenAI'nin oyun ajanları, modern
+warehouse robotlarının yer seçimi — hepsi bu birleşim alanının ürünleri.
+
+Yöneylem öğrencisinin Python ve modern ML kütüphanelerini (scikit-learn,
+PyTorch, TensorFlow) öğrenmesi artık opsiyonel değil zorunludur. Bunun aksi
+de geçerli: veri bilimi öğrencileri klasik optimizasyon temellerini bilmeden
+gerçekten karar verici sistemler kuramaz.
+
+## Yöneylem araştırmasının geleceği nereye gidiyor?
+
+Disiplinin önümüzdeki 10-15 yıllık trajektörisini şekillendiren birkaç güçlü
+eğilim var. Bunları kısaca özetlemek, yeni başlayan birinin gelecek planlamasında
+faydalı olabilir.
+
+**İklim değişikliği ve yeşil dönüşüm**, yöneylem için en büyük yeni problem
+ailesini doğuruyor. Karbon ayak izinin azaltılması için tedarik zinciri yeniden
+tasarımı, elektrikli araç şarj istasyonu yerleşimi, yenilenebilir enerji
+dengeleme, kentsel ulaşımın çoklu modlu optimizasyonu, sirküler ekonomi
+içinde malzeme akış planlaması — hepsi yöneylem yöntemlerinin yoğun
+kullanıldığı taze alanlar. AB'nin Yeşil Mutabakat ve Türkiye'nin yeşil
+sanayi politikaları, önümüzdeki yıllarda yöneylem analistlerine ciddi talep
+yaratacak.
+
+**Hesaplama gücünün kuantum çağına ilk adımları**, optimizasyon dünyası için
+heyecan verici bir gelişme. Klasik bilgisayarda NP-zor sınıfa giren bazı
+kombinatoryel problemler, gelecekteki kuantum bilgisayarlarda polinomyal
+zamanda çözülebilir olabilir. D-Wave, IBM ve Google'ın kuantum optimizasyon
+girişimleri henüz pratik fayda sağlayamasa da, alanın 2030'lara doğru
+şekilleneceğini gösteriyor. Bu konuyla ilgilenen bir yöneylem analistinin
+daha şimdiden lineer cebir ve kuantum hesaplama temelleriyle tanışması
+faydalı olabilir.
+
+**Açık kaynak hareketinin olgunlaşması**, daha önce sadece pahalı ticari
+yazılımlarla erişilebilen yöneylem yeteneklerinin demokratikleşmesini sağlıyor.
+COIN-OR projesi, Google OR-Tools, Pyomo, JuMP (Julia) gibi araçların
+birbirinden öğrenmesi ve birleşmesi, akademik araştırmacının ve küçük
+girişimcinin işini kolaylaştırıyor. Bu, yöneylemin büyük şirketlerin tekelinden
+çıkıp daha geniş bir ekosisteme yayılmasını hızlandıracak.
+
+**Gerçek zamanlı ve dinamik karar verme**, yöneylemi statik "yıllık plan"
+ufkundan çıkarıyor. Kentsel trafik kontrolü, dinamik fiyatlama (Uber, Booking),
+gerçek zamanlı kapasite tahsisi (5G şebekeleri, bulut hesaplama) gibi alanlarda
+saniye-altı kararların alınması gerekiyor. Bu, klasik optimizasyon
+algoritmalarının yetersiz kaldığı bir alandır ve **online optimization**,
+**streaming algorithms**, **bandit problems** gibi yeni alt başlıkların
+hızla büyümesine yol açıyor.
+
+Sonuç olarak yöneylem araştırması ne ölmüş bir disiplin ne de durağan. 70
+yıllık geçmişinin üzerine her on yılda yeni bir uygulama dalgası ve yeni
+araçlar inşa ediyor. Bu yazıyı okuyan biri olarak, sen bu dalgalardan birinde
+yer almak için doğru zamanda doğru yerdesin.
+
+## Özet
+
+Yöneylem araştırması, kısıtlı kaynaklarla karmaşık karar problemlerini
+matematiksel yöntemlerle çözen bir disiplindir. II. Dünya Savaşı'nda doğmuş,
+bilgisayarın yaygınlaşmasıyla pratik bir endüstri aracına dönüşmüş, bugün
+ulaştırma, sağlık, enerji, finans, spor ve daha pek çok alanda görünmez ama
+hayati bir altyapıdır. Türkiye'de güçlü bir akademik geleneği vardır ve sektörde
+artan bir taleple karşı karşıyadır.
+
+Bu sitenin geri kalanı yöneylemin spesifik problem türlerine ve onları çözen
+araçlara odaklanır. [Lig fikstürü oluşturucumuzla](/or-araclari/araclar/lig-fiksturu-olusturucu)
+çizelgelemeyi pratik bir örnekle deneyebilirsin; üzerine
+[Round-Robin algoritması rehberini](/or-araclari/rehberler/fikstur-nasil-olusturulur)
+okuyarak arkadaki matematiği detaylı kavrayabilirsin. İlerleyen haftalarda
+LP çözücü, TSP, atama problemi ve daha fazlası için araçlar ve uzun-form
+yazılar eklenecek.
+
+Yöneylem araştırması büyük bir disiplin; bu rehberin amacı seni o haritanın
+başlangıç noktasına götürmekti. İçeride neyi keşfedeceğin sana kalmış. Hangi
+problem türüne kafa yorduğunu şu anda bilemesem de, yöneylem yaklaşımının
+sana sunabileceği iki güzel hediyesi var. Birincisi: karmaşık görünen
+problemlerin çoğunun aslında belirli bir yapıyı izlediğini ve o yapıyı
+fark edince çözümün de ortaya çıktığını göreceksin. İkincisi: sayılarla
+düşünmek bir kez alışkanlık hâline geldikten sonra, her gün karşılaştığın
+küçük büyük kararlarda bile —yemek tercihinden tatil planına, iş bölümünden
+yatırım kararına— yöneylem refleksinin devreye girdiğini fark edeceksin. Bu
+disiplin, bir akademik konu olmaktan çok bir düşünce alışkanlığıdır; ve bir
+kez kazanılınca geri verilmesi zordur.
