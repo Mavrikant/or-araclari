@@ -31,42 +31,78 @@ const lastUpdated = '6 Mayıs 2026';
         kullanmaz.
       </p>
 
-      <h2>Şu an kullanılan</h2>
+      <h2>Çerez tercih akışı</h2>
+
+      <p>
+        Siteye ilk girişinde sayfanın altında bir <strong>çerez tercih
+        bandı</strong> görürsün. İki seçenek sunulur:
+      </p>
+
+      <ul>
+        <li>
+          <strong>Sadece zorunlu:</strong> Yalnızca site fonksiyonu için
+          gerekli minimum bilgi (örneğin tema tercihi) saklanır. Analitik
+          ve reklam çerezleri etkinleşmez.
+        </li>
+        <li>
+          <strong>Tümünü kabul et:</strong> Yukarıdakilere ek olarak
+          analitik (Google Analytics 4) ve reklam (Google AdSense)
+          çerezleri etkinleştirilir.
+        </li>
+      </ul>
+
+      <p>
+        Yaptığın seçim tarayıcının yerel depolamasında saklanır; bandı bir
+        daha görmezsin. Tercihini değiştirmek istediğinde tarayıcı
+        depolamasındaki <code>cookie-consent</code> anahtarını silmen
+        yeterli — band yeniden gelir.
+      </p>
+
+      <p>
+        Default davranış <strong>Google Consent Mode v2</strong>
+        çerçevesindedir: izin verilmediği sürece analitik ve reklam
+        çerezleri yazılmaz, ölçüm ping'leri kişisel veri içermez.
+      </p>
+
+      <h2>Hangi çerezler nerede</h2>
+
+      <p>Tercihine göre aşağıdaki kategoriler etkinleşir.</p>
+
+      <h3>Zorunlu (her zaman aktif)</h3>
 
       <ul>
         <li>
           <strong>localStorage — <code>theme</code>:</strong> Açık veya koyu
           tema tercihini hatırlamak için. Yalnızca tarayıcında saklanır,
-          sunucuya gönderilmez. Tarayıcı geçmişi temizlendiğinde silinir.
+          sunucuya gönderilmez.
+        </li>
+        <li>
+          <strong>localStorage — <code>cookie-consent</code>:</strong>
+          Çerez tercihini saklamak için (<code>"all"</code> veya
+          <code>"necessary"</code>). Sunucuya gönderilmez.
         </li>
       </ul>
 
-      <p>
-        Bunun dışında site şu anda <strong>hiçbir çerez yerleştirmiyor</strong>.
-        Anonim ziyaret istatistikleri için araç da henüz aktif değil.
-      </p>
-
-      <h2>İleride eklenebilecekler</h2>
-
-      <p>
-        Site büyüyüp düzenli trafik almaya başladıktan sonra aşağıdaki üçüncü
-        taraf hizmetler eklenebilir. Etkinleştirildiklerinde bu sayfa
-        güncellenir.
-      </p>
+      <h3>Analitik (yalnızca "Tümünü kabul et" seçildiyse)</h3>
 
       <ul>
         <li>
           <strong>Google Analytics 4:</strong> Sayfa görüntülemeleri ve
           oturum bilgilerini toplamak için <code>_ga</code> ve
           <code>_ga_*</code> çerezleri kullanır. IP adresleri Google
-          tarafından anonimleştirilir.
+          tarafından anonimleştirilir; site kişisel kullanıcı tanımlayıcısı
+          atamaz.
         </li>
+      </ul>
+
+      <h3>Reklam (yalnızca "Tümünü kabul et" seçildiyse)</h3>
+
+      <ul>
         <li>
-          <strong>Google AdSense:</strong> Bağlamsal reklam gösterimi
-          ve performans ölçümü için
-          <code>__gads</code>, <code>__gpi</code>, <code>NID</code> gibi
-          çerezler kullanabilir. Reklamlar bağlamsal olarak seçilir;
-          kişiselleştirilmiş reklam tercihini Google'ın
+          <strong>Google AdSense:</strong> Bağlamsal reklam gösterimi ve
+          performans ölçümü için <code>__gads</code>, <code>__gpi</code>,
+          <code>NID</code> gibi çerezler kullanabilir. Reklamlar bağlamsal
+          olarak seçilir; kişiselleştirilmiş reklam tercihini Google'ın
           <a href="https://adssettings.google.com" rel="noopener">reklam ayarları</a>
           sayfasından yönetebilirsin.
         </li>

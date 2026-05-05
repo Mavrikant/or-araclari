@@ -65,30 +65,42 @@ const lastUpdated = '6 Mayıs 2026';
         </li>
       </ul>
 
-      <h2>Üçüncü taraf hizmetler</h2>
+      <h2>Üçüncü taraf hizmetler ve onay akışı</h2>
 
       <p>
-        Site büyüdükçe trafiği anlamak ve sürdürülebilir hâle getirmek için
-        bazı üçüncü taraf hizmetleri eklenecek. Şu anda planlananlar:
+        Site, masraflarını karşılamak ve trafiği anlamak için iki üçüncü
+        taraf hizmetinden faydalanır:
       </p>
 
       <ul>
         <li>
           <strong>Google Analytics 4:</strong> Anonim ziyaret verisini
-          (sayfa görüntülemeleri, trafik kaynakları) toplamak için. IP
-          adresleri anonimleştirilir; kişisel veri toplanmaz.
+          (sayfa görüntülemeleri, trafik kaynakları, oturum süresi)
+          toplamak için. IP adresleri anonimleştirilir; site kullanıcılara
+          kalıcı kişisel tanımlayıcı atamaz.
         </li>
         <li>
-          <strong>Google AdSense:</strong> Sitenin masraflarını karşılamak
-          için bağlamsal reklamlar gösterebilir. AdSense kişiselleştirilmiş
-          reklamlar için kendi çerezlerini kullanabilir; tarayıcı
-          ayarlarından bu çerezleri devre dışı bırakabilirsin.
+          <strong>Google AdSense:</strong> Bağlamsal reklamlar
+          gösterilmesi için. Kişiselleştirilmiş reklamlar için Google'ın
+          kendi çerezleri kullanılabilir.
         </li>
       </ul>
 
       <p>
-        Bu hizmetler etkinleştirildiğinde bu politika güncellenecek ve
-        kullanıcı izni gereken yerlerde açık onay alınacak.
+        Bu hizmetlerin <strong>her ikisi de varsayılan olarak kapalıdır</strong>.
+        İlk ziyaretinde sayfanın altında bir çerez tercih bandı görürsün;
+        "Sadece zorunlu" seçeneğini seçersen analitik ve reklam çerezleri
+        etkinleşmez. "Tümünü kabul et" seçeneğiyle her ikisini de
+        etkinleştirebilirsin. Sistem
+        <strong>Google Consent Mode v2</strong> standardını uygular: izin
+        verilene kadar bu hizmetlerin sunucularına kişisel veri yollamaz.
+      </p>
+
+      <p>
+        Tercihini değiştirmek istersen tarayıcı yerel depolamasındaki
+        <code>cookie-consent</code> anahtarını silebilirsin; band yeniden
+        görüntülenir. Daha fazla detay için
+        <a href={withBase('/cerezler')}>Çerez Politikası</a> sayfamıza bak.
       </p>
 
       <h2>Haklarınız</h2>
