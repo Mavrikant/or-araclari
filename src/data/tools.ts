@@ -49,36 +49,40 @@ export const TOOLS: readonly Tool[] = [
     title: 'Gezgin Satıcı (TSP) Çözücü',
     shortTitle: 'TSP Çözücü',
     description:
-      'Harita üzerinde nokta seç, en kısa turu nearest-neighbor + 2-opt sezgiseliyle hesapla.',
+      'Noktaların koordinatlarını gir, en kısa turu nearest-neighbor + 2-opt sezgiseliyle bul. Görsel önizleme dahil.',
     category: 'graf',
-    status: 'soon',
+    status: 'ready',
+    guideSlug: 'tsp-rota-optimizasyonu',
   },
   {
     slug: 'atama-problemi-cozucu',
     title: 'Atama Problemi Çözücü',
     shortTitle: 'Atama (Hungarian)',
     description:
-      'Maliyet matrisini gir, Macar algoritmasıyla optimum atamayı bul. İş–makine, görev–çalışan eşlemeleri için.',
+      'Maliyet matrisini gir, Macar (Hungarian) algoritmasıyla optimum atamayı bul. Min veya max yönü, dikdörtgen matris desteği.',
     category: 'optimizasyon',
-    status: 'soon',
+    status: 'ready',
+    guideSlug: 'macar-algoritmasi',
   },
   {
     slug: 'knapsack-cozucu',
     title: 'Sırt Çantası (Knapsack) Çözücü',
     shortTitle: 'Knapsack',
     description:
-      '0/1 ve fractional varyantları ile sırt çantası problemini çöz. Dinamik programlama tablolarını adım adım gör.',
+      '0/1 ve fractional varyantlarıyla sırt çantası problemini çöz. Dinamik programlama ve açgözlü algoritma.',
     category: 'kombinatoryel',
-    status: 'soon',
+    status: 'ready',
+    guideSlug: 'knapsack-cesitleri',
   },
   {
     slug: 'ders-programi-uretici',
     title: 'Sınav / Ders Programı Üretici',
     shortTitle: 'Ders Programı',
     description:
-      'Öğretmen, sınıf ve zaman kısıtlarına göre çakışmasız haftalık program üret.',
+      'Öğretmen ve grup çakışma kısıtlarına göre çakışmasız haftalık program üret. Backtracking + forward-checking.',
     category: 'cizelgeleme',
-    status: 'soon',
+    status: 'ready',
+    guideSlug: 'ders-programi-olusturma',
   },
 ] as const;
 
