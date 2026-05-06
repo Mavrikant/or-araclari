@@ -108,6 +108,16 @@ export const TOOLS: readonly Tool[] = [
     status: 'ready',
     guideSlug: 'mm1-kuyruk-teorisi',
   },
+  {
+    slug: 'hemsire-vardiya-planlayici',
+    title: 'Hemşire Vardiya Planlayıcı',
+    shortTitle: 'Vardiya Planlayıcı',
+    description:
+      'Hastane servisi için 1 aylık nöbet listesini renkli ızgarada planla. Otomatik doldur, klavyeden hızlı düzenle, kapsama ve dinlenme ihlallerini canlı gör.',
+    category: 'cizelgeleme',
+    status: 'ready',
+    guideSlug: 'hemsire-vardiya-planlama',
+  },
 ] as const;
 
 export function getReadyTools(): readonly Tool[] {

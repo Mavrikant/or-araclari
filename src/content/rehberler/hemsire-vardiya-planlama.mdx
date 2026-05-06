@@ -1,0 +1,231 @@
+---
+title: "Hemşire Vardiya Planlama: Kurallar, Kısıtlar ve Adillik"
+description: "Hastane servisinde 1 aylık hemşire vardiya çizelgesi nasıl kurulur? Sabah/akşam/24-saat nöbet kombinasyonları, dinlenme kuralı, gece kapsama, adil saat dağılımı ve otomatik çizelgeleme algoritmaları."
+pubDate: 2026-05-06
+relatedTool: "hemsire-vardiya-planlayici"
+keywords:
+  - "hemşire vardiya planı"
+  - "nöbet listesi"
+  - "vardiya çizelgesi"
+  - "nurse rostering"
+  - "shift scheduling"
+  - "kısıt programlama"
+  - "ILP integer programming"
+  - "personel çizelgeleme"
+readingMinutes: 11
+faq:
+  - question: "24 saat çıkışı 24 saat nöbet yasal olarak yazılabilir mi?"
+    answer: "Türkiye'de hemşirelik mesleğine yönelik mevzuat ve hastane içi yönetmelikler 24 saat nöbet çıkışını takiben yeterli dinlenme süresi öngörür; ardışık 24-24 nöbet kural olarak kabul edilmez. Bununla birlikte personel sayısının yetmediği özel durumlarda — listenin hiçbir yerleşim biçimiyle dönmediği şartlarda — geçici tek nöbetçi veya gün aşırı nöbet uygulamaları görüldüğü bilinmektedir. Bunlar istisna düzenlemeler olup düzenli kullanım önerilmez. Aracın 'Tek nöbet kabul' anahtarı bu istisnayı modellemek için vardır ve sonuçları yumuşak uyarı olarak işaretler."
+  - question: "Sabit bir hemşire kadrosu ile her ay tutarlı plan kurulabilir mi?"
+    answer: "Hemşire başına aylık hedef saat (örneğin 192 saat tam-zamanlı için), izin politikası, doğum/yıllık izinler ve servis yoğunluğu birlikte düşünüldüğünde kadro hesabı yapılır. Aracın istatistik panelindeki 'ortalamaya göre fark' değeri, planın ne kadar adil dağıldığını gösterir; sapma sürekli yüksekse genelde kadronun yetersizliğini işaret eder."
+  - question: "Optimum çöz (ILP) ile otomatik doldur arasındaki fark nedir?"
+    answer: "Otomatik doldur, açgözlü (greedy) bir sezgisel kullanır: her gün için en az nöbet tutan hemşireden başlayarak boşlukları doldurur, sonunda küçük bir tamir adımıyla geriye kalan ihlalleri kapatmaya çalışır. Hızlıdır (~50 ms) ama optimallik garantisi vermez. Optimum çöz ise tüm planı bir tam sayılı doğrusal programlama (ILP) modeli olarak kurar ve glpk.js çözücüsünü çalıştırır; en yüklü hemşirenin saatini minimize ederek adillik hedefler. Kısıtlar yoğunsa 1-5 saniye sürebilir."
+  - question: "Plan tablosu nereye kaydediliyor?"
+    answer: "Tüm veri yalnız tarayıcının localStorage alanında tutulur; sunucuya hiçbir bilgi gönderilmez. Kapatıp yeniden açtığınızda kaldığınız yerden devam edersiniz. Bilgisayar değiştirirseniz CSV indir butonu ile dışa aktarabilir, başka bilgisayarda elle aktarabilirsiniz."
+  - question: "Akşam (16:00-24:00) vardiyası nasıl modellenir?"
+    answer: "Araç akşam vardiyasını opsiyonel bir kapsama olarak ele alır. Varsayılanda 'Akşam min' 0'dır; çoğu serviste iki adet 24-saat nöbetçi 16:00-24:00 aralığını da örtmek için yeterli kabul edilir. Eğer servisinizde akşam saatlerinde mutlaka ek bir hemşire olmalıysa 'Akşam min' değerini 1 veya 2 yapın. Bu, sezgisel ve ILP'nin her ikisinin de E16 vardiyaları atamasını sağlar."
+  - question: "Bir hücreyi 'Kilitle' deyince ne oluyor?"
+    answer: "Kilitlenen hücre artık otomatik doldur veya optimum çöz tarafından değiştirilmez. Manuel olarak yaptığınız atamalar otomatik kilitlenir. Birkaç günü ön-rezervasyon yapmak istiyorsanız (kıdemli hemşireye Pazartesi-Çarşamba sabah vermek gibi), o hücreleri ayarlayıp bırakın; çözücü kalan boşlukları o sabit ayarlarla uyumlu olacak şekilde doldurur."
+---
+
+import { SITE } from '../../data/site';
+
+Bir hastane servisinde ay başında karşılaşılan sahnedir: sorumlu hemşire
+masaya 30 günlük takvim açar, kalemiyle ilk hücrelere "8" ve "24"
+yazmaya başlar. Aklında **gece minimum 2 nöbetçi**, **gündüz 3 kişi
+sahada**, **24 sonrasında 2 gün dinlenme**, herkesin **izinli olduğu
+günler** ve **kimsenin diğerinden çok yorulmaması** gerektiği gibi
+düzinelerce kural vardır. Üç-dört saat sürer, sonunda da genelde
+yeniden başlar.
+
+Bu rehber, hemşire vardiya planlama probleminin yöneylem araştırması
+penceresinden anlatımıdır: kuralların matematiksel hâli, otomasyon
+yaklaşımları ve [Hemşire Vardiya Planlayıcı](/araclar/hemsire-vardiya-planlayici)
+aracının arkasındaki algoritma.
+
+## Vardiya tipleri ve günlük kapsama
+
+Türkiye'deki hastane servislerinde en yaygın yapı üç vardiya etrafında
+şekillenir:
+
+- **Sabah (08-16, 8 saat)** — gündüz hizmetinin omurgası. Doktor vizitleri,
+  ilaç dağıtımları, ameliyathane bağlantıları yoğun.
+- **Akşam (16-24, 8 saat)** — gündüzün gerilediği, gecenin başladığı
+  geçiş dilimi. Bazı servislerde ayrı bir vardiya olarak bulunur, bazılarında
+  24-saat nöbetçilerin kapsadığı saatlere bırakılır.
+- **24-saat nöbet** — sabah 08'den ertesi sabah 08'e kadar süren tek
+  vardiya. Hem akşam hem de gece saatlerini kapsar. Yorucu olduğu için
+  takip eden günlerde dinlenme zorunludur.
+
+Bir günün **gündüz** (08-24 dilimi) sahada en az 3 hemşire görmesi
+beklenir; bu üçün içinde 24-saatçiler de sayılır. **Gece** (00-08 dilimi)
+ise yalnız 24-saat nöbetçilere kalır; minimum 2 olmaları kuraldır.
+
+Hafta sonları yoğunluk düştüğü için kapsama kuralı genellikle gevşetilir:
+sadece 2 adet 24-saat nöbetçi yeterli kabul edilebilir, ek bir gündüz
+vardiyasına gerek kalmaz.
+
+## Hangi kombinasyonlar geçerli?
+
+Aynı kapsamayı sağlayan birden çok atama biçimi vardır. Tipik bir hafta
+içi günü için:
+
+| Kombinasyon | 24-saat | Sabah | Akşam | Gündüz toplamı | Gece |
+|-------------|---------|-------|-------|----------------|------|
+| Klasik      | 2       | 1     | 0     | 3              | 2    |
+| Akşam dahil | 1       | 2     | 1     | 3              | 1*   |
+| Yoğun       | 2       | 3     | 2     | 5              | 2    |
+
+*Akşam dahil senaryosunda gece sayımı tek olur — bu da "Tek nöbet kabul"
+modunda izinlidir, normal modda ihlal sayılır.
+
+Burada önemli olan görüş: kapsama hedefleri **toplamlardır**, hangi
+kişinin hangi vardiyayı çekeceği serbestliği bırakır. Dolayısıyla
+çizelge, bütün ayı kapsayan bir ataama problemine dönüşür.
+
+## Dinlenme kuralı: "Nöbet sonrası iki gün"
+
+24-saat nöbetin yorucu doğası, peşi sıra çalışmayı insani ve yasal
+açılardan zorlar. Çoğu servis için kullanılan kural şöyledir: **bir
+hemşire 24-saat nöbet tuttuğu günü takiben en az iki günü herhangi bir
+aktif vardiyada çalışmadan geçirir**. Aracın çıktısında bu günler `Nİ`
+("Nöbet İzni") koduyla işaretlenir; gerçekten boş hücrelerden ayrı
+gösterilir ki istatistik panelinde "şu kadar dinlenme günü" olarak takip
+edilebilsin.
+
+Bu kural çiğnendiğinde — örneğin bir hemşire 5 Mayıs'ta nöbet tutmuş ve
+6 Mayıs'ta 8 vardiyasına yazılmışsa — araç kırmızı bir ihlal noktası
+basar ve gerekçeyi listeler.
+
+## Adillik: kimseyi yormamak
+
+Bütün kapsama kuralları sağlandı diyelim. Bir kişi ayda 9 nöbet
+tutarken diğeri 4 tutuyor olabilir mi? Olabilir, ve genelde plan ekibinde
+huzursuzluk doğurur. Otomasyon, **adil dağılımı** teknik bir hedef
+olarak modelleyebilir.
+
+Pratikte iki yaygın yaklaşım vardır:
+
+1. **Toplam saat eşitleme** — her hemşirenin aylık saat toplamının ortalama
+   civarında olması. ILP modelinde
+
+   $$\min \; h_{\max} \quad \text{öyle ki} \quad h_{\max} \geq h_n \quad \forall n$$
+
+   yardımcı değişkeniyle "en yüklü hemşirenin saati"ni minimize ederek
+   dolaylı olarak ulaşılır.
+
+2. **Nöbet sayısı eşitleme** — her hemşirenin ay içinde tuttuğu 24-saat
+   nöbet adedinin yakın olması. Sezgisel çözücü her gün adayları sıralarken
+   "şimdiye kadar kaç nöbet tutmuş" değerine göre seçer; doğal bir
+   dengelemedir.
+
+Aracın istatistik panelindeki **"ortalamaya göre fark"** sütunu adillik
+denetimi için pratik bir gözdür. ±8 saat düzeyinde sapma normaldir; ±24
+saat artık kadro veya izin politikasının yeniden bakımı gerektirir.
+
+## Otomasyon: Sezgisel ve ILP
+
+Hemşire çizelgeleme problemi (literatürde *Nurse Rostering Problem*),
+NP-zor sınıfa girer. 12 hemşire × 31 gün × 4 vardiya kombinasyonu
+düşününce arama uzayı astronomiktir. İki ana yaklaşım kullanılır:
+
+### Açgözlü sezgisel + tamir (greedy + repair)
+
+Algoritma her günü sırayla işler:
+
+1. Müsait hemşireleri toplar (izinli değil, son iki günde nöbet tutmamış).
+2. Skora göre sıralar — düşük nöbet sayısı, düşük saat toplamı önde.
+3. İlk 2'ye 24-saat nöbet, sonraki 1'ine sabah vardiyası verir.
+4. Bir nöbet sonrası 2 günü `Nİ` olarak işaretler.
+5. Akşam vardiyası gerektiyse aynı sıradan atar.
+
+Sonra **tamir adımı**: validate fonksiyonu hangi günlerin eksik kaldığını
+söyler, çözücü o günleri kapsayacak küçük takaslar dener. 100 iterasyona
+kadar.
+
+Hız: 8 hemşire × 31 gün için ~50 ms. Optimallik garantisi yoktur ama
+pratik kalitede sonuçlar verir, kullanıcı kalan açıkları manuel kapatır.
+
+### Tam Sayılı Doğrusal Programlama (ILP)
+
+Aynı problem matematiksel olarak şöyle kurulur. Her hemşire $n$, gün $d$
+ve aktif vardiya $s \in \{D8, E16, N24\}$ için ikili karar değişkeni:
+
+$$x_{n,d,s} \in \{0, 1\}$$
+
+Kısıtlar (kısaca):
+
+- Tek vardiya: $\sum_s x_{n,d,s} \leq 1$
+- Gündüz kapsama: $\sum_n (x_{n,d,D8} + x_{n,d,N24}) \geq 3$
+- Gece kapsama: $\sum_n x_{n,d,N24} \geq 2$
+- Dinlenme: $x_{n,d,N24} + x_{n,d',\text{aktif}} \leq 1$ for $d' \in \{d+1, d+2\}$
+- İzin günleri: ilgili $x$'ler sıfır.
+
+Adillik amacı:
+
+$$\min Z \quad \text{öyle ki} \quad Z \geq \sum_d (8 x_{n,d,D8} + 8 x_{n,d,E16} + 24 x_{n,d,N24}) \quad \forall n$$
+
+Bu model **glpk.js**'in WebAssembly motoruyla tarayıcıda çözülür — sunucu
+yok, veri yerel kalır. Tipik boyutta (~1500 ikili değişken) çözüm 1-5
+saniye sürer.
+
+ILP'nin avantajı: optimaliteyi garantiler ve adilliği amaç fonksiyonu
+ile doğrudan dengeler. Dezavantajı: kısıtlar tutarsızsa "feasible çözüm
+yok" diye çıkar — bu da aslında değerli bir bilgidir; kadronun yetersiz
+olduğunu gösterir.
+
+## Pratikte iyi bir plan kurmak
+
+Aracı kullanırken birkaç akış işe yarar:
+
+**1. İzinleri önce gir.** Yıllık izin (Yİ), rapor (RT) ve bilinen istek
+günleri her hemşire kartından "İzinler" butonuyla işaretlenir. Bu hücreler
+otomatik olarak kilitlenir; çözücü onlara dokunmaz.
+
+**2. Otomatik doldura bas.** Hızlıca bir taslak görürsün. Renkli ızgara
+bütün ayı bir bakışta sunar; kırmızı ihlal noktaları varsa altta
+listelenir.
+
+**3. Manuel rötuş yap.** Bir hücreye tıkla, popoverdan vardiya seç ya da
+klavyeden `8`, `A` (akşam), `N` (24), `Y` (Yİ), `R` (RT), `İ` (Nİ) tuşlarına
+bas. Ok tuşları ile hücreden hücreye geç.
+
+**4. İhlaller varsa Optimum çöz dene.** ILP saniyeler içinde tutarlı bir
+çözüm verirse al; "feasible değil" derse kısıtları gevşet veya hemşire
+ekle.
+
+**5. CSV indir veya yazdır.** Çıktıyı vardiya panosuna asabilir veya
+muhasebeye gönderebilirsin.
+
+## Yasal çerçeve hakkında
+
+Bu rehber teknik amaçlıdır; bağlayıcı hukuki bilgi değildir. Türkiye'deki
+hemşirelerin çalışma süreleri, dinlenme hakları ve nöbet düzenleri 4857
+sayılı İş Kanunu ile Sağlık Bakanlığı'nın yataklı tedavi kurumlarına
+yönelik yönetmelikleri tarafından çerçevelenir. Belirli bir hastanenin
+toplu sözleşmesi veya iç yönetmeliği bu çerçeveye ek kurallar getirir
+(örneğin gece nöbeti sayısının aylık üst sınırı).
+
+Pratik kullanımda iki nokta önemlidir:
+
+- **24 sonrası dinlenme** kuralının iki gün olarak uygulanması yaygın bir
+  iyi-uygulamadır; daha kısa süre yerleştirmek istiyorsanız iş hukuku
+  danışmanınıza sorun.
+- **Tek nöbet kabul** modu, mevzuata uygun bir varsayılan yapılandırma
+  değildir; sadece istisnai personel açıkları için son çare olarak
+  düşünülmüştür ve aracın çıktısında uyarı işaretiyle takip edilir.
+
+## Sonuç
+
+Hemşire vardiya planı, en eski ve en yaygın çizelgeleme problemlerinden
+biridir. Algoritmik araçlar bu problemi tamamen çözmez ama büyük
+yığını dakikalardan saniyelere indirir; sorumlu hemşireye gerçekten önemli
+olan kısma — istisnaları gözeterek hassas dengeleri kurmak — odaklanma
+imkanı verir.
+
+Aracı bugün servisinizde denerseniz, bizden duyduğumuza göre en sık geri
+bildirim "iki saatte yaptığım iş on dakikaya indi" oluyor. İdeale
+yaklaşan bir plan kurabildiyseniz, sapma sayılarını ve manuel
+düzeltmeleri buradaki paylaşımınızla bize iletebilirsiniz; aracın
+gelecek sürümlerinde gerçek dünya örneklerine göre iyileştirmelerini
+sürdürüyoruz.
