@@ -5,7 +5,8 @@ export type ToolCategory =
   | 'optimizasyon'
   | 'kombinatoryel'
   | 'graf'
-  | 'envanter';
+  | 'envanter'
+  | 'olasilik';
 
 export interface Tool {
   slug: string;
@@ -23,6 +24,7 @@ export const CATEGORY_LABELS: Record<ToolCategory, string> = {
   kombinatoryel: 'Kombinatoryel',
   graf: 'Graf & Rota',
   envanter: 'Envanter & Tedarik',
+  olasilik: 'Olasılık & Kuyruk',
 };
 
 export const TOOLS: readonly Tool[] = [
@@ -95,6 +97,16 @@ export const TOOLS: readonly Tool[] = [
     category: 'envanter',
     status: 'ready',
     guideSlug: 'eoq-stok-yonetimi',
+  },
+  {
+    slug: 'mm1-kuyruk-analizci',
+    title: 'M/M/1 Kuyruk Analizci',
+    shortTitle: 'M/M/1 Kuyruk',
+    description:
+      'Geliş ve hizmet hızlarından kararlı durumda ortalama bekleyiş, sistemde olma süresi ve durum olasılıklarını hesapla. Kuyruk teorisi temelinin görsel keşfi.',
+    category: 'olasilik',
+    status: 'ready',
+    guideSlug: 'mm1-kuyruk-teorisi',
   },
 ] as const;
 
