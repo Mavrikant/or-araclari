@@ -932,12 +932,14 @@ export function buildSampleSchedule(year: number, month: number): Schedule {
     { id: 'n6', name: 'Sevgi', unavailable: [] },
     { id: 'n7', name: 'Merve', unavailable: [] },
     { id: 'n8', name: 'Selin', unavailable: [] },
+    { id: 'n9', name: 'Gülnihal', unavailable: [] },
   ];
   const meta = createMonthMeta(year, month);
   if (meta.daysInMonth >= 5) {
     nurses[0].unavailable = [5, 6];
     if (meta.daysInMonth >= 18) nurses[2].unavailable = [12, 13, 14];
     if (meta.daysInMonth >= 22) nurses[4].unavailable = [22];
+    if (meta.daysInMonth >= 27) nurses[8].unavailable = [25, 26, 27];
   }
   return createEmptySchedule(year, month, nurses, DEFAULT_CONSTRAINTS);
 }

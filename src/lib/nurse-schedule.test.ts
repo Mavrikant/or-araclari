@@ -358,9 +358,11 @@ describe('constraints variations', () => {
 });
 
 describe('buildSampleSchedule', () => {
-  it('produces 8 nurses with realistic seed leaves', () => {
+  it('produces 9 nurses with realistic seed leaves', () => {
     const s = buildSampleSchedule(2026, 5);
-    expect(s.nurses.length).toBe(8);
+    expect(s.nurses.length).toBe(9);
     expect(s.nurses[0].unavailable.length).toBeGreaterThan(0);
+    // Gülnihal son sırada
+    expect(s.nurses[8].name).toBe('Gülnihal');
   });
 });
