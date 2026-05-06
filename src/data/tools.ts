@@ -4,7 +4,8 @@ export type ToolCategory =
   | 'cizelgeleme'
   | 'optimizasyon'
   | 'kombinatoryel'
-  | 'graf';
+  | 'graf'
+  | 'envanter';
 
 export interface Tool {
   slug: string;
@@ -21,6 +22,7 @@ export const CATEGORY_LABELS: Record<ToolCategory, string> = {
   optimizasyon: 'Optimizasyon',
   kombinatoryel: 'Kombinatoryel',
   graf: 'Graf & Rota',
+  envanter: 'Envanter & Tedarik',
 };
 
 export const TOOLS: readonly Tool[] = [
@@ -39,9 +41,9 @@ export const TOOLS: readonly Tool[] = [
     title: 'Lineer Programlama Çözücü',
     shortTitle: 'LP Çözücü',
     description:
-      'Doğrusal amaç ve kısıtlarla tanımlı problemleri tarayıcıda çöz. glpk.js destekli, simpleks adımlarını görsel olarak izle.',
+      'LP/MILP modelini textbook biçiminde yaz, GLPK\'nın WASM motoru tarayıcıda çözsün. Hiçbir veri sunucuya gitmez.',
     category: 'optimizasyon',
-    status: 'soon',
+    status: 'ready',
     guideSlug: 'dogrusal-programlama-nedir',
   },
   {
@@ -83,6 +85,16 @@ export const TOOLS: readonly Tool[] = [
     category: 'cizelgeleme',
     status: 'ready',
     guideSlug: 'ders-programi-olusturma',
+  },
+  {
+    slug: 'eoq-hesaplayici',
+    title: 'Ekonomik Sipariş Miktarı (EOQ)',
+    shortTitle: 'EOQ',
+    description:
+      'Yıllık talep, sipariş maliyeti ve taşıma maliyetinden Wilson formülüyle optimum sipariş miktarını hesapla. Toplam maliyet eğrisi grafik olarak gösterilir.',
+    category: 'envanter',
+    status: 'ready',
+    guideSlug: 'eoq-stok-yonetimi',
   },
 ] as const;
 
