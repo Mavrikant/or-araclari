@@ -27,6 +27,12 @@ export interface LineEquation {
 
 const DEFAULT_EPS = 1e-7;
 
+/** Collapse -0 / tiny float noise to a positive zero so equality and
+ *  formatting downstream behave predictably. */
+function snapZero(n: number, eps: number = 1e-10): number {
+  return Math.abs(n) < eps ? 0 : n;
+}
+
 /**
  * Solve a 2x2 linear system using Cramer's rule:
  *   a1*x + b1*y = c1
@@ -44,7 +50,7 @@ export function intersect(
   const x = (l1.c * l2.b - l2.c * l1.b) / det;
   const y = (l1.a * l2.c - l2.a * l1.c) / det;
   if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
-  return { x, y };
+  return { x: snapZero(x), y: snapZero(y) };
 }
 
 /** Returns true when the point satisfies a single constraint within tolerance. */
