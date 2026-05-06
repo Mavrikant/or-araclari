@@ -1,0 +1,1568 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import { withBase, SITE } from '../../data/site';
+import { TOOLS } from '../../data/tools';
+
+const tool = TOOLS.find((t) => t.slug === 'hemsire-vardiya-planlayici')!;
+const guideHref = tool.guideSlug ? withBase(`/rehberler/${tool.guideSlug}`) : null;
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: tool.title,
+  applicationCategory: 'WebApplication',
+  operatingSystem: 'Any',
+  description: tool.description,
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'TRY' },
+  inLanguage: SITE.locale,
+  isAccessibleForFree: true,
+};
+
+const TR_MONTHS = [
+  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
+];
+---
+
+<BaseLayout title={tool.title} description={tool.description}>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+  </Fragment>
+
+  <Container as="section" size="wide" class="pt-12 sm:pt-16">
+    <p class="text-sm font-medium text-brand-600 dark:text-accent-400">
+      <a href={withBase('/araclar')} class="hover:underline">Araçlar</a>
+      <span class="text-slate-400 dark:text-slate-600"> / </span>
+      <span>Çizelgeleme</span>
+    </p>
+    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">
+      {tool.title}
+    </h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
+      Hemşireleri ve izinli günlerini gir, kapsama kurallarını ayarla, tek tuşla
+      tüm ayın vardiya planını dolur. Hücreye tıklayarak veya klavyeden
+      değiştir; gece kapsama / dinlenme ihlalleri canlı vurgulanır.
+      {guideHref && (
+        <a
+          href={guideHref}
+          class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"
+        > Rehbere git →</a>
+      )}
+    </p>
+  </Container>
+
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[360px_minmax(0,1fr)] print:block">
+    {/* ------------------------------------------------------------ FORM */}
+    <form id="ns-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="sample-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Örnek doldur
+        </button>
+        <button type="button" id="reset-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+          Sıfırla
+        </button>
+      </div>
+
+      <div class="space-y-2">
+        <button type="button" id="solve-greedy-btn" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">
+          <span id="solve-greedy-label">Otomatik doldur</span>
+        </button>
+        <button type="button" id="solve-ilp-btn" class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-brand-700 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-accent-500 dark:bg-transparent dark:text-accent-400 dark:hover:bg-slate-800">
+          <span id="solve-ilp-label">Optimum çöz (ILP)</span>
+        </button>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          <strong>Otomatik doldur</strong> hızlı, sezgisel. <strong>Optimum çöz</strong> ILP
+          ile saatleri eşitlemeye çalışır (1-5 sn).
+        </p>
+      </div>
+
+      {/* Ay / Yıl */}
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Plan dönemi
+        </legend>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Ay</span>
+            <select id="month-select" class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+              {TR_MONTHS.map((m, i) => (
+                <option value={i + 1}>{m}</option>
+              ))}
+            </select>
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Yıl</span>
+            <input type="number" id="year-input" min="2020" max="2099" step="1"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+        </div>
+      </fieldset>
+
+      {/* Hemşireler */}
+      <fieldset class="space-y-3">
+        <div class="flex items-center justify-between">
+          <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+            Hemşireler
+          </legend>
+          <span id="nurse-count" class="text-xs text-slate-500 dark:text-slate-400">0</span>
+        </div>
+        <div class="flex gap-2">
+          <input type="text" id="nurse-name-input" maxlength="40" autocomplete="off"
+            placeholder="Ör: Ayşe"
+            class="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          <button type="button" id="nurse-add-btn" class="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+            Ekle
+          </button>
+        </div>
+        <ul id="nurse-list" class="space-y-2"></ul>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          Bir hemşirenin izinli olduğu günleri eklemek için <strong>İzinler</strong> butonuna basın.
+        </p>
+      </fieldset>
+
+      {/* Kısıtlar */}
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Kısıtlar
+        </legend>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Gündüz min</span>
+            <input type="number" id="con-min-day" min="0" max="20" step="1"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Akşam min</span>
+            <input type="number" id="con-min-eve" min="0" max="20" step="1"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Gece min</span>
+            <input type="number" id="con-min-night" min="0" max="20" step="1"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Nöbet sonrası dinlenme (gün)</span>
+            <input type="number" id="con-rest" min="0" max="7" step="1"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+        </div>
+        <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white p-2.5 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
+          <input type="checkbox" id="con-weekend-reduced" class="size-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+          <span class="text-xs text-slate-700 dark:text-slate-300">
+            <strong>Hafta sonu gevşetilmiş</strong> — yalnız gece kapsama gerek (gündüz 8 zorunlu değil)
+          </span>
+        </label>
+        <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white p-2.5 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-amber-500 dark:has-[:checked]:bg-slate-900">
+          <input type="checkbox" id="con-allow-single" class="size-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500" />
+          <span class="text-xs text-slate-700 dark:text-slate-300">
+            <strong>Tek nöbet kabul</strong> — liste dönmüyorsa gece 1 hemşire de yeterli (yumuşak uyarı)
+          </span>
+        </label>
+      </fieldset>
+    </form>
+
+    {/* ------------------------------------------------------------ IZGARA */}
+    <div class="space-y-6 min-w-0 print:px-0">
+      {/* Tutorial / nasıl kullanılır */}
+      <div id="tutorial-banner" class="ns-tutorial print:hidden" role="region" aria-label="Nasıl kullanılır">
+        <button type="button" id="tutorial-close" class="ns-tutorial-close" aria-label="Kapat">×</button>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          👋 Dört adımda hemşire vardiya planı kur
+        </h2>
+        <ol class="mt-3 space-y-1.5 text-sm text-slate-700 dark:text-slate-300">
+          <li>
+            <strong class="text-brand-700 dark:text-accent-400">1.</strong>
+            Sol panelden <strong>hemşireleri ekle</strong>; her hemşirenin
+            <em>İzinler</em> butonundan izinli günlerini işaretle.
+          </li>
+          <li>
+            <strong class="text-brand-700 dark:text-accent-400">2.</strong>
+            "<strong>Otomatik doldur</strong>" — ızgarayı saniyenin altında dolduran sezgisel.
+            Daha sonra "<strong>Optimum çöz (ILP)</strong>" ile saatleri eşitleyebilirsin (1-5 sn).
+          </li>
+          <li>
+            <strong class="text-brand-700 dark:text-accent-400">3.</strong>
+            Bir hücreye <strong>tıkla</strong>: vardiya seçim menüsü açılır. Klavyeden hızlı:
+            <kbd class="ns-kbd">8</kbd> sabah,
+            <kbd class="ns-kbd">A</kbd> akşam,
+            <kbd class="ns-kbd">N</kbd> 24-saat nöbet,
+            <kbd class="ns-kbd">Y</kbd> yıllık izin,
+            <kbd class="ns-kbd">R</kbd> rapor,
+            <kbd class="ns-kbd">İ</kbd> dinlenme,
+            <kbd class="ns-kbd">⌫</kbd> boş.
+            Ok tuşları ile hücreden hücreye geç. <kbd class="ns-kbd">L</kbd> ile bir hücreyi <strong>kilitle</strong> (otomatik çözücü dokunmaz).
+          </li>
+          <li>
+            <strong class="text-brand-700 dark:text-accent-400">4.</strong>
+            Kapsama veya dinlenme ihlalleri varsa <strong>kırmızı nokta</strong> ile işaretlenir
+            ve aşağıdaki listede gerekçesi gösterilir. <strong>CSV indir</strong> veya
+            <strong>Yazdır</strong> ile çıktıya geç.
+          </li>
+        </ol>
+        <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">
+          Tüm veri yalnız tarayıcında kalır — sunucuya gönderilmez.
+          {guideHref && (
+            <a href={guideHref} class="ml-1 font-medium text-brand-600 hover:underline dark:text-accent-400">Detaylı rehbere git →</a>
+          )}
+        </p>
+      </div>
+
+      <div class="flex items-center justify-end print:hidden">
+        <button type="button" id="tutorial-toggle" class="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          <span aria-hidden="true">?</span> Nasıl kullanılır
+        </button>
+      </div>
+
+      {/* Solver durum / hata */}
+      <div id="solver-status" class="hidden rounded-lg border px-4 py-3 text-sm" role="status" aria-live="polite"></div>
+      <div id="solver-error" class="hidden rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/30 dark:text-red-200" role="alert"></div>
+
+      {/* Renk / kod açıklaması */}
+      <div id="legend" class="flex flex-wrap gap-2 text-xs print:hidden">
+        <span class="ns-legend" data-shift="D8"><span class="ns-swatch" data-shift="D8"></span>8 — Sabah (08-16)</span>
+        <span class="ns-legend" data-shift="E16"><span class="ns-swatch" data-shift="E16"></span>16 — Akşam (16-24)</span>
+        <span class="ns-legend" data-shift="N24"><span class="ns-swatch" data-shift="N24"></span>24 — Nöbet</span>
+        <span class="ns-legend" data-shift="NI"><span class="ns-swatch" data-shift="NI"></span>Nİ — Dinlenme</span>
+        <span class="ns-legend" data-shift="YI"><span class="ns-swatch" data-shift="YI"></span>Yİ — Yıllık izin</span>
+        <span class="ns-legend" data-shift="RT"><span class="ns-swatch" data-shift="RT"></span>RT — Rapor</span>
+      </div>
+
+      {/* Schedule grid */}
+      <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:overflow-visible print:p-0 print:shadow-none">
+        <table id="schedule-table" class="ns-table"></table>
+      </div>
+
+      {/* Issues */}
+      <div id="issues-block" class="hidden rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm dark:border-amber-800 dark:bg-amber-900/20 print:hidden">
+        <h2 class="mb-2 font-display font-semibold text-amber-900 dark:text-amber-200">İhlaller</h2>
+        <ul id="issues-list" class="space-y-1 text-amber-900 dark:text-amber-100"></ul>
+      </div>
+
+      {/* Per-nurse stats */}
+      <div>
+        <h2 class="mb-3 font-display text-base font-semibold text-slate-900 dark:text-white">
+          Hemşire başına aylık özet
+        </h2>
+        <div id="stats-grid" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>
+      </div>
+
+      {/* Export aksiyonları */}
+      <div class="flex flex-wrap gap-2 print:hidden">
+        <button type="button" id="export-csv-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          CSV indir
+        </button>
+        <button type="button" id="print-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Yazdır
+        </button>
+      </div>
+
+      {guideHref && (
+        <a href={guideHref} class="block rounded-2xl border border-slate-200 bg-white p-5 hover:border-brand-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900/40 dark:hover:border-accent-500 print:hidden">
+          <p class="text-xs font-medium text-brand-600 dark:text-accent-400">Konuyu derinleştir</p>
+          <p class="mt-1 font-display text-sm font-semibold text-slate-900 dark:text-white">
+            Hemşire vardiya planlamada kurallar ve adillik →
+          </p>
+        </a>
+      )}
+    </div>
+  </Container>
+
+  {/* Hücre popover — sayfa düzeyinde, dinamik konumlandırılır */}
+  <div id="cell-popover" class="ns-popover hidden" role="menu" aria-label="Vardiya seç">
+    <div class="ns-popover-header">
+      <span class="ns-popover-title" id="popover-title">Vardiya seç</span>
+      <button type="button" id="popover-close-btn" class="ns-popover-close" aria-label="Kapat (Esc)" title="Kapat (Esc)">×</button>
+    </div>
+    <div class="ns-popover-grid">
+      <button type="button" data-shift="D8" data-shortcut="8">8 <span class="ns-shortcut">8</span></button>
+      <button type="button" data-shift="E16" data-shortcut="A">16 <span class="ns-shortcut">A</span></button>
+      <button type="button" data-shift="N24" data-shortcut="N">24 <span class="ns-shortcut">N</span></button>
+      <button type="button" data-shift="NI" data-shortcut="I">Nİ <span class="ns-shortcut">İ</span></button>
+      <button type="button" data-shift="YI" data-shortcut="Y">Yİ <span class="ns-shortcut">Y</span></button>
+      <button type="button" data-shift="RT" data-shortcut="R">RT <span class="ns-shortcut">R</span></button>
+      <button type="button" data-shift="OFF" data-shortcut="0">Boş <span class="ns-shortcut">⌫</span></button>
+      <button type="button" data-action="toggle-pin" data-shortcut="L">Kilitle <span class="ns-shortcut">L</span></button>
+    </div>
+  </div>
+</BaseLayout>
+
+<style is:global>
+  /* Hücre rengi paleti — CSS değişkenleri ile light/dark geçişi */
+  :root {
+    --ns-D8-bg: rgb(224 242 254);
+    --ns-D8-fg: rgb(7 89 133);
+    --ns-E16-bg: rgb(254 243 199);
+    --ns-E16-fg: rgb(120 53 15);
+    --ns-N24-bg: rgb(255 228 230);
+    --ns-N24-fg: rgb(159 18 57);
+    --ns-NI-bg: rgb(220 252 231);
+    --ns-NI-fg: rgb(6 95 70);
+    --ns-YI-bg: rgb(237 233 254);
+    --ns-YI-fg: rgb(91 33 182);
+    --ns-RT-bg: rgb(226 232 240);
+    --ns-RT-fg: rgb(51 65 85);
+    --ns-weekend-bg: rgb(248 250 252);
+    --ns-grid-border: rgb(226 232 240);
+  }
+
+  .dark {
+    --ns-D8-bg: rgb(12 74 110 / 0.45);
+    --ns-D8-fg: rgb(186 230 253);
+    --ns-E16-bg: rgb(120 53 15 / 0.45);
+    --ns-E16-fg: rgb(254 215 170);
+    --ns-N24-bg: rgb(159 18 57 / 0.45);
+    --ns-N24-fg: rgb(254 205 211);
+    --ns-NI-bg: rgb(6 95 70 / 0.35);
+    --ns-NI-fg: rgb(167 243 208);
+    --ns-YI-bg: rgb(91 33 182 / 0.35);
+    --ns-YI-fg: rgb(216 180 254);
+    --ns-RT-bg: rgb(30 41 59);
+    --ns-RT-fg: rgb(148 163 184);
+    --ns-weekend-bg: rgb(15 23 42);
+    --ns-grid-border: rgb(30 41 59);
+  }
+
+  /* Schedule table */
+  .ns-table {
+    border-collapse: collapse;
+    font-size: 0.78rem;
+    table-layout: fixed;
+    margin: 0 auto;
+  }
+  .ns-table th, .ns-table td {
+    border: 1px solid var(--ns-grid-border);
+    padding: 0;
+    text-align: center;
+    vertical-align: middle;
+    height: 28px;
+    font-variant-numeric: tabular-nums;
+  }
+  .ns-table thead th {
+    font-weight: 600;
+    background: rgb(248 250 252);
+    color: rgb(15 23 42);
+    height: 32px;
+    padding: 0 4px;
+  }
+  .dark .ns-table thead th {
+    background: rgb(15 23 42);
+    color: rgb(241 245 249);
+  }
+  .ns-table th.ns-row-name {
+    text-align: left;
+    padding: 0 8px;
+    background: rgb(248 250 252);
+    color: rgb(15 23 42);
+    font-weight: 500;
+    font-size: 0.8rem;
+    width: 130px;
+    min-width: 100px;
+  }
+  .dark .ns-table th.ns-row-name {
+    background: rgb(15 23 42);
+    color: rgb(241 245 249);
+  }
+  .ns-table td.ns-cell {
+    width: 28px;
+    min-width: 24px;
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+    transition: outline 100ms;
+  }
+  .ns-table td.ns-cell:hover {
+    outline: 2px solid rgb(99 102 241 / 0.6);
+    outline-offset: -2px;
+    z-index: 1;
+  }
+  .ns-table td.ns-cell:focus,
+  .ns-table td.ns-cell.ns-focused {
+    outline: 2px solid rgb(99 102 241);
+    outline-offset: -2px;
+    z-index: 2;
+  }
+  .ns-table td.ns-cell.ns-pinned::before {
+    content: '🔒';
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    font-size: 8px;
+    line-height: 1;
+    opacity: 0.55;
+  }
+  .ns-table td.ns-cell.ns-violation::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 6px;
+    height: 6px;
+    background: rgb(239 68 68);
+    border-radius: 50%;
+    z-index: 3;
+  }
+  .ns-table td.ns-weekend {
+    background-color: var(--ns-weekend-bg);
+  }
+  .ns-table th.ns-weekend {
+    background-color: var(--ns-weekend-bg) !important;
+  }
+  .ns-table td.ns-summary {
+    background: rgb(248 250 252);
+    color: rgb(15 23 42);
+    font-weight: 600;
+    height: 22px;
+    font-size: 0.7rem;
+  }
+  .dark .ns-table td.ns-summary {
+    background: rgb(15 23 42);
+    color: rgb(241 245 249);
+  }
+  .ns-table td.ns-summary.ns-summary-bad { color: rgb(220 38 38); }
+  .ns-table td.ns-summary.ns-summary-ok { color: rgb(16 185 129); }
+  .ns-table td.ns-row-total {
+    background: rgb(248 250 252);
+    color: rgb(15 23 42);
+    font-weight: 600;
+    padding: 0 6px;
+    width: 80px;
+    font-size: 0.72rem;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .dark .ns-table td.ns-row-total {
+    background: rgb(15 23 42);
+    color: rgb(241 245 249);
+  }
+
+  /* Shift cell colors via data-shift attribute */
+  [data-shift="D8"]   { background-color: var(--ns-D8-bg);  color: var(--ns-D8-fg); }
+  [data-shift="E16"]  { background-color: var(--ns-E16-bg); color: var(--ns-E16-fg); }
+  [data-shift="N24"]  { background-color: var(--ns-N24-bg); color: var(--ns-N24-fg); font-weight: 700; }
+  [data-shift="YI"]   { background-color: var(--ns-YI-bg);  color: var(--ns-YI-fg); }
+  [data-shift="NI"] {
+    background-color: var(--ns-NI-bg);
+    color: var(--ns-NI-fg);
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent, transparent 4px,
+      rgb(0 0 0 / 0.06) 4px, rgb(0 0 0 / 0.06) 5px
+    );
+  }
+  .dark [data-shift="NI"] {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent, transparent 4px,
+      rgb(255 255 255 / 0.05) 4px, rgb(255 255 255 / 0.05) 5px
+    );
+  }
+  [data-shift="RT"] {
+    background-color: var(--ns-RT-bg);
+    color: var(--ns-RT-fg);
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent, transparent 3px,
+      rgb(0 0 0 / 0.08) 3px, rgb(0 0 0 / 0.08) 5px
+    );
+  }
+  .dark [data-shift="RT"] {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent, transparent 3px,
+      rgb(255 255 255 / 0.06) 3px, rgb(255 255 255 / 0.06) 5px
+    );
+  }
+
+  /* Legend swatches */
+  .ns-legend {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: 9999px;
+    border: 1px solid var(--ns-grid-border);
+    background: white;
+    color: rgb(51 65 85);
+  }
+  .dark .ns-legend {
+    background: rgb(15 23 42 / 0.5);
+    color: rgb(203 213 225);
+  }
+  .ns-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid rgb(0 0 0 / 0.06);
+  }
+
+  /* Popover */
+  .ns-popover {
+    position: absolute;
+    z-index: 60;
+    padding: 4px;
+    border-radius: 10px;
+    border: 1px solid var(--ns-grid-border);
+    background: white;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.14);
+    min-width: 248px;
+  }
+  .dark .ns-popover {
+    background: rgb(15 23 42);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+  }
+  .ns-popover-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 4px 4px 8px;
+    border-bottom: 1px solid var(--ns-grid-border);
+    margin-bottom: 4px;
+  }
+  .ns-popover-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: rgb(71 85 105);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .dark .ns-popover-title {
+    color: rgb(148 163 184);
+  }
+  .ns-popover-close {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    border: 0;
+    background: transparent;
+    color: rgb(100 116 139);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0;
+  }
+  .ns-popover-close:hover {
+    background: rgb(241 245 249);
+    color: rgb(15 23 42);
+  }
+  .dark .ns-popover-close:hover {
+    background: rgb(30 41 59);
+    color: rgb(241 245 249);
+  }
+  .ns-popover-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(54px, 1fr));
+    gap: 4px;
+  }
+  .ns-popover-grid button {
+    position: relative;
+    padding: 8px 6px;
+    border-radius: 6px;
+    border: 1px solid var(--ns-grid-border);
+    background: white;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: rgb(15 23 42);
+    cursor: pointer;
+    transition: transform 80ms;
+  }
+  .dark .ns-popover-grid button {
+    background: rgb(2 6 23);
+    color: rgb(241 245 249);
+  }
+  .ns-popover-grid button:hover {
+    transform: translateY(-1px);
+  }
+  .ns-popover-grid button[data-action="toggle-pin"] {
+    grid-column: span 4;
+    background: rgb(241 245 249);
+  }
+  .dark .ns-popover-grid button[data-action="toggle-pin"] {
+    background: rgb(30 41 59);
+  }
+
+  /* Tutorial banner */
+  .ns-tutorial {
+    position: relative;
+    padding: 16px 40px 16px 18px;
+    border-radius: 14px;
+    border: 1px solid rgb(186 230 253);
+    background: linear-gradient(135deg, rgb(240 249 255) 0%, rgb(255 255 255) 100%);
+  }
+  .dark .ns-tutorial {
+    border-color: rgb(30 64 175 / 0.4);
+    background: linear-gradient(135deg, rgb(15 23 42) 0%, rgb(15 23 42 / 0.6) 100%);
+  }
+  .ns-tutorial.hidden {
+    display: none;
+  }
+  .ns-tutorial-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 0;
+    background: transparent;
+    color: rgb(71 85 105);
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    padding: 0;
+  }
+  .ns-tutorial-close:hover {
+    background: rgb(255 255 255 / 0.7);
+    color: rgb(15 23 42);
+  }
+  .dark .ns-tutorial-close:hover {
+    background: rgb(30 41 59);
+    color: rgb(241 245 249);
+  }
+  .ns-kbd {
+    display: inline-block;
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid var(--ns-grid-border);
+    background: white;
+    color: rgb(15 23 42);
+    font-family: ui-monospace, monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.4;
+    box-shadow: 0 1px 0 rgb(0 0 0 / 0.06);
+  }
+  .dark .ns-kbd {
+    background: rgb(2 6 23);
+    color: rgb(241 245 249);
+    box-shadow: 0 1px 0 rgb(0 0 0 / 0.3);
+  }
+  .ns-shortcut {
+    position: absolute;
+    bottom: 1px;
+    right: 3px;
+    font-size: 9px;
+    opacity: 0.6;
+    font-weight: 400;
+  }
+
+  /* Nurse list cards */
+  .ns-nurse-card {
+    border: 1px solid var(--ns-grid-border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: rgb(255 255 255);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .dark .ns-nurse-card {
+    background: rgb(15 23 42 / 0.4);
+  }
+  .ns-nurse-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ns-nurse-row input.ns-nurse-name {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 2px 0;
+  }
+  .ns-nurse-row input.ns-nurse-name:focus {
+    outline: 1px solid rgb(99 102 241);
+    border-radius: 3px;
+  }
+  .ns-icon-btn {
+    border: 1px solid var(--ns-grid-border);
+    border-radius: 4px;
+    background: white;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    color: rgb(71 85 105);
+  }
+  .dark .ns-icon-btn {
+    background: rgb(2 6 23);
+    color: rgb(148 163 184);
+  }
+  .ns-icon-btn:hover {
+    background: rgb(241 245 249);
+  }
+  .dark .ns-icon-btn:hover {
+    background: rgb(30 41 59);
+  }
+  .ns-day-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px;
+  }
+  .ns-day-grid button {
+    padding: 3px 0;
+    border-radius: 3px;
+    border: 1px solid var(--ns-grid-border);
+    background: white;
+    font-size: 0.68rem;
+    cursor: pointer;
+    color: rgb(71 85 105);
+  }
+  .dark .ns-day-grid button {
+    background: rgb(2 6 23);
+    color: rgb(148 163 184);
+  }
+  .ns-day-grid button.ns-day-active {
+    background: var(--ns-YI-bg);
+    color: var(--ns-YI-fg);
+    border-color: var(--ns-YI-fg);
+    font-weight: 600;
+  }
+
+  /* Stats card */
+  .ns-stats-card {
+    border: 1px solid var(--ns-grid-border);
+    border-radius: 12px;
+    padding: 12px;
+    background: white;
+  }
+  .dark .ns-stats-card {
+    background: rgb(15 23 42 / 0.4);
+  }
+
+  /* Print: keep colors */
+  @media print {
+    .ns-table { font-size: 0.65rem; }
+    .ns-table td.ns-cell { height: 22px; }
+    [data-shift] { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+
+<script>
+  import {
+    DEFAULT_CONSTRAINTS,
+    cellKey,
+    computeStats,
+    createMonthMeta,
+    solveScheduleGreedy,
+    solveScheduleILP,
+    validate,
+    buildSampleSchedule,
+    type Nurse,
+    type Schedule,
+    type ScheduleConstraints,
+    type ShiftCode,
+  } from '../../lib/nurse-schedule';
+
+  const STORAGE_KEY = 'nurse-schedule-v1';
+  const TUTORIAL_KEY = 'nurse-schedule-tutorial-dismissed-v1';
+  const TR_DAYS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Element not found: ${id}`);
+    return el as T;
+  };
+
+  function escapeHtml(s: string): string {
+    return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+  }
+
+  function uniqueId(): string {
+    return 'n_' + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-3);
+  }
+
+  function defaultSchedule(): Schedule {
+    const now = new Date();
+    return buildSampleSchedule(now.getFullYear(), now.getMonth() + 1);
+  }
+
+  function normalize(raw: unknown): Schedule | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const o = raw as Record<string, unknown>;
+    const meta = o.meta as Record<string, unknown> | undefined;
+    if (!meta || typeof meta.year !== 'number' || typeof meta.month !== 'number') return null;
+    const year = Math.round(meta.year);
+    const month = Math.round(meta.month);
+    if (month < 1 || month > 12 || year < 2000 || year > 2100) return null;
+    const constraints: ScheduleConstraints = { ...DEFAULT_CONSTRAINTS, ...(o.constraints as object || {}) };
+    constraints.minDayPresent = Math.max(0, Math.round(constraints.minDayPresent));
+    constraints.minEveningPresent = Math.max(0, Math.round(constraints.minEveningPresent));
+    constraints.minNightPresent = Math.max(0, Math.round(constraints.minNightPresent));
+    constraints.restAfterNight = Math.max(0, Math.min(7, Math.round(constraints.restAfterNight)));
+    constraints.weekendReduced = Boolean(constraints.weekendReduced);
+    constraints.allowSingleNight = Boolean(constraints.allowSingleNight);
+    const nursesRaw = Array.isArray(o.nurses) ? o.nurses : [];
+    const nurses: Nurse[] = nursesRaw.flatMap((n: unknown) => {
+      if (!n || typeof n !== 'object') return [];
+      const obj = n as Record<string, unknown>;
+      const id = typeof obj.id === 'string' && obj.id.length > 0 ? obj.id : uniqueId();
+      const name = typeof obj.name === 'string' ? obj.name : '';
+      const unavailable = Array.isArray(obj.unavailable)
+        ? obj.unavailable.filter((d): d is number => typeof d === 'number' && d >= 1 && d <= 31).map((d) => Math.round(d))
+        : [];
+      const notes = typeof obj.notes === 'string' ? obj.notes : undefined;
+      return [{ id, name, unavailable, notes }];
+    });
+    const cells: Record<string, ShiftCode> = {};
+    const validShifts: ShiftCode[] = ['OFF', 'D8', 'E16', 'N24', 'YI', 'RT', 'NI'];
+    const cellsRaw = (o.cells as Record<string, unknown>) || {};
+    for (const [k, v] of Object.entries(cellsRaw)) {
+      if (typeof v !== 'string') continue;
+      if (!validShifts.includes(v as ShiftCode)) continue;
+      cells[k] = v as ShiftCode;
+    }
+    const pinned: Record<string, true> = {};
+    const pinnedRaw = (o.pinned as Record<string, unknown>) || {};
+    for (const [k, v] of Object.entries(pinnedRaw)) {
+      if (v === true) pinned[k] = true;
+    }
+    return {
+      meta: createMonthMeta(year, month),
+      nurses,
+      cells,
+      pinned,
+      constraints,
+    };
+  }
+
+  function loadState(): Schedule {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const norm = normalize(parsed);
+        if (norm) return norm;
+      }
+    } catch {
+      /* ignore */
+    }
+    return defaultSchedule();
+  }
+
+  function saveState(): void {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  let state: Schedule = loadState();
+
+  /* --------------------------------------------------------- DOM cache */
+  const monthSelect = $<HTMLSelectElement>('month-select');
+  const yearInput = $<HTMLInputElement>('year-input');
+  const nurseList = $<HTMLUListElement>('nurse-list');
+  const nurseCount = $('nurse-count');
+  const nurseNameInput = $<HTMLInputElement>('nurse-name-input');
+  const nurseAddBtn = $<HTMLButtonElement>('nurse-add-btn');
+  const sampleBtn = $<HTMLButtonElement>('sample-btn');
+  const resetBtn = $<HTMLButtonElement>('reset-btn');
+  const solveGreedyBtn = $<HTMLButtonElement>('solve-greedy-btn');
+  const solveIlpBtn = $<HTMLButtonElement>('solve-ilp-btn');
+  const solveGreedyLabel = $('solve-greedy-label');
+  const solveIlpLabel = $('solve-ilp-label');
+  const solverStatus = $('solver-status');
+  const solverError = $('solver-error');
+  const scheduleTable = $<HTMLTableElement>('schedule-table');
+  const issuesBlock = $('issues-block');
+  const issuesList = $('issues-list');
+  const statsGrid = $('stats-grid');
+  const exportCsvBtn = $<HTMLButtonElement>('export-csv-btn');
+  const printBtn = $<HTMLButtonElement>('print-btn');
+  const popover = $('cell-popover');
+  const popoverCloseBtn = $<HTMLButtonElement>('popover-close-btn');
+  const popoverTitle = $('popover-title');
+  const tutorialBanner = $('tutorial-banner');
+  const tutorialCloseBtn = $<HTMLButtonElement>('tutorial-close');
+  const tutorialToggleBtn = $<HTMLButtonElement>('tutorial-toggle');
+
+  const conMinDay = $<HTMLInputElement>('con-min-day');
+  const conMinEve = $<HTMLInputElement>('con-min-eve');
+  const conMinNight = $<HTMLInputElement>('con-min-night');
+  const conRest = $<HTMLInputElement>('con-rest');
+  const conWeekendReduced = $<HTMLInputElement>('con-weekend-reduced');
+  const conAllowSingle = $<HTMLInputElement>('con-allow-single');
+
+  /* --------------------------------------------------------- Render: form */
+
+  function renderForm(): void {
+    monthSelect.value = String(state.meta.month);
+    yearInput.value = String(state.meta.year);
+    conMinDay.value = String(state.constraints.minDayPresent);
+    conMinEve.value = String(state.constraints.minEveningPresent);
+    conMinNight.value = String(state.constraints.minNightPresent);
+    conRest.value = String(state.constraints.restAfterNight);
+    conWeekendReduced.checked = state.constraints.weekendReduced;
+    conAllowSingle.checked = state.constraints.allowSingleNight;
+    nurseCount.textContent = `${state.nurses.length} hemşire`;
+
+    nurseList.innerHTML = state.nurses.map(renderNurseCard).join('');
+  }
+
+  function renderNurseCard(nurse: Nurse): string {
+    const D = state.meta.daysInMonth;
+    const dayBtns = Array.from({ length: D }, (_, i) => {
+      const d = i + 1;
+      const active = nurse.unavailable.includes(d);
+      return `<button type="button" data-nurse="${nurse.id}" data-day="${d}" class="${active ? 'ns-day-active' : ''}" title="Gün ${d}: ${active ? 'izinli' : 'müsait'}">${d}</button>`;
+    }).join('');
+    return `
+      <li class="ns-nurse-card" data-nurse-card="${nurse.id}">
+        <div class="ns-nurse-row">
+          <input type="text" class="ns-nurse-name" data-nurse-name="${nurse.id}" value="${escapeHtml(nurse.name)}" maxlength="40" />
+          <button type="button" class="ns-icon-btn" data-toggle-leaves="${nurse.id}">İzinler ${nurse.unavailable.length > 0 ? `(${nurse.unavailable.length})` : ''}</button>
+          <button type="button" class="ns-icon-btn" data-remove-nurse="${nurse.id}" title="Hemşireyi sil">×</button>
+        </div>
+        <div class="ns-day-grid hidden" data-leaves-grid="${nurse.id}">${dayBtns}</div>
+      </li>`;
+  }
+
+  /* --------------------------------------------------------- Render: grid */
+
+  const SHIFT_LABEL: Record<ShiftCode, string> = {
+    OFF: '',
+    D8: '8',
+    E16: '16',
+    N24: '24',
+    YI: 'Yİ',
+    RT: 'RT',
+    NI: 'Nİ',
+  };
+
+  function renderGrid(): void {
+    const D = state.meta.daysInMonth;
+    const weekendSet = new Set(state.meta.weekendDays);
+    const issues = validate(state);
+    const violationCells = new Set<string>();
+    const violationDays = new Map<number, string>();
+    for (const issue of issues) {
+      if (issue.severity === 'error') {
+        if (issue.nurseId) violationCells.add(`${issue.nurseId}:${issue.day}`);
+        const existing = violationDays.get(issue.day);
+        violationDays.set(issue.day, existing ? existing + '\n' + issue.message : issue.message);
+      }
+    }
+
+    // Header row
+    const headCells = Array.from({ length: D }, (_, i) => {
+      const d = i + 1;
+      const dow = new Date(state.meta.year, state.meta.month - 1, d).getDay();
+      const dayLabel = TR_DAYS[(dow + 6) % 7]; // map JS Sun=0 → Pzr at end
+      const isWeekend = weekendSet.has(d);
+      const cls = isWeekend ? 'ns-weekend' : '';
+      return `<th class="${cls}" data-day-header="${d}"><div>${d}</div><div style="font-weight:400; font-size: 0.65rem; opacity: 0.7;">${dayLabel}</div></th>`;
+    }).join('');
+    const headRow = `<tr><th class="ns-row-name">Hemşire</th>${headCells}<th class="ns-row-name" style="text-align:right;">Aylık</th></tr>`;
+
+    // Nurse rows
+    const stats = computeStats(state);
+    const rows = state.nurses.map((nurse) => {
+      const cells = Array.from({ length: D }, (_, i) => {
+        const d = i + 1;
+        const k = cellKey(nurse.id, d);
+        const code = state.cells[k] ?? 'OFF';
+        const isPinned = !!state.pinned[k];
+        const isWeekend = weekendSet.has(d);
+        const isViolation = violationCells.has(k);
+        const cls = [
+          'ns-cell',
+          isWeekend ? 'ns-weekend' : '',
+          isPinned ? 'ns-pinned' : '',
+          isViolation ? 'ns-violation' : '',
+        ].filter(Boolean).join(' ');
+        const shiftAttr = code === 'OFF' ? '' : `data-shift="${code}"`;
+        const tabIndex = 'tabindex="0"';
+        return `<td class="${cls}" ${shiftAttr} data-nurse="${nurse.id}" data-day="${d}" ${tabIndex} title="${escapeHtml(nurse.name)} • ${d}. gün • ${SHIFT_LABEL[code] || 'Boş'}">${SHIFT_LABEL[code]}</td>`;
+      }).join('');
+      const counts = stats.countsByNurse[nurse.id] || { OFF: 0, D8: 0, E16: 0, N24: 0, YI: 0, RT: 0, NI: 0 };
+      const total = stats.hoursByNurse[nurse.id] ?? 0;
+      const summary = `${total}sa · N${counts.N24} · 8×${counts.D8}${counts.E16 ? ' · 16×' + counts.E16 : ''}`;
+      return `<tr><th class="ns-row-name" title="${escapeHtml(nurse.name)}">${escapeHtml(nurse.name)}</th>${cells}<td class="ns-row-total" title="Aylık toplam: ${total} saat">${summary}</td></tr>`;
+    }).join('');
+
+    // Daily summary row
+    const summaryCells = Array.from({ length: D }, (_, i) => {
+      const d = i + 1;
+      const isWeekend = weekendSet.has(d);
+      let dayCount = 0, eveCount = 0, nightCount = 0;
+      for (const nurse of state.nurses) {
+        const c = state.cells[cellKey(nurse.id, d)] ?? 'OFF';
+        if (c === 'D8' || c === 'N24') dayCount++;
+        if (c === 'E16' || c === 'N24') eveCount++;
+        if (c === 'N24') nightCount++;
+      }
+      const reduceDay = isWeekend && state.constraints.weekendReduced;
+      const minDay = reduceDay ? state.constraints.minNightPresent : state.constraints.minDayPresent;
+      const minNight = state.constraints.allowSingleNight ? 1 : state.constraints.minNightPresent;
+      const dayBad = dayCount < minDay;
+      const nightBad = nightCount < minNight;
+      const overallBad = dayBad || nightBad;
+      const cls = `ns-summary ${isWeekend ? 'ns-weekend' : ''} ${overallBad ? 'ns-summary-bad' : 'ns-summary-ok'}`;
+      const tooltip = `Gün ${d}: gündüz ${dayCount}/${minDay} · gece ${nightCount}/${minNight}${eveCount ? ' · akşam ' + eveCount : ''}`;
+      return `<td class="${cls}" title="${escapeHtml(tooltip)}">${nightCount}/${dayCount}</td>`;
+    }).join('');
+    const summaryRow = `<tr><td class="ns-row-name" style="font-size: 0.7rem; font-weight:600;">Gece/Gündüz</td>${summaryCells}<td class="ns-row-total"></td></tr>`;
+
+    scheduleTable.innerHTML = `<thead>${headRow}</thead><tbody>${rows}${summaryRow}</tbody>`;
+  }
+
+  /* ---------------------------------------------------- Render: issues */
+
+  function renderIssues(): void {
+    const issues = validate(state);
+    if (issues.length === 0) {
+      issuesBlock.classList.add('hidden');
+      issuesList.innerHTML = '';
+      return;
+    }
+    issuesBlock.classList.remove('hidden');
+    const items = issues
+      .slice(0, 30)
+      .map((i) => `<li>${i.severity === 'warning' ? '⚠' : '✗'} ${escapeHtml(i.message)}</li>`)
+      .join('');
+    const more = issues.length > 30 ? `<li>… ve ${issues.length - 30} ihlal daha</li>` : '';
+    issuesList.innerHTML = items + more;
+  }
+
+  /* ---------------------------------------------------- Render: stats */
+
+  function renderStats(): void {
+    const stats = computeStats(state);
+    const totalHours = Object.values(stats.hoursByNurse).reduce((a, b) => a + b, 0);
+    const avg = state.nurses.length > 0 ? totalHours / state.nurses.length : 0;
+    const cards = state.nurses.map((nurse) => {
+      const h = stats.hoursByNurse[nurse.id] ?? 0;
+      const c = stats.countsByNurse[nurse.id] || { OFF: 0, D8: 0, E16: 0, N24: 0, YI: 0, RT: 0, NI: 0 };
+      const diff = h - avg;
+      const diffStr = diff > 0 ? `+${Math.round(diff)}` : Math.round(diff);
+      return `
+        <div class="ns-stats-card">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-slate-900 dark:text-white">${escapeHtml(nurse.name)}</span>
+            <span class="text-xs text-slate-500 dark:text-slate-400">${diffStr} sa ortalamaya göre</span>
+          </div>
+          <div class="mt-2 text-2xl font-display font-bold text-slate-900 dark:text-white">${h} <span class="text-sm font-normal text-slate-500">saat</span></div>
+          <div class="mt-2 grid grid-cols-3 gap-2 text-xs">
+            <span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.N24}</strong> nöbet</span>
+            <span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.D8}</strong> sabah</span>
+            ${c.E16 > 0 ? `<span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.E16}</strong> akşam</span>` : ''}
+            ${c.YI > 0 ? `<span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.YI}</strong> yıllık</span>` : ''}
+            ${c.RT > 0 ? `<span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.RT}</strong> rapor</span>` : ''}
+            ${c.NI > 0 ? `<span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.NI}</strong> dinlenme</span>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+    statsGrid.innerHTML = cards || `<p class="text-sm text-slate-500 dark:text-slate-400">Önce hemşire ekleyin.</p>`;
+  }
+
+  /* ---------------------------------------------------- Render: orchestrate */
+
+  function renderAll(): void {
+    renderForm();
+    renderGrid();
+    renderIssues();
+    renderStats();
+  }
+
+  function commit(): void {
+    saveState();
+    renderAll();
+  }
+
+  /* ---------------------------------------------------- Status helpers */
+
+  function setStatus(msg: string, kind: 'info' | 'success' | 'warn' = 'info'): void {
+    const colors: Record<string, string> = {
+      info: 'border-slate-300 bg-slate-50 text-slate-800 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-200',
+      success: 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200',
+      warn: 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200',
+    };
+    solverStatus.className = `rounded-lg border px-4 py-3 text-sm ${colors[kind]}`;
+    solverStatus.textContent = msg;
+    solverStatus.classList.remove('hidden');
+  }
+
+  function clearStatus(): void {
+    solverStatus.classList.add('hidden');
+    solverError.classList.add('hidden');
+  }
+
+  function setError(msg: string): void {
+    solverError.textContent = msg;
+    solverError.classList.remove('hidden');
+  }
+
+  /* ---------------------------------------------------- Form events */
+
+  monthSelect.addEventListener('change', () => {
+    const m = Math.max(1, Math.min(12, parseInt(monthSelect.value, 10) || 1));
+    state.meta = createMonthMeta(state.meta.year, m);
+    pruneOutOfRangeData();
+    commit();
+  });
+  yearInput.addEventListener('change', () => {
+    const y = Math.max(2020, Math.min(2099, parseInt(yearInput.value, 10) || new Date().getFullYear()));
+    state.meta = createMonthMeta(y, state.meta.month);
+    pruneOutOfRangeData();
+    commit();
+  });
+
+  function pruneOutOfRangeData(): void {
+    const D = state.meta.daysInMonth;
+    for (const nurse of state.nurses) {
+      nurse.unavailable = nurse.unavailable.filter((d) => d <= D);
+    }
+    for (const k of Object.keys(state.cells)) {
+      const day = parseInt(k.split(':')[1] ?? '0', 10);
+      if (!day || day > D) {
+        delete state.cells[k];
+        delete state.pinned[k];
+      }
+    }
+  }
+
+  conMinDay.addEventListener('change', () => {
+    state.constraints.minDayPresent = Math.max(0, parseInt(conMinDay.value, 10) || 0);
+    commit();
+  });
+  conMinEve.addEventListener('change', () => {
+    state.constraints.minEveningPresent = Math.max(0, parseInt(conMinEve.value, 10) || 0);
+    commit();
+  });
+  conMinNight.addEventListener('change', () => {
+    state.constraints.minNightPresent = Math.max(0, parseInt(conMinNight.value, 10) || 0);
+    commit();
+  });
+  conRest.addEventListener('change', () => {
+    state.constraints.restAfterNight = Math.max(0, Math.min(7, parseInt(conRest.value, 10) || 0));
+    commit();
+  });
+  conWeekendReduced.addEventListener('change', () => {
+    state.constraints.weekendReduced = conWeekendReduced.checked;
+    commit();
+  });
+  conAllowSingle.addEventListener('change', () => {
+    state.constraints.allowSingleNight = conAllowSingle.checked;
+    commit();
+  });
+
+  /* ---------------------------------------------------- Nurse mgmt */
+
+  nurseAddBtn.addEventListener('click', () => addNurse());
+  nurseNameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addNurse();
+    }
+  });
+
+  function addNurse(): void {
+    const name = nurseNameInput.value.trim();
+    if (!name) {
+      nurseNameInput.focus();
+      return;
+    }
+    state.nurses.push({ id: uniqueId(), name, unavailable: [] });
+    nurseNameInput.value = '';
+    commit();
+  }
+
+  nurseList.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const removeId = target.getAttribute('data-remove-nurse');
+    if (removeId) {
+      state.nurses = state.nurses.filter((n) => n.id !== removeId);
+      // Cells & pins for this nurse → kaldır
+      for (const k of Object.keys(state.cells)) {
+        if (k.startsWith(removeId + ':')) {
+          delete state.cells[k];
+          delete state.pinned[k];
+        }
+      }
+      commit();
+      return;
+    }
+    const toggleId = target.getAttribute('data-toggle-leaves');
+    if (toggleId) {
+      const grid = nurseList.querySelector<HTMLElement>(`[data-leaves-grid="${toggleId}"]`);
+      if (grid) grid.classList.toggle('hidden');
+      return;
+    }
+    const dayBtnNurse = target.getAttribute('data-nurse');
+    const dayBtnDay = target.getAttribute('data-day');
+    if (dayBtnNurse && dayBtnDay && target.closest('[data-leaves-grid]')) {
+      const nurse = state.nurses.find((n) => n.id === dayBtnNurse);
+      if (!nurse) return;
+      const d = parseInt(dayBtnDay, 10);
+      if (nurse.unavailable.includes(d)) {
+        nurse.unavailable = nurse.unavailable.filter((x) => x !== d);
+      } else {
+        nurse.unavailable.push(d);
+        nurse.unavailable.sort((a, b) => a - b);
+      }
+      commit();
+    }
+  });
+
+  nurseList.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    const nameFor = target.getAttribute('data-nurse-name');
+    if (nameFor) {
+      const nurse = state.nurses.find((n) => n.id === nameFor);
+      if (nurse) {
+        nurse.name = target.value.trim() || 'İsimsiz';
+        commit();
+      }
+    }
+  });
+
+  /* ---------------------------------------------------- Sample / Reset */
+
+  sampleBtn.addEventListener('click', () => {
+    state = buildSampleSchedule(state.meta.year, state.meta.month);
+    clearStatus();
+    commit();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('Tüm planı sıfırlamak istediğinden emin misin? Bu işlem geri alınamaz.')) return;
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    state = defaultSchedule();
+    clearStatus();
+    commit();
+  });
+
+  /* ---------------------------------------------------- Solvers */
+
+  solveGreedyBtn.addEventListener('click', () => {
+    if (state.nurses.length === 0) {
+      setError('Önce en az bir hemşire eklemelisin.');
+      return;
+    }
+    clearStatus();
+    solveGreedyBtn.disabled = true;
+    solveGreedyLabel.textContent = 'Çözülüyor...';
+    try {
+      const result = solveScheduleGreedy(state);
+      state = result.schedule;
+      saveState();
+      renderAll();
+      const errs = result.issues.filter((i) => i.severity === 'error').length;
+      if (errs === 0) {
+        setStatus(`Çözüm hazır — ${state.nurses.length} hemşire, ${state.meta.daysInMonth} gün, tüm kısıtlar sağlandı.`, 'success');
+      } else {
+        setStatus(`Çözüm hazır ama ${errs} ihlal kaldı. Aşağıdaki listeden manuel düzelt veya "Optimum çöz" dene.`, 'warn');
+      }
+    } catch (err) {
+      setError(`Hata: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      solveGreedyBtn.disabled = false;
+      solveGreedyLabel.textContent = 'Otomatik doldur';
+    }
+  });
+
+  solveIlpBtn.addEventListener('click', async () => {
+    if (state.nurses.length === 0) {
+      setError('Önce en az bir hemşire eklemelisin.');
+      return;
+    }
+    clearStatus();
+    solveIlpBtn.disabled = true;
+    solveGreedyBtn.disabled = true;
+    solveIlpLabel.textContent = 'ILP çözülüyor (1-5 sn)...';
+    setStatus('ILP solver çalışıyor — saatleri eşitlemeye çalışıyor. Bu birkaç saniye sürebilir.', 'info');
+    try {
+      const t0 = performance.now();
+      const result = await solveScheduleILP(state);
+      const elapsed = Math.round(performance.now() - t0);
+      state = result.schedule;
+      saveState();
+      renderAll();
+      const errs = result.issues.filter((i) => i.severity === 'error').length;
+      if (errs === 0) {
+        setStatus(`Optimum bulundu (${elapsed} ms). Saat sapması: ${result.stats.hoursStdDev.toFixed(1)} saat.`, 'success');
+      } else {
+        setStatus(`ILP feasible çözüm verdi ama ${errs} ihlal var (${elapsed} ms). Bazı kısıtlar gevşetilmesi gerekebilir.`, 'warn');
+      }
+    } catch (err) {
+      setError(`ILP hatası: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      solveIlpBtn.disabled = false;
+      solveGreedyBtn.disabled = false;
+      solveIlpLabel.textContent = 'Optimum çöz (ILP)';
+    }
+  });
+
+  /* ---------------------------------------------------- Cell editing */
+
+  let popoverContext: { nurseId: string; day: number; cell: HTMLElement } | null = null;
+
+  function openPopoverAt(cell: HTMLElement): void {
+    const nurseId = cell.getAttribute('data-nurse');
+    const day = parseInt(cell.getAttribute('data-day') || '0', 10);
+    if (!nurseId || !day) return;
+    popoverContext = { nurseId, day, cell };
+
+    // Başlığı güncelle: "Ayşe • 7 Mayıs"
+    const nurse = state.nurses.find((n) => n.id === nurseId);
+    if (nurse && popoverTitle) {
+      const monthName = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'][state.meta.month - 1];
+      popoverTitle.textContent = `${nurse.name} • ${day} ${monthName}`;
+    }
+
+    const rect = cell.getBoundingClientRect();
+    popover.classList.remove('hidden');
+    // Konumu hesapla (sayfa kaydırmasına dikkat)
+    const popRect = popover.getBoundingClientRect();
+    let x = rect.left + window.scrollX;
+    let y = rect.bottom + window.scrollY + 4;
+    if (x + popRect.width > window.innerWidth + window.scrollX - 8) {
+      x = window.innerWidth + window.scrollX - popRect.width - 8;
+    }
+    if (y + popRect.height > window.innerHeight + window.scrollY - 8) {
+      y = rect.top + window.scrollY - popRect.height - 4;
+    }
+    popover.style.left = `${Math.max(8, x)}px`;
+    popover.style.top = `${Math.max(8, y)}px`;
+  }
+
+  function closePopover(): void {
+    popover.classList.add('hidden');
+    popoverContext = null;
+  }
+
+  popoverCloseBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closePopover();
+  });
+
+  function applyShift(nurseId: string, day: number, shift: ShiftCode): void {
+    const k = cellKey(nurseId, day);
+    if (shift === 'OFF') {
+      delete state.cells[k];
+    } else {
+      state.cells[k] = shift;
+    }
+    state.pinned[k] = true; // user'in elle değiştirmesi → pin
+    commit();
+  }
+
+  function togglePin(nurseId: string, day: number): void {
+    const k = cellKey(nurseId, day);
+    if (state.pinned[k]) {
+      delete state.pinned[k];
+    } else {
+      state.pinned[k] = true;
+    }
+    commit();
+  }
+
+  scheduleTable.addEventListener('click', (e) => {
+    const cell = (e.target as HTMLElement).closest<HTMLElement>('td.ns-cell');
+    if (!cell) return;
+    if (popoverContext && popoverContext.cell === cell) {
+      closePopover();
+      return;
+    }
+    openPopoverAt(cell);
+  });
+
+  scheduleTable.addEventListener('focusin', (e) => {
+    const cell = (e.target as HTMLElement).closest<HTMLElement>('td.ns-cell');
+    if (!cell) return;
+    cell.classList.add('ns-focused');
+  });
+  scheduleTable.addEventListener('focusout', (e) => {
+    const cell = (e.target as HTMLElement).closest<HTMLElement>('td.ns-cell');
+    if (cell) cell.classList.remove('ns-focused');
+  });
+
+  popover.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLElement>('button');
+    if (!btn || !popoverContext) return;
+    const action = btn.getAttribute('data-action');
+    const shift = btn.getAttribute('data-shift') as ShiftCode | null;
+    const ctx = popoverContext;
+    if (action === 'toggle-pin') {
+      togglePin(ctx.nurseId, ctx.day);
+    } else if (shift) {
+      applyShift(ctx.nurseId, ctx.day, shift);
+    }
+    closePopover();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (popover.classList.contains('hidden')) return;
+    const target = e.target as HTMLElement;
+    if (!target.closest('#cell-popover') && !target.closest('td.ns-cell')) {
+      closePopover();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !popover.classList.contains('hidden')) {
+      e.preventDefault();
+      closePopover();
+      // Hücreye odağı geri ver
+      if (popoverContext) {
+        const { nurseId, day } = popoverContext;
+        requestAnimationFrame(() => {
+          const cell = scheduleTable.querySelector<HTMLElement>(
+            `td.ns-cell[data-nurse="${nurseId}"][data-day="${day}"]`,
+          );
+          cell?.focus();
+        });
+      }
+    }
+  });
+
+  /* ---------------------------------------------------- Tutorial */
+
+  function isTutorialDismissed(): boolean {
+    try {
+      return localStorage.getItem(TUTORIAL_KEY) === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  function setTutorialDismissed(dismissed: boolean): void {
+    try {
+      if (dismissed) localStorage.setItem(TUTORIAL_KEY, '1');
+      else localStorage.removeItem(TUTORIAL_KEY);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function showTutorial(): void {
+    tutorialBanner.classList.remove('hidden');
+  }
+
+  function hideTutorial(): void {
+    tutorialBanner.classList.add('hidden');
+  }
+
+  // İlk açılışta dismissed değilse göster, dismissed ise gizle
+  if (isTutorialDismissed()) {
+    hideTutorial();
+  } else {
+    showTutorial();
+  }
+
+  tutorialCloseBtn.addEventListener('click', () => {
+    hideTutorial();
+    setTutorialDismissed(true);
+  });
+
+  tutorialToggleBtn.addEventListener('click', () => {
+    if (tutorialBanner.classList.contains('hidden')) {
+      showTutorial();
+      // Banner'a yumuşak kaydır
+      tutorialBanner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else {
+      hideTutorial();
+    }
+  });
+
+  /* ---------------------------------------------------- Keyboard */
+
+  scheduleTable.addEventListener('keydown', (e) => {
+    const cell = (e.target as HTMLElement).closest<HTMLElement>('td.ns-cell');
+    if (!cell) return;
+    const nurseId = cell.getAttribute('data-nurse');
+    const day = parseInt(cell.getAttribute('data-day') || '0', 10);
+    if (!nurseId || !day) return;
+
+    // Vardiya kısayolları
+    const k = e.key.toLowerCase();
+    let shift: ShiftCode | null = null;
+    if (k === '8') shift = 'D8';
+    else if (k === 'a') shift = 'E16';
+    else if (k === 'n') shift = 'N24';
+    else if (k === 'i' || e.key === 'İ' || e.key === 'i') {
+      // 'i' might be hit by N24 path; explicit İ matches NI
+      if (e.key === 'İ' || e.key === 'i' && (e.shiftKey || e.altKey)) shift = 'NI';
+    }
+    if (k === 'y') shift = 'YI';
+    else if (k === 'r') shift = 'RT';
+    if (e.key === '0' || e.key === 'Backspace' || e.key === 'Delete') {
+      shift = 'OFF';
+    }
+    if (e.key === 'l' || e.key === 'L') {
+      e.preventDefault();
+      togglePin(nurseId, day);
+      // Refocus: aynı hücre yeniden bulunmalı
+      requestAnimationFrame(() => {
+        const next = scheduleTable.querySelector<HTMLElement>(`td.ns-cell[data-nurse="${nurseId}"][data-day="${day}"]`);
+        next?.focus();
+      });
+      return;
+    }
+    if (shift) {
+      e.preventDefault();
+      applyShift(nurseId, day, shift);
+      requestAnimationFrame(() => {
+        const next = scheduleTable.querySelector<HTMLElement>(`td.ns-cell[data-nurse="${nurseId}"][data-day="${day}"]`);
+        next?.focus();
+      });
+      return;
+    }
+
+    // Ok tuşları ile dolaşma
+    const dx = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: 0, ArrowDown: 0 }[e.key] ?? 0;
+    const dy = { ArrowLeft: 0, ArrowRight: 0, ArrowUp: -1, ArrowDown: 1 }[e.key] ?? 0;
+    if (dx !== 0 || dy !== 0) {
+      e.preventDefault();
+      const newDay = Math.max(1, Math.min(state.meta.daysInMonth, day + dx));
+      const nurseIdx = state.nurses.findIndex((n) => n.id === nurseId);
+      const newNurseIdx = Math.max(0, Math.min(state.nurses.length - 1, nurseIdx + dy));
+      const newNurseId = state.nurses[newNurseIdx]?.id;
+      if (newNurseId) {
+        const target = scheduleTable.querySelector<HTMLElement>(`td.ns-cell[data-nurse="${newNurseId}"][data-day="${newDay}"]`);
+        target?.focus();
+      }
+    }
+  });
+
+  /* ---------------------------------------------------- Export */
+
+  exportCsvBtn.addEventListener('click', () => {
+    const D = state.meta.daysInMonth;
+    const header = ['Hemşire', ...Array.from({ length: D }, (_, i) => String(i + 1)), 'Toplam saat', 'Nöbet sayısı'];
+    const stats = computeStats(state);
+    const rows = state.nurses.map((nurse) => {
+      const cells = Array.from({ length: D }, (_, i) => SHIFT_LABEL[state.cells[cellKey(nurse.id, i + 1)] ?? 'OFF']);
+      return [nurse.name, ...cells, String(stats.hoursByNurse[nurse.id] ?? 0), String(stats.countsByNurse[nurse.id]?.N24 ?? 0)];
+    });
+    const csv = [header, ...rows]
+      .map((r) => r.map((c) => /[",\n]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c).join(','))
+      .join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vardiya-${state.meta.year}-${String(state.meta.month).padStart(2, '0')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  printBtn.addEventListener('click', () => window.print());
+
+  /* ---------------------------------------------------- Init */
+
+  renderAll();
+</script>
