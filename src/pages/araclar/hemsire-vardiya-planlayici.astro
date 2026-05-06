@@ -711,6 +711,47 @@ const TR_MONTHS = [
     background: rgb(15 23 42 / 0.4);
   }
 
+  /* Stacked progress bar — work / rest / leave / report */
+  .ns-bar {
+    display: flex;
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    background: rgb(241 245 249);
+    border: 1px solid var(--ns-grid-border);
+  }
+  .dark .ns-bar {
+    background: rgb(2 6 23);
+  }
+  .ns-bar-seg {
+    height: 100%;
+    transition: width 200ms;
+  }
+  .ns-bar-seg + .ns-bar-seg { border-left: 1px solid rgb(255 255 255 / 0.4); }
+  .dark .ns-bar-seg + .ns-bar-seg { border-left: 1px solid rgb(0 0 0 / 0.3); }
+  .ns-bar-work { background: rgb(14 165 233); }   /* sky-500 — çalışma */
+  .ns-bar-rest { background: rgb(16 185 129); }   /* emerald-500 — dinlenme */
+  .ns-bar-yi   { background: rgb(139 92 246); }   /* violet-500 — yıllık izin */
+  .ns-bar-rp   { background: rgb(100 116 139); }  /* slate-500 — rapor */
+
+  /* Stat card tags — vardiya rengiyle eşleşir */
+  .ns-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    border: 1px solid var(--ns-grid-border);
+    background: rgb(241 245 249);
+    color: rgb(51 65 85);
+  }
+  .dark .ns-tag { background: rgb(30 41 59); color: rgb(203 213 225); }
+  .ns-tag[data-shift="G8"]   { background: var(--ns-G8-bg);  color: var(--ns-G8-fg); }
+  .ns-tag[data-shift="GC16"] { background: var(--ns-GC16-bg); color: var(--ns-GC16-fg); }
+  .ns-tag[data-shift="N24"]  { background: var(--ns-N24-bg); color: var(--ns-N24-fg); }
+  .ns-tag[data-shift="DN"]   { background: var(--ns-DN-bg);  color: var(--ns-DN-fg); }
+  .ns-tag[data-shift="YI"]   { background: var(--ns-YI-bg);  color: var(--ns-YI-fg); }
+  .ns-tag[data-shift="RP"]   { background: var(--ns-RP-bg);  color: var(--ns-RP-fg); }
+
   @media print {
     .ns-table { font-size: 0.65rem; }
     .ns-table td.ns-cell { height: 22px; }
@@ -1041,25 +1082,60 @@ const TR_MONTHS = [
     const stats = computeStats(state);
     const totalHours = Object.values(stats.hoursByNurse).reduce((a, b) => a + b, 0);
     const avg = state.nurses.length > 0 ? totalHours / state.nurses.length : 0;
+    const D = state.meta.daysInMonth;
+    const monthTotal = D * 24; // Ayın toplam saati: gün sayısı × 24
+
     const cards = state.nurses.map((nurse) => {
-      const h = stats.hoursByNurse[nurse.id] ?? 0;
+      const work = stats.hoursByNurse[nurse.id] ?? 0;
       const c = stats.countsByNurse[nurse.id] || { G8: 0, GC16: 0, N24: 0, DN: 0, YI: 0, RP: 0 };
-      const diff = h - avg;
+      const diff = work - avg;
       const diffStr = diff > 0 ? `+${Math.round(diff)}` : Math.round(diff);
+
+      // Her vardiya kodu için saat dağılımı (toplam = 24*N)
+      // G8 günü:   8 sa çalışma + 16 sa dinlenme
+      // GC16 günü: 16 sa çalışma + 8 sa dinlenme
+      // N24 günü:  24 sa çalışma + 0 sa dinlenme
+      // DN günü:   24 sa dinlenme
+      // YI günü:   24 sa yıllık izin
+      // RP günü:   24 sa rapor
+      const restHours = c.G8 * 16 + c.GC16 * 8 + c.DN * 24;
+      const yiHours = c.YI * 24;
+      const rpHours = c.RP * 24;
+      const total = work + restHours + yiHours + rpHours; // monthTotal'a eşit olmalı
+
+      const workPct = monthTotal > 0 ? (work / monthTotal) * 100 : 0;
+      const restPct = monthTotal > 0 ? (restHours / monthTotal) * 100 : 0;
+      const yiPct = monthTotal > 0 ? (yiHours / monthTotal) * 100 : 0;
+      const rpPct = monthTotal > 0 ? (rpHours / monthTotal) * 100 : 0;
+
+      const segs: string[] = [];
+      if (workPct > 0) segs.push(`<div class="ns-bar-seg ns-bar-work" style="width: ${workPct}%;" title="Çalışma: ${work} saat (${workPct.toFixed(1)}%)"></div>`);
+      if (restPct > 0) segs.push(`<div class="ns-bar-seg ns-bar-rest" style="width: ${restPct}%;" title="Dinlenme: ${restHours} saat (${restPct.toFixed(1)}%)"></div>`);
+      if (yiPct > 0) segs.push(`<div class="ns-bar-seg ns-bar-yi" style="width: ${yiPct}%;" title="Yıllık izin: ${yiHours} saat (${yiPct.toFixed(1)}%)"></div>`);
+      if (rpPct > 0) segs.push(`<div class="ns-bar-seg ns-bar-rp" style="width: ${rpPct}%;" title="Rapor: ${rpHours} saat (${rpPct.toFixed(1)}%)"></div>`);
+
       return `
         <div class="ns-stats-card">
           <div class="flex items-center justify-between">
             <span class="text-sm font-semibold text-slate-900 dark:text-white">${escapeHtml(nurse.name)}</span>
             <span class="text-xs text-slate-500 dark:text-slate-400">${diffStr} sa ortalamaya göre</span>
           </div>
-          <div class="mt-2 text-2xl font-display font-bold text-slate-900 dark:text-white">${h} <span class="text-sm font-normal text-slate-500">saat</span></div>
-          <div class="mt-2 grid grid-cols-3 gap-2 text-xs">
-            <span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.N24}</strong> nöbet</span>
-            <span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.G8}</strong> gündüz</span>
-            ${c.GC16 > 0 ? `<span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.GC16}</strong> gece</span>` : ''}
-            ${c.DN > 0 ? `<span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.DN}</strong> dinlenme</span>` : ''}
-            ${c.YI > 0 ? `<span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.YI}</strong> yıllık</span>` : ''}
-            ${c.RP > 0 ? `<span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.RP}</strong> rapor</span>` : ''}
+          <div class="mt-2 flex items-baseline gap-2">
+            <div class="text-2xl font-display font-bold text-slate-900 dark:text-white">${work}<span class="text-sm font-normal text-slate-500"> sa çalışma</span></div>
+            <div class="ml-auto text-sm text-slate-700 dark:text-slate-300">${restHours + yiHours + rpHours}<span class="text-xs text-slate-500"> sa boş</span></div>
+          </div>
+          <div class="ns-bar mt-2" aria-label="Aylık saat dağılımı">${segs.join('')}</div>
+          <div class="mt-1.5 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+            <span>Toplam ${total} / ${monthTotal} sa (${D} gün × 24)</span>
+            <span>%${workPct.toFixed(0)} çalışma</span>
+          </div>
+          <div class="mt-2 flex flex-wrap gap-1.5 text-xs">
+            <span class="ns-tag" data-shift="N24"><strong>${c.N24}</strong> nöbet</span>
+            <span class="ns-tag" data-shift="G8"><strong>${c.G8}</strong> gündüz</span>
+            ${c.GC16 > 0 ? `<span class="ns-tag" data-shift="GC16"><strong>${c.GC16}</strong> gece</span>` : ''}
+            ${c.DN > 0 ? `<span class="ns-tag" data-shift="DN"><strong>${c.DN}</strong> dinlenme</span>` : ''}
+            ${c.YI > 0 ? `<span class="ns-tag" data-shift="YI"><strong>${c.YI}</strong> yıllık</span>` : ''}
+            ${c.RP > 0 ? `<span class="ns-tag" data-shift="RP"><strong>${c.RP}</strong> rapor</span>` : ''}
           </div>
         </div>`;
     }).join('');
