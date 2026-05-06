@@ -444,35 +444,25 @@ const TR_MONTHS = [
   .ns-style-badge:hover {
     filter: brightness(0.95);
   }
-  .ns-style-standard {
+  .ns-style-normal {
     background: rgb(241 245 249);
     color: rgb(71 85 105);
     border-color: rgb(203 213 225);
   }
-  .ns-style-oncall {
+  .ns-style-yogun {
     background: rgb(254 226 226);
     color: rgb(153 27 27);
     border-color: rgb(252 165 165);
   }
-  .ns-style-minDays {
-    background: rgb(254 243 199);
-    color: rgb(120 53 15);
-    border-color: rgb(253 224 71);
-  }
-  .dark .ns-style-standard {
+  .dark .ns-style-normal {
     background: rgb(30 41 59);
     color: rgb(203 213 225);
     border-color: rgb(51 65 85);
   }
-  .dark .ns-style-oncall {
+  .dark .ns-style-yogun {
     background: rgb(127 29 29 / 0.4);
     color: rgb(252 165 165);
     border-color: rgb(127 29 29);
-  }
-  .dark .ns-style-minDays {
-    background: rgb(120 53 15 / 0.4);
-    color: rgb(253 224 71);
-    border-color: rgb(120 53 15);
   }
   .ns-remove-btn {
     position: absolute;
@@ -933,10 +923,24 @@ const TR_MONTHS = [
   }
   .ns-bar-seg + .ns-bar-seg { border-left: 1px solid rgb(255 255 255 / 0.4); }
   .dark .ns-bar-seg + .ns-bar-seg { border-left: 1px solid rgb(0 0 0 / 0.3); }
-  .ns-bar-work { background: rgb(14 165 233); }   /* sky-500 — çalışma */
+  .ns-bar-work { background: rgb(14 165 233); }   /* sky-500 — çalışma (legacy) */
+  .ns-bar-h8   { background: rgb(56 189 248); }   /* sky-400 — gündüz 8h */
+  .ns-bar-h16  { background: rgb(14 165 233); }   /* sky-500 — gece 16h */
+  .ns-bar-h24  { background: rgb(2 132 199); }    /* sky-600 — nöbet 24h */
   .ns-bar-rest { background: rgb(16 185 129); }   /* emerald-500 — dinlenme */
   .ns-bar-yi   { background: rgb(139 92 246); }   /* violet-500 — yıllık izin */
   .ns-bar-rp   { background: rgb(100 116 139); }  /* slate-500 — rapor */
+  .ns-card-label {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: rgb(100 116 139);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    align-self: center;
+    margin-right: 4px;
+  }
+  .dark .ns-card-label { color: rgb(148 163 184); }
 
   /* Stat card tags — vardiya rengiyle eşleşir */
   .ns-tag {
@@ -972,6 +976,7 @@ const TR_MONTHS = [
     cellKey,
     computeStats,
     createMonthMeta,
+    monthlyTargetHoursForNurse,
     solveScheduleGreedy,
     solveScheduleILP,
     validate,
@@ -1078,9 +1083,15 @@ const TR_MONTHS = [
         ? obj.unavailable.filter((d): d is number => typeof d === 'number' && d >= 1 && d <= 31).map((d) => Math.round(d))
         : [];
       const notes = typeof obj.notes === 'string' ? obj.notes : undefined;
+      // Migration:
+      //   v1: 'standard' → 'normal'
+      //   v1: 'oncall'   → 'yogun'
+      //   v1: 'minDays'  → 'normal' (kaldırıldı)
+      //   v2: 'normal' / 'yogun' (current)
       const wsRaw = obj.workStyle;
-      const workStyle: WorkStyle =
-        wsRaw === 'oncall' || wsRaw === 'minDays' ? wsRaw : 'standard';
+      let workStyle: WorkStyle = 'normal';
+      if (wsRaw === 'yogun' || wsRaw === 'oncall') workStyle = 'yogun';
+      else if (wsRaw === 'normal' || wsRaw === 'standard' || wsRaw === 'minDays') workStyle = 'normal';
       return [{ id, name, unavailable, workStyle, notes }];
     });
     const cells: Record<string, ShiftCode> = {};
@@ -1326,38 +1337,67 @@ const TR_MONTHS = [
       const work = stats.hoursByNurse[nurse.id] ?? 0;
       const c = stats.countsByNurse[nurse.id] || { G8: 0, GC16: 0, N24: 0, DN: 0, YI: 0, RP: 0 };
 
-      // Bar segment'leri: çalışma (mavi) + dinlenme (yeşil) + yıllık (mor) + rapor (gri)
-      const restHours = c.G8 * 16 + c.GC16 * 8 + c.DN * 24;
+      // Çalışma saati 3 kategoriye ayrılır:
+      //   8h (G8) · 16h (GC16) · 24h (N24)
+      const h8 = c.G8 * 8;
+      const h16 = c.GC16 * 16;
+      const h24 = c.N24 * 24;
+      // "Dinlenme saati" = DN günleri × 24 sa (tam gün dinlenme).
+      // (G8/GC16 günlerindeki vardiya-dışı saatler dinlenme sayılmaz; günün
+      //  bir parçası çalışma, kalanı zaten ücretsiz/standart serbest.)
+      const restHours = c.DN * 24;
       const yiHours = c.YI * 24;
       const rpHours = c.RP * 24;
-      const workPct = monthTotal > 0 ? (work / monthTotal) * 100 : 0;
-      const restPct = monthTotal > 0 ? (restHours / monthTotal) * 100 : 0;
-      const yiPct = monthTotal > 0 ? (yiHours / monthTotal) * 100 : 0;
-      const rpPct = monthTotal > 0 ? (rpHours / monthTotal) * 100 : 0;
 
-      const segs: string[] = [];
-      if (workPct > 0) segs.push(`<div class="ns-bar-seg ns-bar-work" style="width: ${workPct}%;" title="Çalışma: ${work} saat"></div>`);
-      if (restPct > 0) segs.push(`<div class="ns-bar-seg ns-bar-rest" style="width: ${restPct}%;" title="Dinlenme: ${restHours} saat"></div>`);
-      if (yiPct > 0) segs.push(`<div class="ns-bar-seg ns-bar-yi" style="width: ${yiPct}%;" title="Yıllık izin: ${yiHours} saat"></div>`);
-      if (rpPct > 0) segs.push(`<div class="ns-bar-seg ns-bar-rp" style="width: ${rpPct}%;" title="Rapor: ${rpHours} saat"></div>`);
+      // Hedef saat = baz hedef - 8 × izin günü (YI + RP).
+      const target = monthlyTargetHoursForNurse(state.meta, c.YI + c.RP);
+      const diff = work - target;
+      const diffLabel = diff > 0
+        ? `<span class="text-amber-600 dark:text-amber-400">+${diff} sa fazla</span>`
+        : diff < 0
+          ? `<span class="text-rose-600 dark:text-rose-400">${diff} sa eksik</span>`
+          : `<span class="text-emerald-600 dark:text-emerald-400">hedefte</span>`;
 
-      // Tag'leri sadece sıfır olmayanlar için göster
-      const tags: string[] = [];
-      if (c.N24 > 0) tags.push(`<span class="ns-tag" data-shift="N24"><strong>${c.N24}</strong> nöbet</span>`);
-      if (c.G8 > 0) tags.push(`<span class="ns-tag" data-shift="G8"><strong>${c.G8}</strong> gündüz</span>`);
-      if (c.GC16 > 0) tags.push(`<span class="ns-tag" data-shift="GC16"><strong>${c.GC16}</strong> gece</span>`);
-      if (c.DN > 0) tags.push(`<span class="ns-tag" data-shift="DN"><strong>${c.DN}</strong> dinlenme</span>`);
-      if (c.YI > 0) tags.push(`<span class="ns-tag" data-shift="YI"><strong>${c.YI}</strong> yıllık</span>`);
-      if (c.RP > 0) tags.push(`<span class="ns-tag" data-shift="RP"><strong>${c.RP}</strong> rapor</span>`);
+      // Bar segmentleri: 8 / 16 / 24 ayrı renklerde, sonra dinlenme / yıllık / rapor
+      const seg = (hours: number, cls: string, title: string): string =>
+        hours > 0 && monthTotal > 0
+          ? `<div class="ns-bar-seg ${cls}" style="width: ${(hours / monthTotal) * 100}%;" title="${title}"></div>`
+          : '';
+      const segs = [
+        seg(h8, 'ns-bar-h8', `Gündüz (8h × ${c.G8}): ${h8} saat`),
+        seg(h16, 'ns-bar-h16', `Gece (16h × ${c.GC16}): ${h16} saat`),
+        seg(h24, 'ns-bar-h24', `Nöbet (24h × ${c.N24}): ${h24} saat`),
+        seg(restHours, 'ns-bar-rest', `Dinlenme: ${restHours} saat`),
+        seg(yiHours, 'ns-bar-yi', `Yıllık izin: ${yiHours} saat`),
+        seg(rpHours, 'ns-bar-rp', `Rapor: ${rpHours} saat`),
+      ];
+
+      const ws: WorkStyle = nurse.workStyle ?? DEFAULT_WORK_STYLE;
+      const wsBadge = `<span class="ns-style-badge ns-style-${ws}" title="Çalışma tarzı: ${WORK_STYLE_LABEL[ws]}">${WORK_STYLE_SHORT[ws]}</span>`;
+
+      // Çalışma satırı: kategori başına saat
+      const workLines: string[] = [];
+      if (h8 > 0) workLines.push(`<span class="ns-tag" data-shift="G8"><strong>${c.G8}×8</strong> = ${h8}sa</span>`);
+      if (h16 > 0) workLines.push(`<span class="ns-tag" data-shift="GC16"><strong>${c.GC16}×16</strong> = ${h16}sa</span>`);
+      if (h24 > 0) workLines.push(`<span class="ns-tag" data-shift="N24"><strong>${c.N24}×24</strong> = ${h24}sa</span>`);
+
+      const otherLines: string[] = [];
+      if (restHours > 0) otherLines.push(`<span class="ns-tag" data-shift="DN"><strong>${c.DN}</strong> dinlenme · ${restHours}sa</span>`);
+      if (yiHours > 0) otherLines.push(`<span class="ns-tag" data-shift="YI"><strong>${c.YI}</strong> yıllık · ${yiHours}sa</span>`);
+      if (rpHours > 0) otherLines.push(`<span class="ns-tag" data-shift="RP"><strong>${c.RP}</strong> rapor · ${rpHours}sa</span>`);
 
       return `
         <div class="ns-stats-card">
           <div class="flex items-baseline justify-between">
-            <span class="text-base font-semibold text-slate-900 dark:text-white">${escapeHtml(nurse.name)}</span>
+            <span class="text-base font-semibold text-slate-900 dark:text-white">${escapeHtml(nurse.name)} ${wsBadge}</span>
             <span class="text-xl font-display font-bold text-slate-900 dark:text-white">${work}<span class="text-xs font-normal text-slate-500 ml-1">saat</span></span>
           </div>
+          <div class="ns-target-line mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Hedef: <strong>${target} sa</strong> · ${diffLabel}
+          </div>
           <div class="ns-bar mt-2" aria-label="Aylık saat dağılımı">${segs.join('')}</div>
-          <div class="mt-2 flex flex-wrap gap-1.5 text-xs">${tags.join('')}</div>
+          ${workLines.length > 0 ? `<div class="mt-2 flex flex-wrap gap-1.5 text-xs"><span class="ns-card-label">Çalışma</span>${workLines.join('')}</div>` : ''}
+          ${otherLines.length > 0 ? `<div class="mt-1.5 flex flex-wrap gap-1.5 text-xs"><span class="ns-card-label">Diğer</span>${otherLines.join('')}</div>` : ''}
         </div>`;
     }).join('');
     statsGrid.innerHTML = cards || `<p class="text-sm text-slate-500 dark:text-slate-400">Önce hemşire ekleyin.</p>`;
@@ -1503,7 +1543,7 @@ const TR_MONTHS = [
   function cycleWorkStyle(nurseId: string): void {
     const nurse = state.nurses.find((n) => n.id === nurseId);
     if (!nurse) return;
-    const order: WorkStyle[] = ['standard', 'oncall', 'minDays'];
+    const order: WorkStyle[] = ['normal', 'yogun'];
     const cur = nurse.workStyle ?? DEFAULT_WORK_STYLE;
     const next = order[(order.indexOf(cur) + 1) % order.length];
     nurse.workStyle = next;

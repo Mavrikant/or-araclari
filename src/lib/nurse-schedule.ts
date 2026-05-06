@@ -72,32 +72,49 @@ export function isLeaveShift(code: ShiftCode): boolean {
 
 /**
  * Hemşirenin çalışma tarzı.
- * - 'standard': mevcut adil dağılım (varsayılan).
- * - 'oncall' (Nöbetçi): yalnız N24 atanır; G8 / GC16 yasak (sert kısıt).
- *   Hedef: haftada ~2 nöbet ile iş yükünü tamamlamak.
- * - 'minDays' (Min-Gün): aktif vardiyalar mümkün olan en az haftalık güne
- *   sıkıştırılır. G8/GC16/N24 hepsi serbest, ama solver gün sayısını minimize
- *   eder (yumuşak hedef).
+ * - 'normal' (N): hafta içi 8 saatlik gündüz vardiyaları (G8) tercih eder.
+ *   Varsayılan adil dağılım davranışı.
+ * - 'yogun' (Y): "1 gün nöbet, 2 gün dinlenme" örüntüsü ister. Yalnız N24
+ *   atanır; G8/GC16 yasak (sert kısıt). Greedy ön-atamayla yoğun olarak nöbet
+ *   yazılır.
  */
-export type WorkStyle = 'standard' | 'oncall' | 'minDays';
+export type WorkStyle = 'normal' | 'yogun';
 
-export const DEFAULT_WORK_STYLE: WorkStyle = 'standard';
+export const DEFAULT_WORK_STYLE: WorkStyle = 'normal';
 
 export const WORK_STYLE_LABEL: Record<WorkStyle, string> = {
-  standard: 'Standart',
-  oncall: 'Nöbetçi',
-  minDays: 'Min-Gün',
+  normal: 'Normal',
+  yogun: 'Yoğun',
 };
 
 /** Tarz rozeti için kısa kod (UI). */
 export const WORK_STYLE_SHORT: Record<WorkStyle, string> = {
-  standard: 'S',
-  oncall: 'N',
-  minDays: 'M',
+  normal: 'N',
+  yogun: 'Y',
 };
 
 export function getWorkStyle(nurse: Nurse): WorkStyle {
   return nurse.workStyle ?? DEFAULT_WORK_STYLE;
+}
+
+/**
+ * Standart aylık hedef saat: haftada 40 saat × ay-içi hafta sayısı.
+ * Bir ay genelde 4-5 hafta (28-31 gün), yani hedef ≈ 160-180 saat.
+ */
+export function monthlyBaseTargetHours(meta: MonthMeta): number {
+  return Math.round((40 * meta.daysInMonth) / 7);
+}
+
+/**
+ * Bir hemşirenin saat hedefi: standart hedeften, izinli/raporlu her gün için
+ * 8 saat düşülür (zorunlu mesai azalır). Asla 0'ın altına düşmez.
+ */
+export function monthlyTargetHoursForNurse(
+  meta: MonthMeta,
+  leaveDays: number,
+): number {
+  const base = monthlyBaseTargetHours(meta);
+  return Math.max(0, base - 8 * leaveDays);
 }
 
 export interface Nurse {
@@ -105,7 +122,7 @@ export interface Nurse {
   name: string;
   /** Çalışılamaz gün numaraları (1..31). YI olarak işaretlenir, kilitlenir. */
   unavailable: number[];
-  /** Çalışma tarzı tercihi. Yoksa 'standard'. */
+  /** Çalışma tarzı tercihi. Yoksa 'normal'. */
   workStyle?: WorkStyle;
   notes?: string;
 }
@@ -453,9 +470,9 @@ export function validate(schedule: Schedule): ValidationIssue[] {
     }
   }
 
-  // Nöbetçi çalışma tarzı ihlali: G8 / GC16 atanmamalı (sadece N24 serbest).
+  // Yoğun çalışma tarzı ihlali: G8 / GC16 atanmamalı (sadece N24 serbest).
   for (const nurse of nurses) {
-    if (getWorkStyle(nurse) !== 'oncall') continue;
+    if (getWorkStyle(nurse) !== 'yogun') continue;
     for (let d = 1; d <= D; d++) {
       const c = getCell(schedule, nurse.id, d);
       if (c === 'G8' || c === 'GC16') {
@@ -463,7 +480,7 @@ export function validate(schedule: Schedule): ValidationIssue[] {
           kind: 'WORKSTYLE_VIOLATION',
           day: d,
           nurseId: nurse.id,
-          message: `${nurse.name} (Nöbetçi): gün ${d} ${SHIFT_LABEL[c]} atanmış — Nöbetçi tarzında yalnız 24 saat nöbet yazılabilir.`,
+          message: `${nurse.name} (Yoğun): gün ${d} ${SHIFT_LABEL[c]} atanmış — Yoğun tarzında yalnız 24 saat nöbet yazılabilir.`,
           severity: 'error',
         });
       }
@@ -515,23 +532,40 @@ export function computeStats(schedule: Schedule): ScheduleStats {
 interface ScoringState {
   nCount: Record<string, number>;
   hours: Record<string, number>;
+  /**
+   * Hemşire başına izin/rapor günü sayısı (YI + RP). Sabit kalır — solver YI/RP
+   * yazmaz, ön-doldurmadan veya kullanıcı pin'inden gelir.
+   */
+  leaveCount: Record<string, number>;
 }
 
 function initScoringState(schedule: Schedule): ScoringState {
   const nCount: Record<string, number> = {};
   const hours: Record<string, number> = {};
+  const leaveCount: Record<string, number> = {};
   for (const nurse of schedule.nurses) {
     nCount[nurse.id] = 0;
     hours[nurse.id] = 0;
+    leaveCount[nurse.id] = 0;
     for (let d = 1; d <= schedule.meta.daysInMonth; d++) {
       const k = cellKey(nurse.id, d);
       const c = schedule.cells[k];
       if (!c) continue;
       if (c === 'N24') nCount[nurse.id]++;
+      if (c === 'YI' || c === 'RP') leaveCount[nurse.id]++;
       hours[nurse.id] += shiftHoursOf(c);
     }
   }
-  return { nCount, hours };
+  return { nCount, hours, leaveCount };
+}
+
+/**
+ * Hemşirenin "ayarlı" saati: çalıştığı saat + 8 × izin/rapor günü.
+ * İzinli günleri 8 saat çalışmaya eşdeğer sayar → adil dağılım için kullanılır.
+ * (İzinsiz hemşire 160 sa = 18 izin günlü hemşire 16 sa + 18×8 = 160 sa)
+ */
+function adjustedHours(state: ScoringState, nurseId: string): number {
+  return state.hours[nurseId] + 8 * (state.leaveCount[nurseId] ?? 0);
 }
 
 /**
@@ -635,67 +669,36 @@ function candidatesForDay(
     if (schedule.pinned[k]) continue;
     if (schedule.cells[k]) continue; // already assigned
     if (nurseUnavailableDueToRest(schedule, nurse.id, day)) continue;
-    if (forShift && getWorkStyle(nurse) === 'oncall' && forShift !== 'N24') continue;
+    if (forShift && getWorkStyle(nurse) === 'yogun' && forShift !== 'N24') continue;
     out.push(nurse);
   }
   return out;
 }
 
-/**
- * Verilen gün için, nurse'ün o haftada hâlihazırda kaç aktif vardiyası
- * (G8/GC16/N24) olduğunu döner. Min-Gün tarzı için kümeleme metriği.
- */
-function nurseActiveDaysInWeek(
-  schedule: Schedule,
-  nurseId: string,
-  day: number,
-): number {
-  const week = weekOfDay(schedule.meta, day);
-  let count = 0;
-  for (const wd of week) {
-    if (wd === day) continue;
-    const c = schedule.cells[cellKey(nurseId, wd)];
-    if (c && isWorkingShift(c)) count++;
-  }
-  return count;
-}
-
 function rankCandidates(
   candidates: Nurse[],
   state: ScoringState,
-  schedule: Schedule,
-  day: number,
+  _schedule: Schedule,
+  _day: number,
   forShift: ShiftCode,
 ): Nurse[] {
   return [...candidates].sort((a, b) => {
     const wa = getWorkStyle(a);
     const wb = getWorkStyle(b);
 
-    // Nöbetçi hemşireler N24'te öne — yük yine eşitlenir ama pool'da varsa
-    // önce onlardan tüket.
+    // Yoğun hemşireler N24'te öne — pool'da varsa önce onlardan tüket.
     if (forShift === 'N24') {
-      const oa = wa === 'oncall' ? 0 : 1;
-      const ob = wb === 'oncall' ? 0 : 1;
+      const oa = wa === 'yogun' ? 0 : 1;
+      const ob = wb === 'yogun' ? 0 : 1;
       if (oa !== ob) return oa - ob;
     }
 
-    // Min-Gün hemşireler: o haftada zaten aktif günleri varsa onlara yaz
-    // (kümeleme). Hem a hem b minDays ise daha yoğun olanı tercih et.
-    const ada = wa === 'minDays' ? nurseActiveDaysInWeek(schedule, a.id, day) : -1;
-    const adb = wb === 'minDays' ? nurseActiveDaysInWeek(schedule, b.id, day) : -1;
-    if (ada !== adb) {
-      // -1 (non-minDays) en sonda kalsın değil — biz minDays nurse'ü
-      // mevcut aktif günleri ÇOK olduğunda tercih ediyoruz.
-      // Eğer biri minDays ve aktif günü > 0 ise, diğerinden öne geçsin.
-      const sa = ada > 0 ? ada * -1 : 0;
-      const sb = adb > 0 ? adb * -1 : 0;
-      // Daha küçük (negatif) skor önce gelir → daha çok aktif gün önce.
-      if (sa !== sb) return sa - sb;
-    }
-
+    // Nöbet sayısı az olan önce gelir (nöbet adaleti).
     const dn = state.nCount[a.id] - state.nCount[b.id];
     if (dn !== 0) return dn;
-    return state.hours[a.id] - state.hours[b.id];
+
+    // İzinli günler 8 sa eşdeğer sayılır → izinli hemşire daha az çalışır.
+    return adjustedHours(state, a.id) - adjustedHours(state, b.id);
   });
 }
 
@@ -713,20 +716,22 @@ function fillEmptyWithRest(schedule: Schedule): void {
 }
 
 /**
- * Nöbetçi (oncall) hemşireler için haftada ~2 N24 ön-atama.
+ * Yoğun (yogun) hemşireler için "1 gün nöbet, 2 gün dinlenme" örüntüsünde
+ * proaktif N24 ön-ataması.
  *
- * Greedy çekirdek pass'i sadece minimum kapsamayı dolduruyor; oysa Nöbetçi
- * hemşire kendi tercihiyle haftada ~2 nöbet bekliyor. Bu fonksiyon her hafta
- * için hedef sayıda N24 yazar — hem aktif kapsamayı erken tamamlar hem
- * hemşirenin tarz tercihini onurlandırır.
+ * Greedy çekirdek pass'i sadece minimum kapsamayı dolduruyor; oysa Yoğun
+ * hemşire kendi tercihiyle haftada ~2 nöbet bekliyor (1 gün çalış, 2 gün
+ * dinlen → haftada 2-3 nöbet). Bu fonksiyon her hafta için hedef sayıda N24
+ * yazar — hem aktif kapsamayı erken tamamlar hem hemşirenin tarz tercihini
+ * onurlandırır.
  *
  * Hedef hafta başına 2 N24, ay başı/sonundaki kısmi haftalarda 1 N24.
- * Restafternight ve unavailable kısıtları ihlal edilmez.
+ * RestAfterNight ve unavailable kısıtları ihlal edilmez.
  */
-function preAssignOncall(schedule: Schedule, state: ScoringState): void {
+function preAssignYogun(schedule: Schedule, state: ScoringState): void {
   const buckets = weekBucketsOfMonth(schedule.meta);
   for (const nurse of schedule.nurses) {
-    if (getWorkStyle(nurse) !== 'oncall') continue;
+    if (getWorkStyle(nurse) !== 'yogun') continue;
     for (const week of buckets) {
       const target = week.length >= 5 ? 2 : 1;
       let placed = 0;
@@ -778,11 +783,11 @@ export function solveScheduleGreedy(input: Schedule): SolveResult {
   const D = schedule.meta.daysInMonth;
   const { constraints } = schedule;
 
-  // 0) Nöbetçi (oncall) hemşireler için ön-atama: haftada hedef 2 N24.
-  // Greedy normalde gerek görmedikçe ekstra atama yapmaz; ama Nöbetçi
-  // hemşireler "yalnız nöbet" tarzında çalışmak istediği için onlara
-  // proaktif N24 yazıyoruz.
-  preAssignOncall(schedule, state);
+  // 0) Yoğun (yogun) hemşireler için ön-atama: haftada hedef 2 N24.
+  // Greedy normalde gerek görmedikçe ekstra atama yapmaz; ama Yoğun
+  // hemşireler "1 gün nöbet, 2 gün dinlenme" tarzında çalışmak istediği için
+  // onlara proaktif N24 yazıyoruz.
+  preAssignYogun(schedule, state);
 
   for (let d = 1; d <= D; d++) {
     const kind = dayKindOf(schedule, d);
@@ -1032,10 +1037,10 @@ export async function solveScheduleILP(
     return true;
   };
 
-  // Çalışma tarzına göre izinli vardiyaları belirle (Nöbetçi için sadece N24).
+  // Çalışma tarzına göre izinli vardiyaları belirle (Yoğun için sadece N24).
   const allowedShiftsFor = (nurse: Nurse): readonly ShiftCode[] => {
     const ws = getWorkStyle(nurse);
-    if (ws === 'oncall') return ['N24'] as const;
+    if (ws === 'yogun') return ['N24'] as const;
     return ACTIVE_SHIFTS;
   };
 
@@ -1176,17 +1181,23 @@ export async function solveScheduleILP(
     }
   }
 
-  // 8. Adillik objektifi: min(Z1 - Z2)
-  // Z1 ≥ hours_n, Z2 ≤ hours_n her n için
-  // Yardımcı: hours_n = pinnedHours + sum(8 x_G8 + 16 x_GC16 + 24 x_N24)
+  // 8. Adillik objektifi: min(Z1 - Z2) — "ayarlı saat" üzerinden
+  // adjustedHours_n = hours_n + 8 × leaveDays_n
+  //   → izinli/raporlu gün başına 8 sa kredi → izinli hemşire daha az çalışır.
+  // Z1 ≥ adjustedHours_n, Z2 ≤ adjustedHours_n her n için.
+  // hours_n = pinnedHours + sum(8 x_G8 + 16 x_GC16 + 24 x_N24)
+  // leaveDays sabittir (YI/RP solver kararı değil) → RHS'e taşınır.
   for (const nurse of schedule.nurses) {
     let pinnedHours = 0;
+    let leaveDays = 0;
     const z1Vars: LpVar[] = [{ name: 'Z1', coef: -1 }];
     const z2Vars: LpVar[] = [{ name: 'Z2', coef: -1 }];
     for (let d = 1; d <= D; d++) {
       const k = cellKey(nurse.id, d);
+      const cur = schedule.cells[k];
+      if (cur === 'YI' || cur === 'RP') leaveDays++;
       if (schedule.pinned[k]) {
-        pinnedHours += shiftHoursOf(schedule.cells[k] ?? 'DN');
+        pinnedHours += shiftHoursOf(cur ?? 'DN');
         continue;
       }
       const v1 = varNameOf(nurse.id, d, 'G8');
@@ -1205,58 +1216,24 @@ export async function solveScheduleILP(
         z2Vars.push({ name: v3, coef: 24 });
       }
     }
-    // -Z1 + sum(coef*x) ≤ -pinnedHours  (yani sum + pinned ≤ Z1)
+    const offset = pinnedHours + 8 * leaveDays;
+    // -Z1 + sum(coef*x) ≤ -offset   (yani sum + pinned + 8·leave ≤ Z1)
     subjectTo.push({
       name: `maxhours_${nurse.id}`,
       vars: z1Vars,
-      bnds: { type: glpk.GLP_UP, ub: -pinnedHours, lb: 0 },
+      bnds: { type: glpk.GLP_UP, ub: -offset, lb: 0 },
     });
-    // -Z2 + sum(coef*x) ≥ -pinnedHours  (yani sum + pinned ≥ Z2)
+    // -Z2 + sum(coef*x) ≥ -offset   (yani sum + pinned + 8·leave ≥ Z2)
     subjectTo.push({
       name: `minhours_${nurse.id}`,
       vars: z2Vars,
-      bnds: { type: glpk.GLP_LO, ub: 0, lb: -pinnedHours },
+      bnds: { type: glpk.GLP_LO, ub: 0, lb: -offset },
     });
   }
 
-  // 9. Min-Gün tarzı: her (nurse, hafta) için yardımcı `daysActive` değişkeni.
-  // daysActive_n_w ≥ Σ x_active over days in that week.
-  // Objektif fonksiyonda β · daysActive eklenir → solver gün sayısını azaltır.
-  const minDaysVars: string[] = [];
-  const weekBuckets = weekBucketsOfMonth(schedule.meta);
-  for (const nurse of schedule.nurses) {
-    if (getWorkStyle(nurse) !== 'minDays') continue;
-    for (let wIdx = 0; wIdx < weekBuckets.length; wIdx++) {
-      const week = weekBuckets[wIdx];
-      const daVar = `da_${nurse.id}_${wIdx}`;
-      const lhs: LpVar[] = [{ name: daVar, coef: -1 }];
-      let added = 0;
-      for (const d of week) {
-        for (const s of ACTIVE_SHIFTS) {
-          const v = varNameOf(nurse.id, d, s);
-          if (binaries.includes(v)) {
-            lhs.push({ name: v, coef: 1 });
-            added++;
-          }
-        }
-      }
-      if (added === 0) continue;
-      // Σ x - daysActive ≤ 0  →  daysActive ≥ Σ x
-      subjectTo.push({
-        name: `mindays_${nurse.id}_${wIdx}`,
-        vars: lhs,
-        bnds: { type: glpk.GLP_UP, ub: 0, lb: 0 },
-      });
-      minDaysVars.push(daVar);
-    }
-  }
-
   // Objective: spread minimize + N24 penalty (zorunda kalmadıkça nöbet yazma)
-  //          + β · Σ daysActive (Min-Gün hemşireleri için kümeleme)
-  // - Z1 - Z2 ana terim (saat sapması, tipik aralık 0-200 sa)
+  // - Z1 - Z2 ana terim (ayarlı saat sapması)
   // - α × ΣN24 ek terim (ufak penalty; spread çözümünü bozmayacak büyüklükte)
-  // - β × ΣdaysActive (Min-Gün hemşireler için: aktif gün sayısı azaltılır)
-  // α=1, β=1: her ekstra aktif gün ya da N24 spread'e 1 sa eşdeğer maliyet
   const objVars: LpVar[] = [
     { name: 'Z1', coef: 1 },
     { name: 'Z2', coef: -1 },
@@ -1264,26 +1241,14 @@ export async function solveScheduleILP(
   if (cons.preferEveningOverNight) {
     const alpha = 1;
     for (const nurse of schedule.nurses) {
-      // Nöbetçi için α=0 (zaten N24 yazmak istiyoruz, cezalandırmaya gerek yok).
-      if (getWorkStyle(nurse) === 'oncall') continue;
+      // Yoğun için α=0 (zaten N24 yazmak istiyoruz, cezalandırmaya gerek yok).
+      if (getWorkStyle(nurse) === 'yogun') continue;
       for (let d = 1; d <= D; d++) {
         const v = varNameOf(nurse.id, d, 'N24');
         if (binaries.includes(v)) objVars.push({ name: v, coef: alpha });
       }
     }
   }
-  const beta = 1;
-  for (const daVar of minDaysVars) {
-    objVars.push({ name: daVar, coef: beta });
-  }
-
-  // Yardımcı değişkenler (continuous) için bound'lar.
-  const auxBounds = minDaysVars.map((v) => ({
-    name: v,
-    type: glpk.GLP_LO,
-    lb: 0,
-    ub: 0,
-  }));
 
   const lp = {
     name: 'nurse_schedule',
@@ -1296,7 +1261,6 @@ export async function solveScheduleILP(
     bounds: [
       { name: 'Z1', type: glpk.GLP_LO, lb: 0, ub: 0 },
       { name: 'Z2', type: glpk.GLP_LO, lb: 0, ub: 0 },
-      ...auxBounds,
     ],
     binaries,
   };
@@ -1360,15 +1324,15 @@ export async function solveScheduleILP(
 
 export function buildSampleSchedule(year: number, month: number): Schedule {
   const nurses: Nurse[] = [
-    { id: 'n1', name: 'Ayşe', unavailable: [], workStyle: 'standard' },
-    { id: 'n2', name: 'Fatma', unavailable: [], workStyle: 'standard' },
-    { id: 'n3', name: 'Zeynep', unavailable: [], workStyle: 'standard' },
-    { id: 'n4', name: 'Elif', unavailable: [], workStyle: 'standard' },
-    { id: 'n5', name: 'Hanife', unavailable: [], workStyle: 'minDays' },
-    { id: 'n6', name: 'Sevgi', unavailable: [], workStyle: 'standard' },
-    { id: 'n7', name: 'Merve', unavailable: [], workStyle: 'standard' },
-    { id: 'n8', name: 'Selin', unavailable: [], workStyle: 'oncall' },
-    { id: 'n9', name: 'Gülnihal', unavailable: [], workStyle: 'standard' },
+    { id: 'n1', name: 'Ayşe', unavailable: [], workStyle: 'normal' },
+    { id: 'n2', name: 'Fatma', unavailable: [], workStyle: 'normal' },
+    { id: 'n3', name: 'Zeynep', unavailable: [], workStyle: 'normal' },
+    { id: 'n4', name: 'Elif', unavailable: [], workStyle: 'normal' },
+    { id: 'n5', name: 'Hanife', unavailable: [], workStyle: 'normal' },
+    { id: 'n6', name: 'Sevgi', unavailable: [], workStyle: 'normal' },
+    { id: 'n7', name: 'Merve', unavailable: [], workStyle: 'yogun' },
+    { id: 'n8', name: 'Selin', unavailable: [], workStyle: 'yogun' },
+    { id: 'n9', name: 'Gülnihal', unavailable: [], workStyle: 'normal' },
   ];
   const meta = createMonthMeta(year, month);
   if (meta.daysInMonth >= 5) {
