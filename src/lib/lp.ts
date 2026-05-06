@@ -295,6 +295,127 @@ function statusToString(glpk: GlpkLike, status: number): LpStatus {
   return 'undefined';
 }
 
+/* ------------------------------------------------------------------ */
+/* Structured form representation — used by the form-based UI.        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Structured representation of an LP problem, keyed by variable name.
+ * Designed for a form UI where the user picks variables and types
+ * coefficients into cells; sparse storage keeps "missing = 0" semantics.
+ */
+export interface StructuredLp {
+  direction: LpDirection;
+  /** Display order of variables in the form. */
+  variables: string[];
+  /** Sparse: variables not listed are treated as coefficient 0. */
+  objective: Record<string, number>;
+  constraints: StructuredConstraint[];
+}
+
+export interface StructuredConstraint {
+  /** Stable id for DOM rendering — survives reorders/deletions. */
+  id: string;
+  /** Sparse: variables not listed are treated as coefficient 0. */
+  coefficients: Record<string, number>;
+  relation: '<=' | '>=' | '=';
+  rhs: number;
+}
+
+function generateId(): string {
+  /* Prefer crypto.randomUUID() when available; fall back for older runtimes. */
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `c-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
+}
+
+/** Format a single coefficient for inclusion in the rendered LP text. */
+function formatCoefForText(n: number): string {
+  if (Number.isInteger(n)) return String(Math.abs(n));
+  /* Avoid trailing zeros like "3.0000"; keep up to 6 significant decimals. */
+  const s = Math.abs(n).toFixed(6).replace(/\.?0+$/, '');
+  return s.length === 0 ? '0' : s;
+}
+
+/** Render a sparse coefficient map into a textual expression like "3x + 4y". */
+function renderTerms(
+  variables: string[],
+  coefs: Record<string, number>,
+): string {
+  const parts: string[] = [];
+  for (const v of variables) {
+    const c = coefs[v];
+    if (c === undefined || c === 0) continue;
+    const abs = formatCoefForText(c);
+    const coefStr = abs === '1' ? '' : abs;
+    if (parts.length === 0) {
+      parts.push((c < 0 ? '-' : '') + coefStr + v);
+    } else {
+      parts.push(c < 0 ? '- ' : '+ ');
+      parts.push(coefStr + v);
+    }
+  }
+  if (parts.length === 0) return '0';
+  return parts.join(' ').replace(/\s+/g, ' ').trim();
+}
+
+function formatRhsForText(n: number): string {
+  if (Number.isInteger(n)) return String(n);
+  return n.toFixed(6).replace(/\.?0+$/, '');
+}
+
+/**
+ * Serialise a structured LP into the textual format that `parseLp` accepts.
+ * The result is round-trip stable: parseLp(structuredToText(s)) reconstructs
+ * an equivalent ParsedLp (modulo float formatting).
+ */
+export function structuredToText(s: StructuredLp): string {
+  const lines: string[] = [];
+  lines.push(`${s.direction} ${renderTerms(s.variables, s.objective)}`);
+  for (const c of s.constraints) {
+    const lhs = renderTerms(s.variables, c.coefficients);
+    lines.push(`${lhs} ${c.relation} ${formatRhsForText(c.rhs)}`);
+  }
+  return lines.join('\n');
+}
+
+/**
+ * Convert a successfully parsed LP back into the structured form so that
+ * legacy text-only state (lp-state-v2) can populate the new form UI.
+ */
+export function parsedToStructured(p: ParsedLp): StructuredLp {
+  const objective: Record<string, number> = {};
+  for (const t of p.objective) objective[t.variable] = t.coef;
+  return {
+    direction: p.direction,
+    variables: [...p.variables],
+    objective,
+    constraints: p.constraints.map((c) => {
+      const coefficients: Record<string, number> = {};
+      for (const t of c.terms) coefficients[t.variable] = t.coef;
+      return {
+        id: generateId(),
+        coefficients,
+        relation: c.relation,
+        rhs: c.rhs,
+      };
+    }),
+  };
+}
+
+/** Default starting state: 2 variables (x, y), max direction, one empty <= constraint. */
+export function emptyStructured(): StructuredLp {
+  return {
+    direction: 'max',
+    variables: ['x', 'y'],
+    objective: {},
+    constraints: [
+      { id: generateId(), coefficients: {}, relation: '<=', rhs: 0 },
+    ],
+  };
+}
+
 export async function solveLp(parsed: ParsedLp): Promise<LpSolveResult> {
   const glpk = await getGlpk();
   const t0 = performance.now();

@@ -43,7 +43,7 @@ export const TOOLS: readonly Tool[] = [
     title: 'Lineer Programlama Çözücü',
     shortTitle: 'LP Çözücü',
     description:
-      'LP/MILP modelini textbook biçiminde yaz, GLPK\'nın WASM motoru tarayıcıda çözsün. Hiçbir veri sunucuya gitmez.',
+      'Değişkenleri ve kısıtları görsel formla gir; GLPK\'nın WASM motoru tarayıcıda çözsün. İki değişkenli problemde uygun bölge ve optimum vertex anlık olarak çizilir.',
     category: 'optimizasyon',
     status: 'ready',
     guideSlug: 'dogrusal-programlama-nedir',
