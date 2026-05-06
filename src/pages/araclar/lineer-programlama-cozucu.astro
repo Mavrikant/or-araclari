@@ -36,16 +36,19 @@ const softwareJsonLd = {
       {tool.title}
     </h1>
     <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
-      LP'yi metin olarak yaz, GLPK'nın WebAssembly motoru tarayıcıda çözsün.
-      Tüm hesaplama yerel — model verisi sunucuya gönderilmez.
+      Değişkenleri ve kısıtları tıklayarak gir; GLPK'nın WebAssembly motoru
+      tarayıcıda çözsün, iki değişkenli problemde uygun bölge ve optimum vertex
+      anlık olarak çizilsin. Tüm hesaplama yerel — model verisi sunucuya gönderilmez.
       {guideHref && (
         <a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>
       )}
     </p>
   </Container>
 
-  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,300px)_1fr] print:block">
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,360px)_1fr] print:block">
+    {/* ------------------------------------------------------------ FORM */}
     <form id="lp-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+      {/* Üst aksiyonlar */}
       <div class="flex flex-wrap gap-2">
         <button type="button" id="sample-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
           Örnek doldur
@@ -59,57 +62,178 @@ const softwareJsonLd = {
         <span id="solve-label">Çöz</span>
       </button>
 
+      {/* Mod tabı */}
+      <div role="tablist" aria-label="Giriş yöntemi" class="flex gap-1 rounded-lg border border-slate-200 bg-slate-100 p-1 dark:border-slate-800 dark:bg-slate-900/60">
+        <button type="button" role="tab" id="tab-form" aria-selected="true" aria-controls="panel-form" class="flex-1 rounded-md px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
+          Görsel form
+        </button>
+        <button type="button" role="tab" id="tab-text" aria-selected="false" aria-controls="panel-text" class="flex-1 rounded-md px-3 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-500">
+          Metin editörü
+        </button>
+      </div>
+
+      {/* ============================================ Yapısal form paneli */}
+      <div id="panel-form" role="tabpanel" aria-labelledby="tab-form" class="space-y-6">
+        <fieldset>
+          <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+            Optimizasyon yönü
+          </legend>
+          <div class="mt-3 space-y-2">
+            <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
+              <input type="radio" name="dir" value="max" checked class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
+              <span class="flex-1">
+                <span class="block text-sm font-medium text-slate-900 dark:text-white">Maksimize</span>
+                <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Kâr, gelir, üretim gibi yükseltilecek değerler.</span>
+              </span>
+            </label>
+            <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
+              <input type="radio" name="dir" value="min" class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
+              <span class="flex-1">
+                <span class="block text-sm font-medium text-slate-900 dark:text-white">Minimize</span>
+                <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Maliyet, süre, mesafe gibi düşürülecek değerler.</span>
+              </span>
+            </label>
+          </div>
+        </fieldset>
+
+        {/* Değişkenler — chip listesi */}
+        <fieldset class="space-y-3">
+          <div class="flex items-center justify-between">
+            <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">Değişkenler</legend>
+            <span id="var-count" class="text-xs text-slate-500 dark:text-slate-400">0 değişken</span>
+          </div>
+          <div class="flex gap-2">
+            <input type="text" id="var-input" maxlength="16" autocomplete="off" placeholder="Ör: x"
+              class="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+            <button type="button" id="var-add-btn" class="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+              Ekle
+            </button>
+          </div>
+          <ul id="var-list" class="flex flex-wrap gap-1.5"></ul>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Tam <strong>2 değişken</strong> tanımlarsan altta otomatik grafik çizilir.</p>
+        </fieldset>
+
+        {/* Amaç fonksiyonu */}
+        <fieldset class="space-y-3">
+          <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">Amaç fonksiyonu</legend>
+          <div id="objective-row" class="flex flex-wrap items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-sm dark:border-slate-800 dark:bg-slate-900/40"></div>
+        </fieldset>
+
+        {/* Kısıtlar — matrix grid */}
+        <fieldset class="space-y-3">
+          <div class="flex items-center justify-between">
+            <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">Kısıtlar</legend>
+            <span id="constraint-count" class="text-xs text-slate-500 dark:text-slate-400">0 kısıt</span>
+          </div>
+          <div id="constraint-table" class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800"></div>
+          <button type="button" id="constraint-add-btn" class="inline-flex items-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-brand-500 hover:text-brand-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-accent-500 dark:hover:text-accent-300">
+            + Kısıt ekle
+          </button>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Boş hücre 0 olarak kabul edilir. Her değişken varsayılan olarak ≥ 0'dır.</p>
+        </fieldset>
+      </div>
+
+      {/* ============================================ Metin editörü paneli */}
+      <div id="panel-text" role="tabpanel" aria-labelledby="tab-text" hidden class="space-y-3">
+        <label for="lp-text" class="block font-display text-sm font-semibold text-slate-900 dark:text-white">
+          LP modeli (metin)
+        </label>
+        <textarea id="lp-text" rows="14" autocomplete="off" spellcheck="false"
+          class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 font-mono text-sm leading-relaxed text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+          placeholder="max 3x + 4y&#10;&#10;x + 2y <= 14&#10;3x - y >= 0&#10;x - y <= 2"></textarea>
+        <button type="button" id="text-to-form-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Metni form'a aktar
+        </button>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Yaptığın değişiklikler "Çöz"e basınca işlenir. Form'a geçince mevcut metin kaybolmaz.</p>
+      </div>
+
+      {/* Sonuç durum kartı */}
       <div id="status-box" hidden class="space-y-3">
         <div id="status-card" class="rounded-lg border p-3 text-sm">
           <div id="status-title" class="text-xs font-medium uppercase tracking-wide"></div>
           <div id="status-z" class="mt-1 font-display text-2xl font-bold"></div>
           <div id="status-time" class="mt-1 text-xs"></div>
         </div>
-        <div id="result-actions" class="flex flex-wrap gap-2">
-          <button type="button" id="print-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
-            Yazdır
-          </button>
-        </div>
+        <button type="button" id="print-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Yazdır
+        </button>
       </div>
 
+      {/* Format yardımı */}
       <details class="rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-xs dark:border-slate-800 dark:bg-slate-900/40">
         <summary class="cursor-pointer font-medium text-slate-700 dark:text-slate-300">
-          Format yardımı
+          Yardım
         </summary>
         <div class="mt-2 space-y-2 text-slate-600 dark:text-slate-400">
-          <p>İlk satır: <code>max</code> veya <code>min</code> + hedef ifadesi.</p>
-          <p>Sonraki satırlar: <code>ifade &lt;= sayı</code>, <code>ifade &gt;= sayı</code>, <code>ifade = sayı</code>.</p>
-          <p><code>#</code> veya <code>//</code> ile başlayan satırlar yorumdur.</p>
-          <p>Tüm değişkenler varsayılan olarak ≥ 0'dır; bunu değiştirmek için <code>x &gt;= -5</code> gibi açık bir kısıt ekleyebilirsin.</p>
-          <p>Türkçe ondalık virgülü (1,5) desteklenir.</p>
+          <p><strong>Görsel form:</strong> değişkenleri ekle, amaç fonksiyonunda her değişken için katsayıyı yaz, kısıt tablosuna katsayı + ilişki + sağ taraf gir.</p>
+          <p><strong>Metin editörü:</strong> İlk satır <code>max</code> veya <code>min</code> + hedef. Sonraki satırlar <code>ifade &lt;= sayı</code> formatında. <code>#</code> ile başlayan satırlar yorumdur.</p>
+          <p>Tüm değişkenler varsayılan olarak ≥ 0'dır. Türkçe ondalık virgülü (1,5) desteklenir.</p>
+          <p>İki değişkenli problemlerde sağ panelde uygun bölge ve optimum vertex grafiği otomatik çizilir.</p>
         </div>
       </details>
 
+      {/* Hata kutusu */}
       <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
     </form>
 
+    {/* ---------------------------------------------------------- SONUÇ PANELİ */}
     <section aria-live="polite" class="space-y-6">
-      <div>
-        <label for="lp-text" class="block font-display text-base font-semibold text-slate-900 dark:text-white">
-          LP modeli
-        </label>
-        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          Hedef + kısıtları metin olarak yaz, "Çöz" butonuna bas.
-        </p>
-        <textarea id="lp-text" rows="14" required autocomplete="off" spellcheck="false"
-          class="mt-3 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 font-mono text-sm leading-relaxed text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-          placeholder="max 3x + 4y&#10;&#10;x + 2y <= 14&#10;3x - y >= 0&#10;x - y <= 2"></textarea>
+      {/* Önizleme metni — yalnızca form modunda */}
+      <div id="preview-panel">
+        <div class="flex items-center justify-between">
+          <h2 class="font-display text-sm font-semibold text-slate-900 dark:text-white">LP modeli önizlemesi</h2>
+          <button type="button" id="copy-text-btn" class="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300">Metne kopyala</button>
+        </div>
+        <pre id="preview-text" class="mt-2 overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 p-3 font-mono text-xs leading-relaxed text-slate-700 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300"></pre>
       </div>
 
-      <div id="result-panel" hidden class="space-y-4">
-        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
-          Değişken değerleri
-        </h2>
-        <div id="vars-grid" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>
+      {/* Grafik paneli */}
+      <div id="chart-panel" hidden class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">Uygun bölge ve optimum</h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Yeşil bölge = uygun bölge · Yıldız = optimum vertex · Kesikli çizgi = z = z* amaç fonksiyonu.
+          <span class="ml-1 text-slate-400 dark:text-slate-500">(Yakınlaştırmak için kaydır, sürükleyerek kaydır, çift tıkla sıfırla.)</span>
+        </p>
+        <div id="chart-container" class="relative mt-3"></div>
+      </div>
+
+      {/* Grafik fallback */}
+      <div id="chart-fallback" hidden class="rounded-2xl border border-dashed border-slate-300 bg-slate-50/40 p-6 text-center text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/30 dark:text-slate-400">
+        <svg viewBox="0 0 24 24" class="mx-auto size-10 text-slate-400 dark:text-slate-600" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7 14l4-4 4 4 5-7" />
+        </svg>
+        <p id="chart-fallback-msg" class="mt-2"></p>
+      </div>
+
+      {/* Sonuç paneli */}
+      <div id="result-panel" hidden class="space-y-5">
+        <div>
+          <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">Değişken değerleri</h2>
+          <div id="vars-grid" class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>
+        </div>
+
+        <div id="slack-panel">
+          <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">Kısıt analizi</h2>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Bağlayıcı (binding) kısıtlar optimum vertex'i belirler — slack ≈ 0.</p>
+          <div class="mt-3 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
+            <table id="slack-table" class="w-full text-sm">
+              <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:bg-slate-900/60 dark:text-slate-400">
+                <tr>
+                  <th class="px-3 py-2 text-left">Kısıt</th>
+                  <th class="px-3 py-2 text-right">LHS</th>
+                  <th class="px-3 py-2 text-center">İlişki</th>
+                  <th class="px-3 py-2 text-right">RHS</th>
+                  <th class="px-3 py-2 text-right">Slack</th>
+                  <th class="px-3 py-2 text-center">Bağlayıcı?</th>
+                </tr>
+              </thead>
+              <tbody id="slack-tbody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+            </table>
+          </div>
+        </div>
+
         <details class="text-sm">
-          <summary class="cursor-pointer font-medium text-slate-700 dark:text-slate-300">
-            Çözücü ayrıntıları
-          </summary>
+          <summary class="cursor-pointer font-medium text-slate-700 dark:text-slate-300">Çözücü ayrıntıları (JSON)</summary>
           <pre id="solver-detail" class="mt-2 overflow-x-auto rounded-lg bg-slate-50 p-3 font-mono text-xs text-slate-700 dark:bg-slate-900/60 dark:text-slate-300"></pre>
         </details>
       </div>
@@ -138,10 +262,56 @@ const softwareJsonLd = {
 </BaseLayout>
 
 <script>
-  import { parseLp, solveLp, LpParseError, LpSolveError, type LpSolveResult } from '../../lib/lp';
+  import {
+    parseLp,
+    solveLp,
+    structuredToText,
+    parsedToStructured,
+    emptyStructured,
+    LpParseError,
+    LpSolveError,
+    type LpSolveResult,
+    type ParsedLp,
+    type StructuredLp,
+    type StructuredConstraint,
+  } from '../../lib/lp';
+  import {
+    feasibleRegion,
+    objectiveAt,
+    type LineEquation,
+    type Point2D,
+  } from '../../lib/lp-geometry';
 
-  const STORAGE_KEY = 'lp-state-v2';
-  const SAMPLE = `max 3x + 4y\n\nx + 2y <= 14\n3x - y >= 0\nx - y <= 2`;
+  /* ============================================================ Constants */
+
+  const STORAGE_KEY = 'lp-state-v3';
+  const LEGACY_KEY = 'lp-state-v2';
+  const VAR_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+  const SAMPLE: StructuredLp = {
+    direction: 'max',
+    variables: ['x', 'y'],
+    objective: { x: 3, y: 4 },
+    constraints: [
+      { id: 's1', coefficients: { x: 1, y: 2 }, relation: '<=', rhs: 14 },
+      { id: 's2', coefficients: { x: 3, y: -1 }, relation: '>=', rhs: 0 },
+      { id: 's3', coefficients: { x: 1, y: -1 }, relation: '<=', rhs: 2 },
+    ],
+  };
+
+  /* 8-color palette for constraint lines (Tailwind 500 hues). */
+  const CONSTRAINT_COLORS = [
+    '#3b82f6', // blue
+    '#f97316', // orange
+    '#a855f7', // purple
+    '#f43f5e', // rose
+    '#14b8a6', // teal
+    '#f59e0b', // amber
+    '#0ea5e9', // sky
+    '#d946ef', // fuchsia
+  ];
+
+  /* ============================================================ DOM helpers */
 
   const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
     const el = document.getElementById(id);
@@ -154,17 +324,116 @@ const softwareJsonLd = {
   }
 
   function fmt(n: number): string {
+    if (!Number.isFinite(n)) return '—';
     if (Number.isInteger(n)) return String(n);
     if (Math.abs(n) < 1e-9) return '0';
     return n.toFixed(4).replace(/\.?0+$/, '');
   }
 
+  function newId(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+    return `c-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
+  }
+
+  /* ============================================================ Type / state */
+
+  type Mode = 'structured' | 'text';
+
+  interface FormState {
+    mode: Mode;
+    structured: StructuredLp;
+    text: string;
+  }
+
+  function emptyState(): FormState {
+    return { mode: 'structured', structured: emptyStructured(), text: '' };
+  }
+
+  function normalize(s: Partial<FormState> | undefined | null): FormState {
+    if (!s || typeof s !== 'object') return emptyState();
+    const def = emptyState();
+    const struct = s.structured && typeof s.structured === 'object'
+      ? {
+          direction: s.structured.direction === 'min' ? 'min' as const : 'max' as const,
+          variables: Array.isArray(s.structured.variables) ? s.structured.variables.filter((v): v is string => typeof v === 'string' && VAR_RE.test(v)) : def.structured.variables,
+          objective: s.structured.objective && typeof s.structured.objective === 'object' ? s.structured.objective as Record<string, number> : {},
+          constraints: Array.isArray(s.structured.constraints)
+            ? s.structured.constraints
+                .filter((c): c is StructuredConstraint => !!c && typeof c === 'object')
+                .map((c) => ({
+                  id: typeof c.id === 'string' && c.id ? c.id : newId(),
+                  coefficients: c.coefficients && typeof c.coefficients === 'object' ? c.coefficients : {},
+                  relation: c.relation === '>=' || c.relation === '=' ? c.relation : '<=',
+                  rhs: typeof c.rhs === 'number' && Number.isFinite(c.rhs) ? c.rhs : 0,
+                }))
+            : def.structured.constraints,
+        }
+      : def.structured;
+    if (struct.constraints.length === 0) struct.constraints = def.structured.constraints;
+    return {
+      mode: s.mode === 'text' ? 'text' : 'structured',
+      structured: struct,
+      text: typeof s.text === 'string' ? s.text : '',
+    };
+  }
+
+  function loadState(): FormState {
+    /* 1. v3 JSON */
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const norm = normalize(parsed);
+        if (norm.structured.variables.length > 0) return norm;
+      }
+    } catch { /* fall through */ }
+    /* 2. v2 string — try to upgrade */
+    try {
+      const v2 = localStorage.getItem(LEGACY_KEY);
+      if (v2 && v2.trim()) {
+        try {
+          const parsed = parseLp(v2);
+          return { mode: 'structured', structured: parsedToStructured(parsed), text: v2 };
+        } catch {
+          return { mode: 'text', structured: emptyStructured(), text: v2 };
+        }
+      }
+    } catch { /* fall through */ }
+    return emptyState();
+  }
+
+  function saveState(): void {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch { /* ignore quota / disabled */ }
+  }
+
+  /* ============================================================ DOM cache */
+
   const form = $<HTMLFormElement>('lp-form');
-  const lpText = $<HTMLTextAreaElement>('lp-text');
-  const sampleBtn = $('sample-btn');
-  const resetBtn = $('reset-btn');
+  const sampleBtn = $<HTMLButtonElement>('sample-btn');
+  const resetBtn = $<HTMLButtonElement>('reset-btn');
   const solveBtn = $<HTMLButtonElement>('solve-btn');
   const solveLabel = $('solve-label');
+
+  const tabForm = $<HTMLButtonElement>('tab-form');
+  const tabText = $<HTMLButtonElement>('tab-text');
+  const panelForm = $('panel-form');
+  const panelText = $('panel-text');
+  const lpText = $<HTMLTextAreaElement>('lp-text');
+  const textToFormBtn = $<HTMLButtonElement>('text-to-form-btn');
+
+  const varInput = $<HTMLInputElement>('var-input');
+  const varAddBtn = $<HTMLButtonElement>('var-add-btn');
+  const varList = $('var-list');
+  const varCount = $('var-count');
+  const objectiveRow = $('objective-row');
+  const constraintTable = $('constraint-table');
+  const constraintAddBtn = $<HTMLButtonElement>('constraint-add-btn');
+  const constraintCount = $('constraint-count');
+
   const errorBox = $('error-box');
   const statusBox = $('status-box');
   const statusCard = $('status-card');
@@ -172,41 +441,325 @@ const softwareJsonLd = {
   const statusZ = $('status-z');
   const statusTime = $('status-time');
   const printBtn = $<HTMLButtonElement>('print-btn');
+
+  const previewPanel = $('preview-panel');
+  const previewText = $('preview-text') as HTMLPreElement;
+  const copyTextBtn = $<HTMLButtonElement>('copy-text-btn');
+
+  const chartPanel = $('chart-panel');
+  const chartContainer = $('chart-container');
+  const chartFallback = $('chart-fallback');
+  const chartFallbackMsg = $('chart-fallback-msg');
+
   const resultPanel = $('result-panel');
   const varsGrid = $('vars-grid');
+  const slackPanel = $('slack-panel');
+  const slackTbody = $('slack-tbody');
   const solverDetail = $('solver-detail') as HTMLPreElement;
 
-  /* ---------- state ---------- */
+  /* ============================================================ State */
 
-  function loadState(): string {
+  const state: FormState = loadState();
+
+  /* ============================================================ Render */
+
+  function renderModeUI(): void {
+    const isForm = state.mode === 'structured';
+    panelForm.hidden = !isForm;
+    panelText.hidden = isForm;
+    previewPanel.hidden = !isForm;
+
+    /* Tab visual states */
+    const activeCls = 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white';
+    const inactiveCls = 'text-slate-500 dark:text-slate-500';
+    tabForm.className = `flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition ${isForm ? activeCls : inactiveCls}`;
+    tabText.className = `flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition ${!isForm ? activeCls : inactiveCls}`;
+    tabForm.setAttribute('aria-selected', isForm ? 'true' : 'false');
+    tabText.setAttribute('aria-selected', !isForm ? 'true' : 'false');
+
+    if (!isForm) lpText.value = state.text;
+  }
+
+  function renderDirectionRadio(): void {
+    const radios = form.querySelectorAll<HTMLInputElement>('input[name="dir"]');
+    radios.forEach((r) => {
+      r.checked = r.value === state.structured.direction;
+    });
+  }
+
+  function renderVariableChips(): void {
+    const vars = state.structured.variables;
+    varCount.textContent = `${vars.length} değişken`;
+    if (vars.length === 0) {
+      varList.innerHTML = '<li class="text-xs italic text-slate-400 dark:text-slate-500">Henüz değişken yok. "x" ekleyerek başla.</li>';
+      return;
+    }
+    varList.innerHTML = vars
+      .map((v, i) => {
+        const color = CONSTRAINT_COLORS[i % CONSTRAINT_COLORS.length];
+        return `<li class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-900">
+          <span class="inline-block size-2 rounded-full" style="background:${color}"></span>
+          <span class="font-mono text-slate-900 dark:text-slate-100">${escapeHtml(v)}</span>
+          <button type="button" data-remove-var="${escapeHtml(v)}" aria-label="${escapeHtml(v)} kaldır" class="ml-0.5 rounded text-slate-400 hover:text-red-600 dark:hover:text-red-400">
+            <svg viewBox="0 0 20 20" class="size-3.5" fill="currentColor"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </li>`;
+      })
+      .join('');
+  }
+
+  function renderObjectiveRow(): void {
+    const vars = state.structured.variables;
+    const dirLabel = state.structured.direction === 'max' ? 'max' : 'min';
+    if (vars.length === 0) {
+      objectiveRow.innerHTML = '<span class="text-xs italic text-slate-400 dark:text-slate-500">Önce değişken ekle.</span>';
+      return;
+    }
+    const parts: string[] = [
+      `<span class="rounded bg-brand-100 px-2 py-0.5 font-mono text-xs font-semibold text-brand-800 dark:bg-accent-500/15 dark:text-accent-300">${dirLabel}</span>`,
+    ];
+    vars.forEach((v, i) => {
+      const val = state.structured.objective[v];
+      const valStr = val === undefined || val === 0 ? '' : String(val);
+      if (i > 0) parts.push('<span class="text-slate-400">+</span>');
+      parts.push(`<label class="inline-flex items-center gap-1">
+        <input type="number" step="any" inputmode="decimal" data-obj-coef="${escapeHtml(v)}" value="${escapeHtml(valStr)}" placeholder="0"
+          class="w-16 rounded border border-slate-300 bg-white px-2 py-1 text-right text-sm tabular-nums focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        <span class="font-mono text-sm font-semibold text-slate-700 dark:text-slate-300">${escapeHtml(v)}</span>
+      </label>`);
+    });
+    objectiveRow.innerHTML = parts.join(' ');
+  }
+
+  function renderConstraintTable(): void {
+    const vars = state.structured.variables;
+    const cs = state.structured.constraints;
+    constraintCount.textContent = `${cs.length} kısıt`;
+
+    if (vars.length === 0) {
+      constraintTable.innerHTML = '<div class="p-4 text-center text-xs italic text-slate-400 dark:text-slate-500">Önce değişken ekle, sonra kısıtları gir.</div>';
+      return;
+    }
+
+    const headerCells = vars
+      .map((v, i) => {
+        const color = CONSTRAINT_COLORS[i % CONSTRAINT_COLORS.length];
+        return `<th class="px-2 py-2 text-center font-mono text-xs font-semibold">
+          <span class="inline-flex items-center gap-1">
+            <span class="inline-block size-1.5 rounded-full" style="background:${color}"></span>
+            ${escapeHtml(v)}
+          </span>
+        </th>`;
+      })
+      .join('');
+
+    const rows = cs
+      .map((c, ci) => {
+        const cells = vars
+          .map((v) => {
+            const coef = c.coefficients[v];
+            const val = coef === undefined || coef === 0 ? '' : String(coef);
+            return `<td class="border-t border-slate-200 p-1 dark:border-slate-800">
+              <input type="number" step="any" inputmode="decimal" data-con-coef="${escapeHtml(c.id)}" data-var="${escapeHtml(v)}" value="${escapeHtml(val)}" placeholder="0"
+                class="w-14 rounded border border-transparent bg-transparent px-1 py-1 text-right text-sm tabular-nums hover:bg-slate-50 focus:border-brand-500 focus:bg-white focus:ring-1 focus:ring-brand-500/30 dark:hover:bg-slate-800 dark:focus:bg-slate-950" />
+            </td>`;
+          })
+          .join('');
+        const removable = cs.length > 1;
+        return `<tr>
+          ${cells}
+          <td class="border-t border-slate-200 px-1 py-1 dark:border-slate-800">
+            <select data-con-rel="${escapeHtml(c.id)}" class="rounded border border-slate-300 bg-white px-1.5 py-1 text-xs font-semibold focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+              <option value="<=" ${c.relation === '<=' ? 'selected' : ''}>≤</option>
+              <option value="=" ${c.relation === '=' ? 'selected' : ''}>=</option>
+              <option value=">=" ${c.relation === '>=' ? 'selected' : ''}>≥</option>
+            </select>
+          </td>
+          <td class="border-t border-slate-200 p-1 dark:border-slate-800">
+            <input type="number" step="any" inputmode="decimal" data-con-rhs="${escapeHtml(c.id)}" value="${escapeHtml(String(c.rhs))}" placeholder="0"
+              class="w-16 rounded border border-slate-300 bg-white px-2 py-1 text-right text-sm tabular-nums focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </td>
+          <td class="border-t border-slate-200 px-1 py-1 text-center dark:border-slate-800">
+            <button type="button" data-remove-con="${escapeHtml(c.id)}" ${removable ? '' : 'disabled'} aria-label="Kısıt ${ci + 1} kaldır"
+              class="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-red-950/40 dark:hover:text-red-400">
+              <svg viewBox="0 0 20 20" class="size-4" fill="currentColor"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+          </td>
+        </tr>`;
+      })
+      .join('');
+
+    constraintTable.innerHTML = `<table class="w-full text-sm">
+      <thead class="bg-slate-50 dark:bg-slate-900/60">
+        <tr>
+          ${headerCells}
+          <th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">İlişki</th>
+          <th class="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">RHS</th>
+          <th class="w-8"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>`;
+  }
+
+  function renderPreview(): void {
+    if (state.mode !== 'structured') return;
+    state.text = structuredToText(state.structured);
+    previewText.textContent = state.text;
+  }
+
+  function renderAll(): void {
+    renderModeUI();
+    renderDirectionRadio();
+    renderVariableChips();
+    renderObjectiveRow();
+    renderConstraintTable();
+    renderPreview();
+  }
+
+  function commit(): void {
+    saveState();
+    renderPreview();
+  }
+
+  /* ============================================================ State mutations */
+
+  function addVariable(name: string): void {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    if (!VAR_RE.test(trimmed)) {
+      flashFieldError(varInput, 'Değişken adı harf veya _ ile başlamalı.');
+      return;
+    }
+    const lower = trimmed.toLocaleLowerCase('tr');
+    if (state.structured.variables.some((v) => v.toLocaleLowerCase('tr') === lower)) {
+      flashFieldError(varInput, 'Bu değişken zaten ekli.');
+      return;
+    }
+    if (state.structured.variables.length >= 64) {
+      flashFieldError(varInput, 'En fazla 64 değişken desteklenir.');
+      return;
+    }
+    state.structured.variables.push(trimmed);
+    varInput.value = '';
+    renderVariableChips();
+    renderObjectiveRow();
+    renderConstraintTable();
+    commit();
+    varInput.focus();
+  }
+
+  function removeVariable(name: string): void {
+    state.structured.variables = state.structured.variables.filter((v) => v !== name);
+    delete state.structured.objective[name];
+    for (const c of state.structured.constraints) delete c.coefficients[name];
+    renderVariableChips();
+    renderObjectiveRow();
+    renderConstraintTable();
+    commit();
+  }
+
+  function setObjectiveCoef(varName: string, val: number | null): void {
+    if (val === null || val === 0) {
+      delete state.structured.objective[varName];
+    } else {
+      state.structured.objective[varName] = val;
+    }
+    commit();
+  }
+
+  function setConstraintCoef(id: string, varName: string, val: number | null): void {
+    const c = state.structured.constraints.find((c) => c.id === id);
+    if (!c) return;
+    if (val === null || val === 0) delete c.coefficients[varName];
+    else c.coefficients[varName] = val;
+    commit();
+  }
+
+  function setConstraintRel(id: string, rel: '<=' | '>=' | '='): void {
+    const c = state.structured.constraints.find((c) => c.id === id);
+    if (!c) return;
+    c.relation = rel;
+    commit();
+  }
+
+  function setConstraintRhs(id: string, val: number): void {
+    const c = state.structured.constraints.find((c) => c.id === id);
+    if (!c) return;
+    c.rhs = val;
+    commit();
+  }
+
+  function addConstraint(): void {
+    if (state.structured.constraints.length >= 128) {
+      showError('En fazla 128 kısıt desteklenir.');
+      return;
+    }
+    state.structured.constraints.push({ id: newId(), coefficients: {}, relation: '<=', rhs: 0 });
+    renderConstraintTable();
+    commit();
+  }
+
+  function removeConstraint(id: string): void {
+    if (state.structured.constraints.length <= 1) return;
+    state.structured.constraints = state.structured.constraints.filter((c) => c.id !== id);
+    renderConstraintTable();
+    commit();
+  }
+
+  function setDirection(d: 'max' | 'min'): void {
+    state.structured.direction = d;
+    commit();
+  }
+
+  function setMode(mode: Mode): void {
+    /* Form -> Text: regenerate text from structured. */
+    if (state.mode === 'structured' && mode === 'text') {
+      state.text = structuredToText(state.structured);
+      lpText.value = state.text;
+    }
+    state.mode = mode;
+    renderModeUI();
+    saveState();
+  }
+
+  function importTextToForm(): void {
+    const text = lpText.value;
+    if (!text.trim()) {
+      showError('Aktarılacak metin boş.');
+      return;
+    }
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ?? '';
-    } catch {
-      return '';
+      const parsed = parseLp(text);
+      state.structured = parsedToStructured(parsed);
+      state.text = text;
+      state.mode = 'structured';
+      clearError();
+      renderAll();
+      saveState();
+    } catch (err) {
+      const msg = err instanceof LpParseError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
+      showError(`Metin form'a aktarılamadı: ${msg}`);
     }
   }
-  function saveState(): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, lpText.value);
-    } catch {
-      /* ignore */
-    }
-  }
-  lpText.value = loadState();
-  lpText.addEventListener('input', saveState);
 
-  /* ---------- error / status helpers ---------- */
+  /* ============================================================ Errors / status */
 
   function showError(msg: string): void {
     errorBox.textContent = msg;
     errorBox.hidden = false;
     statusBox.hidden = true;
-    resultPanel.hidden = true;
   }
   function clearError(): void {
     errorBox.hidden = true;
     errorBox.textContent = '';
+  }
+  function flashFieldError(field: HTMLInputElement, msg: string): void {
+    showError(msg);
+    field.focus();
+    field.select();
   }
 
   function setStatus(result: LpSolveResult): void {
@@ -224,7 +777,7 @@ const softwareJsonLd = {
       ? 'mt-1 text-xs text-emerald-800 dark:text-emerald-300'
       : 'mt-1 text-xs text-amber-800 dark:text-amber-300';
 
-    const labels: Record<typeof result.status, string> = {
+    const labels: Record<LpSolveResult['status'], string> = {
       optimal: 'Optimum bulundu',
       feasible: 'Uygun çözüm (interior)',
       infeasible: 'Uygun çözüm yok',
@@ -233,19 +786,21 @@ const softwareJsonLd = {
       undefined: 'Çözüm tanımsız',
     };
     statusTitle.textContent = labels[result.status];
-    statusZ.textContent =
-      result.status === 'optimal' || result.status === 'feasible'
-        ? `z* = ${fmt(result.objectiveValue)}`
-        : '—';
+    statusZ.textContent = positive ? `z* = ${fmt(result.objectiveValue)}` : '—';
     statusTime.textContent = `${result.solveTimeMs} ms`;
     statusBox.hidden = false;
   }
 
-  function renderVars(result: LpSolveResult): void {
-    if (result.status !== 'optimal' && result.status !== 'feasible') {
+  function renderResults(parsed: ParsedLp, result: LpSolveResult): void {
+    const positive = result.status === 'optimal' || result.status === 'feasible';
+    if (!positive) {
       resultPanel.hidden = true;
+      chartPanel.hidden = true;
+      chartFallback.hidden = true;
       return;
     }
+
+    /* Variable values grid */
     varsGrid.innerHTML = result.variables
       .map(
         (v) => `<div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
@@ -254,6 +809,11 @@ const softwareJsonLd = {
         </div>`,
       )
       .join('');
+
+    /* Slack / binding table */
+    renderSlackTable(parsed, result);
+
+    /* JSON dump */
     solverDetail.textContent = JSON.stringify(
       {
         status: result.status,
@@ -265,20 +825,409 @@ const softwareJsonLd = {
       2,
     );
     resultPanel.hidden = false;
+
+    /* Chart */
+    if (parsed.variables.length === 2) {
+      chartPanel.hidden = false;
+      chartFallback.hidden = true;
+      void renderChart(parsed, result).catch((err) => {
+        console.error('Grafik render hatası:', err);
+      });
+    } else {
+      chartPanel.hidden = true;
+      purgeChart();
+      chartFallback.hidden = false;
+      const n = parsed.variables.length;
+      chartFallbackMsg.textContent =
+        n === 1
+          ? 'Tek değişkenli LP — grafik 2 değişken için çizilir. Sonuçları yukarıda gör.'
+          : `Bu problem ${n} değişkenli. Grafik yalnızca 2 değişkenli problemler için çizilir; alttaki kısıt analizi tablosu hangi kısıtların optimum vertex'i belirlediğini gösterir.`;
+    }
   }
 
-  /* ---------- solve ---------- */
+  function renderSlackTable(parsed: ParsedLp, result: LpSolveResult): void {
+    const valMap = new Map<string, number>();
+    for (const v of result.variables) valMap.set(v.variable, v.value);
+
+    slackTbody.innerHTML = parsed.constraints
+      .map((c) => {
+        let lhs = 0;
+        for (const t of c.terms) lhs += t.coef * (valMap.get(t.variable) ?? 0);
+        const slack = c.relation === '<=' ? c.rhs - lhs : c.relation === '>=' ? lhs - c.rhs : Math.abs(lhs - c.rhs);
+        const binding = Math.abs(slack) < 1e-6;
+        const relSym = c.relation === '<=' ? '≤' : c.relation === '>=' ? '≥' : '=';
+        const rowCls = binding
+          ? 'bg-emerald-50/50 dark:bg-emerald-950/20'
+          : '';
+        const badgeCls = binding
+          ? 'inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+          : 'inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400';
+        return `<tr class="${rowCls}">
+          <td class="px-3 py-2 font-mono text-xs text-slate-700 dark:text-slate-300">${escapeHtml(c.source.length > 40 ? c.source.slice(0, 40) + '…' : c.source)}</td>
+          <td class="px-3 py-2 text-right tabular-nums">${fmt(lhs)}</td>
+          <td class="px-3 py-2 text-center font-semibold text-slate-500 dark:text-slate-400">${relSym}</td>
+          <td class="px-3 py-2 text-right tabular-nums">${fmt(c.rhs)}</td>
+          <td class="px-3 py-2 text-right tabular-nums ${binding ? 'font-semibold text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'}">${fmt(slack)}</td>
+          <td class="px-3 py-2 text-center"><span class="${badgeCls}">${binding ? 'Bağlayıcı' : 'Gevşek'}</span></td>
+        </tr>`;
+      })
+      .join('');
+  }
+
+  /* ============================================================ Chart (Plotly.js) */
+
+  function termsToCoefs(terms: { coef: number; variable: string }[], vars: string[]): { x: number; y: number } {
+    const m: Record<string, number> = {};
+    for (const t of terms) m[t.variable] = (m[t.variable] ?? 0) + t.coef;
+    return { x: m[vars[0]] ?? 0, y: m[vars[1]] ?? 0 };
+  }
+
+  function constraintToLine(c: ParsedLp['constraints'][number], vars: string[]): LineEquation {
+    const { x, y } = termsToCoefs(c.terms, vars);
+    return { a: x, b: y, c: c.rhs, relation: c.relation };
+  }
+
+  /* Plotly is loaded lazily on first chart render — keeps the initial bundle slim. */
+  type PlotlyApi = {
+    newPlot: (el: HTMLElement, data: unknown[], layout: unknown, config?: unknown) => Promise<unknown>;
+    react: (el: HTMLElement, data: unknown[], layout: unknown, config?: unknown) => Promise<unknown>;
+    purge: (el: HTMLElement) => void;
+    Plots: { resize: (el: HTMLElement) => void };
+  };
+  let plotlyPromise: Promise<PlotlyApi> | null = null;
+  function getPlotly(): Promise<PlotlyApi> {
+    if (!plotlyPromise) {
+      plotlyPromise = import('plotly.js-basic-dist-min').then((mod) => {
+        const m = mod as unknown as { default?: PlotlyApi } & PlotlyApi;
+        return (m.default ?? m) as PlotlyApi;
+      });
+    }
+    return plotlyPromise;
+  }
+
+  function isDarkMode(): boolean {
+    return document.documentElement.classList.contains('dark');
+  }
+
+  /* Cached so a theme change can re-render without solving again. */
+  let lastChartArgs: { parsed: ParsedLp; result: LpSolveResult } | null = null;
+
+  async function renderChart(parsed: ParsedLp, result: LpSolveResult): Promise<void> {
+    lastChartArgs = { parsed, result };
+    const Plotly = await getPlotly();
+
+    const [vx, vy] = parsed.variables;
+    const objCoefs = termsToCoefs(parsed.objective, parsed.variables);
+    const constraintLines = parsed.constraints.map((c) => constraintToLine(c, parsed.variables));
+
+    /* Default non-negativity bounds (x >= 0, y >= 0) shape the feasible region. */
+    const xAxisLine: LineEquation = { a: 0, b: 1, c: 0, relation: '>=' };
+    const yAxisLine: LineEquation = { a: 1, b: 0, c: 0, relation: '>=' };
+    const allLines: LineEquation[] = [...constraintLines, xAxisLine, yAxisLine];
+
+    const region = feasibleRegion(allLines);
+    const optX = result.variables.find((v) => v.variable === vx)?.value ?? 0;
+    const optY = result.variables.find((v) => v.variable === vy)?.value ?? 0;
+    const optimum: Point2D = { x: optX, y: optY };
+    const z = result.objectiveValue;
+
+    /* Viewport from feasible vertices + optimum, padded. */
+    const interestPoints = region.length > 0 ? [...region, optimum] : [optimum, { x: 0, y: 0 }];
+    let xMin = Math.min(0, ...interestPoints.map((p) => p.x));
+    let xMax = Math.max(...interestPoints.map((p) => p.x), 1);
+    let yMin = Math.min(0, ...interestPoints.map((p) => p.y));
+    let yMax = Math.max(...interestPoints.map((p) => p.y), 1);
+    const xPad = Math.max((xMax - xMin) * 0.15, 1);
+    const yPad = Math.max((yMax - yMin) * 0.15, 1);
+    xMin -= xPad * 0.5;
+    xMax += xPad;
+    yMin -= yPad * 0.5;
+    yMax += yPad;
+
+    const dark = isDarkMode();
+    const fontColor = dark ? 'rgb(226, 232, 240)' : 'rgb(15, 23, 42)';
+    const subtleFont = dark ? 'rgb(148, 163, 184)' : 'rgb(71, 85, 105)';
+    const gridColor = dark ? 'rgba(148, 163, 184, 0.18)' : 'rgba(100, 116, 139, 0.20)';
+    const zeroLineColor = dark ? 'rgba(148, 163, 184, 0.5)' : 'rgba(71, 85, 105, 0.55)';
+    const objectiveColor = dark ? '#e2e8f0' : '#0f172a';
+    const optimumColor = dark ? 'rgb(45, 212, 191)' : 'rgb(20, 45, 84)';
+    const vertexColor = dark ? 'rgb(52, 211, 153)' : 'rgb(5, 150, 105)';
+    const fillColor = dark ? 'rgba(16, 185, 129, 0.18)' : 'rgba(16, 185, 129, 0.22)';
+
+    /* ---------- Traces ---------- */
+    const traces: unknown[] = [];
+
+    /* 1. Feasible region — closed polygon. */
+    if (region.length >= 3) {
+      const xs = [...region.map((p) => p.x), region[0].x];
+      const ys = [...region.map((p) => p.y), region[0].y];
+      traces.push({
+        type: 'scatter',
+        mode: 'lines',
+        x: xs,
+        y: ys,
+        fill: 'toself',
+        fillcolor: fillColor,
+        line: { color: dark ? 'rgba(52, 211, 153, 0.55)' : 'rgba(5, 150, 105, 0.6)', width: 1 },
+        name: 'Uygun bölge',
+        hoverinfo: 'skip',
+      });
+    }
+
+    /* 2. Constraint lines — one trace each, hover shows the original source. */
+    constraintLines.forEach((line, i) => {
+      const seg = lineSegment(line, xMin, xMax, yMin, yMax);
+      if (!seg) return;
+      const color = CONSTRAINT_COLORS[i % CONSTRAINT_COLORS.length];
+      const label = parsed.constraints[i].source;
+      traces.push({
+        type: 'scatter',
+        mode: 'lines',
+        x: [seg[0].x, seg[1].x],
+        y: [seg[0].y, seg[1].y],
+        line: { color, width: 2 },
+        name: label,
+        hovertemplate: `<b>${label.replace(/[<>]/g, (m) => (m === '<' ? '≤' : '≥'))}</b><br>${vx} = %{x:.3g}, ${vy} = %{y:.3g}<extra></extra>`,
+      });
+    });
+
+    /* 3. Vertex points of the feasible region. */
+    if (region.length > 0) {
+      const vertHover = region.map(
+        (v) => `(${fmt(v.x)}, ${fmt(v.y)})<br>z = ${fmt(objectiveAt(v, objCoefs))}`,
+      );
+      traces.push({
+        type: 'scatter',
+        mode: 'markers',
+        x: region.map((p) => p.x),
+        y: region.map((p) => p.y),
+        marker: {
+          color: vertexColor,
+          size: 10,
+          line: { color: dark ? '#0f172a' : '#fff', width: 1.5 },
+          symbol: 'circle',
+        },
+        name: 'Vertex (köşe)',
+        text: vertHover,
+        hovertemplate: '%{text}<extra>vertex</extra>',
+      });
+    }
+
+    /* 4. Objective level curve through the optimum: ax + by = z*. */
+    const objLine: LineEquation = { a: objCoefs.x, b: objCoefs.y, c: z, relation: '=' };
+    const objSeg = lineSegment(objLine, xMin, xMax, yMin, yMax);
+    if (objSeg) {
+      traces.push({
+        type: 'scatter',
+        mode: 'lines',
+        x: [objSeg[0].x, objSeg[1].x],
+        y: [objSeg[0].y, objSeg[1].y],
+        line: { color: objectiveColor, width: 2.5, dash: 'dash' },
+        name: `z = ${fmt(z)} (amaç)`,
+        hoverinfo: 'name',
+      });
+    }
+
+    /* 5. Optimum vertex — large highlighted star with label. */
+    traces.push({
+      type: 'scatter',
+      mode: 'markers+text',
+      x: [optimum.x],
+      y: [optimum.y],
+      marker: {
+        color: optimumColor,
+        size: 20,
+        symbol: 'star',
+        line: { color: dark ? '#0f172a' : '#fff', width: 2 },
+      },
+      text: [`(${fmt(optimum.x)}, ${fmt(optimum.y)}) · z*=${fmt(z)}`],
+      textposition: optimum.x > xMin + (xMax - xMin) * 0.6 ? 'top left' : 'top right',
+      textfont: { size: 13, color: optimumColor, family: '"Inter Variable", system-ui, sans-serif' },
+      cliponaxis: false,
+      name: 'Optimum',
+      hovertemplate: `<b>Optimum vertex</b><br>${vx} = %{x}<br>${vy} = %{y}<br>z* = ${fmt(z)}<extra></extra>`,
+    });
+
+    /* ---------- Layout ---------- */
+    const layout = {
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { family: '"Inter Variable", system-ui, sans-serif', size: 12, color: fontColor },
+      xaxis: {
+        title: { text: vx, font: { size: 14, color: fontColor } },
+        range: [xMin, xMax],
+        gridcolor: gridColor,
+        zerolinecolor: zeroLineColor,
+        zerolinewidth: 1.5,
+        showline: false,
+        tickfont: { size: 11, color: subtleFont },
+        automargin: true,
+      },
+      yaxis: {
+        title: { text: vy, font: { size: 14, color: fontColor } },
+        range: [yMin, yMax],
+        gridcolor: gridColor,
+        zerolinecolor: zeroLineColor,
+        zerolinewidth: 1.5,
+        showline: false,
+        tickfont: { size: 11, color: subtleFont },
+        automargin: true,
+      },
+      showlegend: true,
+      legend: {
+        bgcolor: dark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.92)',
+        bordercolor: dark ? 'rgba(148, 163, 184, 0.25)' : 'rgba(100, 116, 139, 0.25)',
+        borderwidth: 1,
+        x: 1,
+        y: 1,
+        xanchor: 'right',
+        yanchor: 'top',
+        font: { size: 11, color: fontColor },
+        itemsizing: 'constant',
+      },
+      margin: { t: 16, r: 16, b: 56, l: 64 },
+      hovermode: 'closest',
+      hoverlabel: {
+        bgcolor: dark ? 'rgb(30, 41, 59)' : 'rgb(15, 23, 42)',
+        bordercolor: dark ? 'rgb(71, 85, 105)' : 'rgb(15, 23, 42)',
+        font: { color: '#fff', size: 12, family: '"Inter Variable", system-ui, sans-serif' },
+      },
+      dragmode: 'pan',
+    };
+
+    /* ---------- Config ---------- */
+    const config = {
+      responsive: true,
+      displaylogo: false,
+      displayModeBar: 'hover',
+      scrollZoom: true,
+      doubleClick: 'reset',
+      modeBarButtonsToRemove: ['lasso2d', 'select2d', 'toggleSpikelines', 'autoScale2d'],
+      toImageButtonOptions: {
+        format: 'png',
+        filename: `lp-grafigi-${vx}-${vy}`,
+        scale: 2,
+      },
+      locale: 'tr',
+    };
+
+    /* Container holds a child div so Plotly's resize observer attaches cleanly. */
+    if (!chartContainer.querySelector('#chart-plot')) {
+      chartContainer.innerHTML = '<div id="chart-plot" class="w-full" style="height:480px"></div>';
+    }
+    const plotEl = document.getElementById('chart-plot') as HTMLDivElement | null;
+    if (!plotEl) return;
+    /* react() reuses the DOM if newPlot was called before; first call falls back to newPlot. */
+    if (plotEl.dataset.plotlyInit === '1') {
+      await Plotly.react(plotEl, traces, layout, config);
+    } else {
+      await Plotly.newPlot(plotEl, traces, layout, config);
+      plotEl.dataset.plotlyInit = '1';
+    }
+  }
+
+  function purgeChart(): void {
+    const plotEl = document.getElementById('chart-plot');
+    if (!plotEl) return;
+    void getPlotly().then((P) => P.purge(plotEl));
+    plotEl.removeAttribute('data-plotly-init');
+    chartContainer.innerHTML = '';
+    lastChartArgs = null;
+  }
+
+  /* Re-render the chart when the user toggles dark mode. */
+  if (typeof MutationObserver !== 'undefined') {
+    const themeObserver = new MutationObserver(() => {
+      if (lastChartArgs && !chartPanel.hidden) {
+        void renderChart(lastChartArgs.parsed, lastChartArgs.result);
+      }
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+  }
+
+  /**
+   * Clip a constraint line ax + by = c to the viewport rectangle.
+   * Returns the two endpoints of the visible segment, or null if the
+   * line doesn't pass through the viewport.
+   */
+  function lineSegment(
+    line: LineEquation,
+    xMin: number,
+    xMax: number,
+    yMin: number,
+    yMax: number,
+  ): [Point2D, Point2D] | null {
+    const { a, b, c } = line;
+    const candidates: Point2D[] = [];
+    /* Intersect with x = xMin and x = xMax (vertical edges). */
+    if (Math.abs(b) > 1e-12) {
+      candidates.push({ x: xMin, y: (c - a * xMin) / b });
+      candidates.push({ x: xMax, y: (c - a * xMax) / b });
+    }
+    /* Intersect with y = yMin and y = yMax (horizontal edges). */
+    if (Math.abs(a) > 1e-12) {
+      candidates.push({ x: (c - b * yMin) / a, y: yMin });
+      candidates.push({ x: (c - b * yMax) / a, y: yMax });
+    }
+    /* Keep only those inside the rectangle (with tiny tolerance). */
+    const eps = 1e-6;
+    const inside = candidates.filter(
+      (p) =>
+        p.x >= xMin - eps && p.x <= xMax + eps && p.y >= yMin - eps && p.y <= yMax + eps,
+    );
+    if (inside.length < 2) return null;
+    /* Take the two extreme endpoints. */
+    inside.sort((p, q) => p.x - q.x || p.y - q.y);
+    return [inside[0], inside[inside.length - 1]];
+  }
+
+  /* ============================================================ Solve flow */
 
   async function solve(): Promise<void> {
     clearError();
-    if (lpText.value.trim().length === 0) {
-      showError('LP modeli boş — bir hedef ve en az bir kısıt ekle.');
-      return;
+    /* Determine the LP text to solve based on active mode. */
+    let text: string;
+    if (state.mode === 'structured') {
+      const s = state.structured;
+      if (s.variables.length === 0) {
+        showError('En az bir değişken eklemelisin.');
+        return;
+      }
+      const objCount = Object.values(s.objective).filter((v) => v !== 0).length;
+      if (objCount === 0) {
+        showError('Amaç fonksiyonunda en az bir değişken için katsayı gir.');
+        return;
+      }
+      if (s.constraints.length === 0) {
+        showError('En az bir kısıt eklemelisin.');
+        return;
+      }
+      const validConstraints = s.constraints.filter(
+        (c) => Object.values(c.coefficients).some((v) => v !== 0),
+      );
+      if (validConstraints.length === 0) {
+        showError('En az bir kısıtta katsayı belirtmelisin.');
+        return;
+      }
+      text = structuredToText(s);
+      state.text = text;
+    } else {
+      text = lpText.value;
+      if (!text.trim()) {
+        showError('LP metni boş.');
+        return;
+      }
+      state.text = text;
     }
 
-    let parsed;
+    saveState();
+
+    let parsed: ParsedLp;
     try {
-      parsed = parseLp(lpText.value);
+      parsed = parseLp(text);
     } catch (err) {
       const msg = err instanceof LpParseError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
       showError(msg);
@@ -291,7 +1240,7 @@ const softwareJsonLd = {
     try {
       const result = await solveLp(parsed);
       setStatus(result);
-      renderVars(result);
+      renderResults(parsed, result);
     } catch (err) {
       const msg = err instanceof LpSolveError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
       showError(msg);
@@ -301,34 +1250,133 @@ const softwareJsonLd = {
     }
   }
 
+  /* ============================================================ Event handlers */
+
+  /* Sample / reset / submit */
+  sampleBtn.addEventListener('click', () => {
+    state.structured = JSON.parse(JSON.stringify(SAMPLE)) as StructuredLp;
+    /* Re-id constraints so each is fresh (avoids id collisions on multiple loads). */
+    state.structured.constraints = state.structured.constraints.map((c) => ({ ...c, id: newId() }));
+    state.mode = 'structured';
+    clearError();
+    statusBox.hidden = true;
+    resultPanel.hidden = true;
+    chartPanel.hidden = true;
+    chartFallback.hidden = true;
+    purgeChart();
+    renderAll();
+    saveState();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('Mevcut model temizlenecek. Devam edilsin mi?')) return;
+    state.structured = emptyStructured();
+    state.text = '';
+    state.mode = 'structured';
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+    clearError();
+    statusBox.hidden = true;
+    resultPanel.hidden = true;
+    chartPanel.hidden = true;
+    chartFallback.hidden = true;
+    purgeChart();
+    renderAll();
+  });
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     solve();
   });
 
-  sampleBtn.addEventListener('click', () => {
-    lpText.value = SAMPLE;
-    saveState();
-    clearError();
-    statusBox.hidden = true;
-    resultPanel.hidden = true;
+  printBtn.addEventListener('click', () => window.print());
+
+  /* Mode tabs */
+  tabForm.addEventListener('click', () => setMode('structured'));
+  tabText.addEventListener('click', () => setMode('text'));
+  textToFormBtn.addEventListener('click', importTextToForm);
+  lpText.addEventListener('input', () => { state.text = lpText.value; saveState(); });
+
+  /* Direction radio (event delegation on form) */
+  form.addEventListener('change', (e) => {
+    const t = e.target as HTMLElement;
+    if (t.matches('input[name="dir"]')) {
+      const v = (t as HTMLInputElement).value;
+      setDirection(v === 'min' ? 'min' : 'max');
+    }
+  });
+
+  /* Variable input */
+  varAddBtn.addEventListener('click', () => addVariable(varInput.value));
+  varInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addVariable(varInput.value);
+    }
+  });
+  /* Variable removal — event delegation */
+  varList.addEventListener('click', (e) => {
+    const t = (e.target as HTMLElement).closest<HTMLElement>('[data-remove-var]');
+    if (!t) return;
+    removeVariable(t.dataset.removeVar!);
+  });
+
+  /* Objective input — event delegation (input event for live update) */
+  objectiveRow.addEventListener('input', (e) => {
+    const t = (e.target as HTMLElement);
+    const v = t.getAttribute?.('data-obj-coef');
+    if (!v) return;
+    const raw = (t as HTMLInputElement).value.trim();
+    const num = raw === '' ? null : Number(raw.replace(',', '.'));
+    if (num !== null && !Number.isFinite(num)) return;
+    setObjectiveCoef(v, num);
+  });
+
+  /* Constraint table — input + change + click */
+  constraintTable.addEventListener('input', (e) => {
+    const t = e.target as HTMLElement;
+    const conCoef = t.getAttribute?.('data-con-coef');
+    const conRhs = t.getAttribute?.('data-con-rhs');
+    if (conCoef) {
+      const v = t.getAttribute('data-var')!;
+      const raw = (t as HTMLInputElement).value.trim();
+      const num = raw === '' ? null : Number(raw.replace(',', '.'));
+      if (num !== null && !Number.isFinite(num)) return;
+      setConstraintCoef(conCoef, v, num);
+      return;
+    }
+    if (conRhs) {
+      const raw = (t as HTMLInputElement).value.trim();
+      const num = raw === '' ? 0 : Number(raw.replace(',', '.'));
+      if (!Number.isFinite(num)) return;
+      setConstraintRhs(conRhs, num);
+      return;
+    }
+  });
+  constraintTable.addEventListener('change', (e) => {
+    const t = e.target as HTMLElement;
+    const conRel = t.getAttribute?.('data-con-rel');
+    if (conRel) {
+      const v = (t as HTMLSelectElement).value as '<=' | '>=' | '=';
+      setConstraintRel(conRel, v);
+    }
+  });
+  constraintTable.addEventListener('click', (e) => {
+    const t = (e.target as HTMLElement).closest<HTMLElement>('[data-remove-con]');
+    if (!t) return;
+    removeConstraint(t.dataset.removeCon!);
+  });
+  constraintAddBtn.addEventListener('click', addConstraint);
+
+  /* Copy preview to text mode */
+  copyTextBtn.addEventListener('click', () => {
+    state.text = structuredToText(state.structured);
+    lpText.value = state.text;
+    setMode('text');
     lpText.focus();
   });
 
-  resetBtn.addEventListener('click', () => {
-    if (lpText.value.trim() && !confirm('Mevcut model temizlenecek. Devam edilsin mi?')) return;
-    lpText.value = '';
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      /* ignore */
-    }
-    clearError();
-    statusBox.hidden = true;
-    resultPanel.hidden = true;
-  });
-
-  printBtn.addEventListener('click', () => window.print());
+  /* Initial render */
+  renderAll();
 </script>
 
 <style>
@@ -339,5 +1387,18 @@ const softwareJsonLd = {
     body {
       background: white !important;
     }
+  }
+  /* Hide spinner arrows on number inputs in compact cells */
+  #constraint-table input[type='number']::-webkit-outer-spin-button,
+  #constraint-table input[type='number']::-webkit-inner-spin-button,
+  #objective-row input[type='number']::-webkit-outer-spin-button,
+  #objective-row input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  #constraint-table input[type='number'],
+  #objective-row input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
   }
 </style>
