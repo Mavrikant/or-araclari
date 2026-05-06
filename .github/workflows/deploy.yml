@@ -18,6 +18,11 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    env:
+      PUBLIC_GA_ID: ${{ secrets.PUBLIC_GA_ID }}
+      PUBLIC_ADSENSE_CLIENT_ID: ${{ secrets.PUBLIC_ADSENSE_CLIENT_ID }}
+      PUBLIC_CLARITY_ID: ${{ secrets.PUBLIC_CLARITY_ID }}
+      PUBLIC_GSC_VERIFICATION: ${{ secrets.PUBLIC_GSC_VERIFICATION }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6

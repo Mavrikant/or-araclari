@@ -30,6 +30,21 @@ export const GA_ID = import.meta.env.PUBLIC_GA_ID ?? '';
 export const ADSENSE_CLIENT_ID = import.meta.env.PUBLIC_ADSENSE_CLIENT_ID ?? '';
 
 /**
+ * Microsoft Clarity proje ID'si (örn. "abcd1234ef"). Heatmap + oturum
+ * kayıtları. Boş bırakılırsa Clarity hiç yüklenmez. Yüklenmesi cookie
+ * banner'da "Tümünü kabul et" tıklanmasına bağlıdır (conservative pattern):
+ * GA gibi default-denied ile eager yüklenmez, çünkü Clarity'nin Google
+ * Consent Mode'a karşılık gelen native bir kontratı yok.
+ */
+export const CLARITY_ID = import.meta.env.PUBLIC_CLARITY_ID ?? '';
+
+/**
+ * Google Search Console doğrulama tokenı — `google-site-verification`
+ * meta etiketinin `content` değeri. Boşken meta etiketi hiç render edilmez.
+ */
+export const GSC_VERIFICATION = import.meta.env.PUBLIC_GSC_VERIFICATION ?? '';
+
+/**
  * Returns BASE_URL guaranteed to end with `/` so concatenations like
  * `${base}rehberler` always render as `/or-araclari/rehberler` with a single
  * separator, regardless of how Astro normalises BASE_URL across versions.
