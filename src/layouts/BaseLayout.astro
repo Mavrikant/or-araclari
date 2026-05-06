@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css';
-import { SITE, base, GA_ID, ADSENSE_CLIENT_ID } from '../data/site';
+import { SITE, base, GA_ID, ADSENSE_CLIENT_ID, CLARITY_ID, GSC_VERIFICATION } from '../data/site';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import CookieBanner from '../components/CookieBanner.astro';
@@ -56,6 +56,7 @@ const websiteJsonLd = {
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex" />}
+    {GSC_VERIFICATION && <meta name="google-site-verification" content={GSC_VERIFICATION} />}
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={SITE.name} />
@@ -136,6 +137,6 @@ const websiteJsonLd = {
 
     <Footer />
 
-    {(GA_ID || ADSENSE_CLIENT_ID) && <CookieBanner />}
+    {(GA_ID || ADSENSE_CLIENT_ID || CLARITY_ID) && <CookieBanner />}
   </body>
 </html>

@@ -36,17 +36,23 @@ npm run preview    # build çıktısını yerelde önizle
 ## Ortam değişkenleri
 
 Tüm değişkenler `PUBLIC_*` ön ekiyle istemciye gömülür. Yerel geliştirmede
-`.env.local` dosyası kullanılabilir; CI'da GitHub Actions secrets üzerinden
-verilir ve `withastro/action@v3` build sırasında işin ortamına geçirir.
+`.env.local` dosyası kullanılabilir; CI'da GitHub Actions repository
+secrets üzerinden verilir ve `deploy.yml` workflow'undaki job-level `env:`
+bloğu üzerinden `withastro/action@v6`'nın ortamına geçirilir.
 
 | Değişken | Zorunlu mu? | Açıklama |
 |---|---|---|
 | `PUBLIC_GA_ID` | Hayır | Google Analytics 4 measurement ID (örn. `G-XXXXXXXXXX`). Boş bırakılırsa analitik scripti hiç yüklenmez. |
 | `PUBLIC_ADSENSE_CLIENT_ID` | Hayır | AdSense publisher ID (örn. `ca-pub-1234567890123456`). Boşken `<AdSlot>` bileşenleri hiçbir şey render etmez ve AdSense kütüphanesi yüklenmez. |
+| `PUBLIC_CLARITY_ID` | Hayır | Microsoft Clarity proje ID'si (örn. 10 karakterli `abcd1234ef`). Heatmap ve oturum kaydı için. Boşken Clarity hiç yüklenmez. Set ise yalnızca kullanıcı çerez bandında "Tümünü kabul et" seçtikten sonra (veya daha önceki onayı tarayıcı hafızasındayken) yüklenir. |
+| `PUBLIC_GSC_VERIFICATION` | Hayır | Google Search Console doğrulama tokenı — `google-site-verification` meta etiketinin `content` değeri. Boşken meta etiketi hiç render edilmez. |
 
-İki değişkenin biri set edildiği anda BaseLayout otomatik olarak çerez tercih
-bandını göstermeye başlar; consent verilmeden hiçbir kişisel veri
-yollanmaz (Google Consent Mode v2).
+Üç ölçüm değişkeninin (`GA_ID`, `CLARITY_ID`, `ADSENSE_CLIENT_ID`) biri set
+edildiği anda BaseLayout otomatik olarak çerez tercih bandını göstermeye
+başlar. Consent verilmeden GA4 ve AdSense storage'ları "denied" durumunda
+kalır (Google Consent Mode v2 advanced); Clarity ise consent öncesi DOM'a
+hiç enjekte edilmez (conservative pattern — session recording davranışsal
+veri içerdiği için).
 
 ## AdSense yayını için ek adımlar
 

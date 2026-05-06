@@ -1,12 +1,13 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Container from '../components/Container.astro';
-import { SITE, withBase, GA_ID, ADSENSE_CLIENT_ID } from '../data/site';
+import { SITE, withBase, GA_ID, ADSENSE_CLIENT_ID, CLARITY_ID } from '../data/site';
 
 const lastUpdated = '6 Mayıs 2026';
 const analyticsActive = Boolean(GA_ID);
 const adsActive = Boolean(ADSENSE_CLIENT_ID);
-const anyActive = analyticsActive || adsActive;
+const clarityActive = Boolean(CLARITY_ID);
+const anyActive = analyticsActive || adsActive || clarityActive;
 ---
 
 <BaseLayout
@@ -73,11 +74,12 @@ const anyActive = analyticsActive || adsActive;
       {!anyActive && (
         <p>
           <strong>Şu anda site hiçbir analitik veya reklam hizmeti
-          kullanmamaktadır.</strong> Aşağıdaki Google Analytics 4 ve Google
-          AdSense altyapısı ileride etkinleştirilmek üzere repoda hazır
-          tutulmaktadır; bunlar etkinleştirilirse bu sayfa güncellenir, önce
-          çerez tercih bandı görüntülenir ve hiçbir veri kullanıcı onayı
-          olmadan üçüncü tarafa gönderilmez.
+          kullanmamaktadır.</strong> Aşağıdaki Google Analytics 4,
+          Microsoft Clarity ve Google AdSense altyapısı ileride
+          etkinleştirilmek üzere repoda hazır tutulmaktadır; bunlar
+          etkinleştirilirse bu sayfa güncellenir, önce çerez tercih bandı
+          görüntülenir ve hiçbir veri kullanıcı onayı olmadan üçüncü tarafa
+          gönderilmez.
         </p>
       )}
 
@@ -94,6 +96,13 @@ const anyActive = analyticsActive || adsActive;
           Anonim ziyaret verisini (sayfa görüntülemeleri, trafik kaynakları,
           oturum süresi) toplamak için. IP adresleri anonimleştirilir; site
           kullanıcılara kalıcı kişisel tanımlayıcı atamaz.
+        </li>
+        <li>
+          <strong>Microsoft Clarity{!clarityActive && ' (şu an aktif değil)'}:</strong>
+          Anonim kullanım davranışı analizi (ısı haritası, oturum kaydı).
+          Form alanları ve hassas içerikler "mask sensitive content"
+          varsayılanı ile sansürlenir; veri Microsoft'un veri merkezlerinde
+          işlenir. Kalıcı kişisel tanımlayıcı atanmaz.
         </li>
         <li>
           <strong>Google AdSense{!adsActive && ' (şu an aktif değil)'}:</strong>
