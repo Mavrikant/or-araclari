@@ -127,4 +127,33 @@ describe('solveCpm — validation', () => {
       ]),
     ).toThrow(/döngü/);
   });
+
+  /* Defensive paths against corrupted JSON / older localStorage shapes
+     that callers (UI loadState) might pass through. The library throws
+     CpmError instead of bubbling a TypeError. */
+
+  it('rejects non-array predecessors with a CpmError (not TypeError)', () => {
+    expect(() =>
+      // Cast through unknown to bypass TS but still test the runtime guard.
+      solveCpm([{ id: 'A', duration: 1, predecessors: 'B' as unknown as string[] }]),
+    ).toThrow(/dizi/);
+  });
+
+  it('rejects non-string predecessor entries', () => {
+    expect(() =>
+      solveCpm([
+        { id: 'A', duration: 1, predecessors: [] },
+        { id: 'B', duration: 1, predecessors: [42 as unknown as string] },
+      ]),
+    ).toThrow(/metin id/);
+  });
+
+  it('rejects empty-string predecessor entries', () => {
+    expect(() =>
+      solveCpm([
+        { id: 'A', duration: 1, predecessors: [] },
+        { id: 'B', duration: 1, predecessors: [''] },
+      ]),
+    ).toThrow(/metin id/);
+  });
 });

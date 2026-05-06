@@ -197,15 +197,46 @@ const softwareJsonLd = {
   const activityTable = $('activity-table');
   const gantt = $('gantt');
 
+  function sanitizeActivities(value: unknown): Activity[] {
+    if (!Array.isArray(value)) return [];
+    const out: Activity[] = [];
+    const seenIds = new Set<string>();
+    for (const item of value) {
+      if (!item || typeof item !== 'object') continue;
+      const raw = item as Record<string, unknown>;
+      if (typeof raw.id !== 'string' || raw.id.length === 0) continue;
+      if (seenIds.has(raw.id)) continue;
+      const duration = typeof raw.duration === 'number' && Number.isFinite(raw.duration) && raw.duration >= 0
+        ? raw.duration
+        : 0;
+      const predecessors = Array.isArray(raw.predecessors)
+        ? raw.predecessors.filter((p): p is string => typeof p === 'string' && p.length > 0)
+        : [];
+      const label = typeof raw.label === 'string' ? raw.label : undefined;
+      seenIds.add(raw.id);
+      out.push({ id: raw.id, label, duration, predecessors });
+    }
+    return out;
+  }
+
   function loadState(): void {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) activities = parsed;
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      const sanitized = sanitizeActivities(parsed);
+      if (sanitized.length === 0 && Array.isArray(parsed) && parsed.length > 0) {
+        /* Stored data was unrecognisable — drop it so we don't keep loading garbage. */
+        localStorage.removeItem(STORAGE_KEY);
+        return;
       }
+      activities = sanitized;
     } catch {
-      /* ignore */
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
     }
   }
   function saveState(): void {
@@ -226,7 +257,7 @@ const softwareJsonLd = {
               <span class="font-mono text-xs font-semibold text-brand-700 dark:text-accent-400">${escapeHtml(a.id)}</span>
               <span class="min-w-0 flex-1 truncate text-sm text-slate-900 dark:text-slate-100">${escapeHtml(a.label ?? a.id)}</span>
               <span class="font-mono text-xs text-slate-500 dark:text-slate-400">${fmt(a.duration)}b</span>
-              <span class="font-mono text-xs text-slate-500 dark:text-slate-400">${a.predecessors.length ? '←' + a.predecessors.join(',') : '—'}</span>
+              <span class="font-mono text-xs text-slate-500 dark:text-slate-400">${a.predecessors.length ? '←' + a.predecessors.map(escapeHtml).join(',') : '—'}</span>
               <button type="button" data-rm="${i}" aria-label="Aktivite ${escapeHtml(a.id)}, kaldır" class="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200">
                 <svg class="size-3.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6"/></svg>
               </button>

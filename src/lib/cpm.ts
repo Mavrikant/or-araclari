@@ -52,6 +52,9 @@ export class CpmError extends Error {
 }
 
 function validate(activities: ReadonlyArray<Activity>): void {
+  if (!Array.isArray(activities)) {
+    throw new CpmError('Aktivite listesi bir dizi olmalıdır.');
+  }
   if (activities.length === 0) {
     throw new CpmError('En az bir aktivite gereklidir.');
   }
@@ -62,6 +65,9 @@ function validate(activities: ReadonlyArray<Activity>): void {
   }
   const ids = new Set<string>();
   for (const a of activities) {
+    if (!a || typeof a !== 'object') {
+      throw new CpmError('Her aktivite bir nesne olmalıdır.');
+    }
     if (!a.id || typeof a.id !== 'string') {
       throw new CpmError('Her aktivitenin geçerli bir id\'si olmalıdır.');
     }
@@ -71,6 +77,14 @@ function validate(activities: ReadonlyArray<Activity>): void {
     ids.add(a.id);
     if (typeof a.duration !== 'number' || !Number.isFinite(a.duration) || a.duration < 0) {
       throw new CpmError(`"${a.id}" süresi 0 veya pozitif bir sayı olmalı (${a.duration} verildi).`);
+    }
+    if (!Array.isArray(a.predecessors)) {
+      throw new CpmError(`"${a.id}" için önceller listesi (predecessors) bir dizi olmalıdır.`);
+    }
+    for (const p of a.predecessors) {
+      if (typeof p !== 'string' || p.length === 0) {
+        throw new CpmError(`"${a.id}" için önceller listesi yalnızca metin id'leri içermelidir.`);
+      }
     }
   }
   for (const a of activities) {
