@@ -228,7 +228,7 @@ const TR_MONTHS = [
         <span class="ns-legend"><span class="ns-swatch" data-shift="RP"></span>RP — Rapor</span>
       </div>
 
-      <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:overflow-visible print:p-0 print:shadow-none">
+      <div class="ns-table-wrap overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:overflow-visible print:p-0 print:shadow-none">
         <table id="schedule-table" class="ns-table"></table>
       </div>
 
@@ -324,7 +324,21 @@ const TR_MONTHS = [
     font-size: 0.72rem;
     table-layout: fixed;
     margin: 0 auto;
-    width: 100%;
+    /* Her zaman içerik kadar geniş; container darsa overflow-x-auto kaydırır */
+    min-width: max-content;
+  }
+  /* Geniş ekranda container'ın tamamını kullansın (1024+) */
+  @media (min-width: 1024px) {
+    .ns-table {
+      width: 100%;
+    }
+  }
+  /* Tablo container'ı mobile'de mask ile sağ kenarda fade — yatay kaydırma cue */
+  @media (max-width: 1023px) {
+    .ns-table-wrap {
+      -webkit-mask-image: linear-gradient(to right, black 0, black calc(100% - 14px), transparent 100%);
+      mask-image: linear-gradient(to right, black 0, black calc(100% - 14px), transparent 100%);
+    }
   }
   .ns-table th, .ns-table td {
     border: 1px solid var(--ns-grid-border);
@@ -429,6 +443,11 @@ const TR_MONTHS = [
   .ns-table th.ns-nurse-row-header:hover .ns-remove-btn,
   .ns-remove-btn:focus-visible {
     opacity: 1;
+  }
+  /* Touch cihazlarda (mouse yok) × her zaman görünür */
+  @media (hover: none) {
+    .ns-remove-btn { opacity: 0.55; }
+    .ns-remove-btn:active { opacity: 1; }
   }
   .ns-remove-btn:hover {
     background: rgb(254 226 226);
