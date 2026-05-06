@@ -41,9 +41,10 @@ const TR_MONTHS = [
       {tool.title}
     </h1>
     <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
-      Hemşireleri ve izinli günlerini gir, hafta içi/sonu kapsama kurallarını ayarla,
-      tek tuşla tüm ayın vardiya planını dolur. Vardiyalar: 8 gündüz (08-16), 16 gece (16-08),
-      24 nöbet (00-24). Hücreye tıkla veya klavyeden değiştir; ihlaller canlı vurgulanır.
+      Tablo başlığındaki <strong>+</strong> ile hemşire ekle; hücreye tıklayıp <strong>Yİ</strong>
+      seçerek yıllık izin işaretle. Sol panelden tatil günlerini ve kapsama kurallarını ayarla,
+      tek tuşla tüm ayın vardiya planını dolsun. Vardiyalar: 8 gündüz (08-16), 16 gece (16-08),
+      24 nöbet (00-24). İhlaller canlı vurgulanır.
       {guideHref && (
         <a
           href={guideHref}
@@ -53,7 +54,7 @@ const TR_MONTHS = [
     </p>
   </Container>
 
-  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[360px_minmax(0,1fr)] print:block">
+  <Container as="div" size="wide" class="grid gap-6 py-10 sm:py-12 lg:grid-cols-[320px_minmax(0,1fr)] print:block !max-w-[1600px]">
     {/* ------------------------------------------------------------ FORM */}
     <form id="ns-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
       <div class="flex flex-wrap gap-2">
@@ -102,48 +103,57 @@ const TR_MONTHS = [
       <fieldset class="space-y-3">
         <div class="flex items-center justify-between">
           <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
-            Hemşireler
+            Resmi tatiller
           </legend>
-          <span id="nurse-count" class="text-xs text-slate-500 dark:text-slate-400">0</span>
+          <span id="holiday-count" class="text-xs text-slate-500 dark:text-slate-400">0 gün</span>
         </div>
-        <div class="flex gap-2">
-          <input type="text" id="nurse-name-input" maxlength="40" autocomplete="off"
-            placeholder="Ör: Ayşe"
-            class="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
-          <button type="button" id="nurse-add-btn" class="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
-            Ekle
-          </button>
-        </div>
-        <ul id="nurse-list" class="space-y-2"></ul>
         <p class="text-xs text-slate-500 dark:text-slate-400">
-          Bir hemşirenin izinli olduğu günleri eklemek için <strong>İzinler</strong> butonuna basın.
+          Bayram ve resmi tatil günlerini takvimden tıklayarak işaretle. Bu günler için ayrı kapsama sayıları geçerli olur.
         </p>
+        <div id="holiday-grid" class="ns-day-grid"></div>
       </fieldset>
 
       <fieldset class="space-y-3">
         <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
           Kapsama kuralları
         </legend>
-        <div class="grid grid-cols-2 gap-x-3 gap-y-2 rounded-lg border border-slate-200 bg-slate-50/40 p-3 dark:border-slate-800 dark:bg-slate-900/20">
+        <div class="grid grid-cols-3 gap-x-2 gap-y-2 rounded-lg border border-slate-200 bg-slate-50/40 p-3 dark:border-slate-800 dark:bg-slate-900/20">
           <div></div>
-          <div class="text-center text-xs font-medium text-slate-600 dark:text-slate-400">Min hemşire</div>
-          <label class="self-center text-xs font-medium text-slate-700 dark:text-slate-300">Hafta içi gündüz</label>
+          <div class="text-center text-xs font-medium text-slate-600 dark:text-slate-400">Gündüz</div>
+          <div class="text-center text-xs font-medium text-slate-600 dark:text-slate-400">Gece</div>
+          <label class="self-center text-xs font-medium text-slate-700 dark:text-slate-300">Hafta içi</label>
           <input type="number" id="con-min-day-wd" min="0" max="20" step="1"
             class="block w-full rounded border border-slate-300 bg-white px-2 py-1 text-sm text-center text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
-          <label class="self-center text-xs font-medium text-slate-700 dark:text-slate-300">Hafta içi gece</label>
           <input type="number" id="con-min-night-wd" min="0" max="20" step="1"
             class="block w-full rounded border border-slate-300 bg-white px-2 py-1 text-sm text-center text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
-          <label class="self-center text-xs font-medium text-slate-700 dark:text-slate-300">Hafta sonu gündüz</label>
+          <label class="self-center text-xs font-medium text-slate-700 dark:text-slate-300">Hafta sonu</label>
           <input type="number" id="con-min-day-we" min="0" max="20" step="1"
             class="block w-full rounded border border-slate-300 bg-white px-2 py-1 text-sm text-center text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
-          <label class="self-center text-xs font-medium text-slate-700 dark:text-slate-300">Hafta sonu gece</label>
           <input type="number" id="con-min-night-we" min="0" max="20" step="1"
             class="block w-full rounded border border-slate-300 bg-white px-2 py-1 text-sm text-center text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          <label class="self-center text-xs font-medium text-slate-700 dark:text-slate-300">Tatil</label>
+          <input type="number" id="con-min-day-hol" min="0" max="20" step="1"
+            class="block w-full rounded border border-slate-300 bg-white px-2 py-1 text-sm text-center text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          <input type="number" id="con-min-night-hol" min="0" max="20" step="1"
+            class="block w-full rounded border border-slate-300 bg-white px-2 py-1 text-sm text-center text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
         </div>
-        <label class="block">
-          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Nöbet sonrası dinlenme (gün)</span>
-          <input type="number" id="con-rest" min="0" max="7" step="1"
-            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        <div class="grid grid-cols-2 gap-2">
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Nöbet sonrası boş (gün)</span>
+            <input type="number" id="con-rest" min="0" max="7" step="1"
+              class="mt-1 block w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Gece sonrası boş (gün)</span>
+            <input type="number" id="con-rest-eve" min="0" max="7" step="1"
+              class="mt-1 block w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+        </div>
+        <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white p-2.5 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-emerald-500 dark:has-[:checked]:bg-slate-900">
+          <input type="checkbox" id="con-prefer-evening" class="size-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+          <span class="text-xs text-slate-700 dark:text-slate-300">
+            <strong>Zorunda kalmadıkça nöbet yazma</strong> — gece kapsama önce 16h gece vardiyası ile doldurulur, 24h nöbet son çare
+          </span>
         </label>
         <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white p-2.5 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-amber-500 dark:has-[:checked]:bg-slate-900">
           <input type="checkbox" id="con-allow-single" class="size-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500" />
@@ -164,8 +174,8 @@ const TR_MONTHS = [
         <ol class="mt-3 space-y-1.5 text-sm text-slate-700 dark:text-slate-300">
           <li>
             <strong class="text-brand-700 dark:text-accent-400">1.</strong>
-            Sol panelden <strong>hemşireleri ekle</strong>; her hemşirenin
-            <em>İzinler</em> butonundan izinli günlerini işaretle.
+            Tablonun başlığındaki <strong>+</strong> butonuna basarak <strong>hemşireleri ekle</strong>.
+            Yıllık izin günlerini hücreye tıklayıp menüden <strong>Yİ</strong> seçerek işaretle.
           </li>
           <li>
             <strong class="text-brand-700 dark:text-accent-400">2.</strong>
@@ -287,6 +297,7 @@ const TR_MONTHS = [
     --ns-RP-bg: rgb(226 232 240);
     --ns-RP-fg: rgb(51 65 85);
     --ns-weekend-bg: rgb(248 250 252);
+    --ns-holiday-bg: rgb(254 243 199);
     --ns-grid-border: rgb(226 232 240);
   }
 
@@ -304,21 +315,23 @@ const TR_MONTHS = [
     --ns-RP-bg: rgb(30 41 59);
     --ns-RP-fg: rgb(148 163 184);
     --ns-weekend-bg: rgb(15 23 42);
+    --ns-holiday-bg: rgb(120 53 15 / 0.4);
     --ns-grid-border: rgb(30 41 59);
   }
 
   .ns-table {
     border-collapse: collapse;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     table-layout: fixed;
     margin: 0 auto;
+    width: 100%;
   }
   .ns-table th, .ns-table td {
     border: 1px solid var(--ns-grid-border);
     padding: 0;
     text-align: center;
     vertical-align: middle;
-    height: 28px;
+    height: 26px;
     font-variant-numeric: tabular-nums;
   }
   .ns-table thead th {
@@ -326,7 +339,8 @@ const TR_MONTHS = [
     background: rgb(248 250 252);
     color: rgb(15 23 42);
     height: 32px;
-    padding: 0 4px;
+    padding: 0 2px;
+    font-size: 0.74rem;
   }
   .dark .ns-table thead th {
     background: rgb(15 23 42);
@@ -334,21 +348,128 @@ const TR_MONTHS = [
   }
   .ns-table th.ns-row-name {
     text-align: left;
-    padding: 0 8px;
+    padding: 0 6px;
     background: rgb(248 250 252);
     color: rgb(15 23 42);
     font-weight: 500;
-    font-size: 0.8rem;
-    width: 130px;
+    font-size: 0.78rem;
+    width: 120px;
     min-width: 100px;
   }
   .dark .ns-table th.ns-row-name {
     background: rgb(15 23 42);
     color: rgb(241 245 249);
   }
+  .ns-table th[data-nurse-header] {
+    position: relative;
+    padding: 0 28px 0 6px;
+    height: 32px;
+  }
+  .ns-table th[data-nurse-header] > span {
+    display: inline-block;
+    vertical-align: middle;
+    line-height: 32px;
+  }
+  .ns-table th[data-nurse-header] > .ns-add-btn {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .ns-add-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1px dashed rgb(99 102 241);
+    background: white;
+    color: rgb(99 102 241);
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    transition: all 100ms;
+  }
+  .ns-add-btn:hover {
+    background: rgb(99 102 241);
+    color: white;
+    border-style: solid;
+  }
+  .dark .ns-add-btn {
+    background: rgb(2 6 23);
+    border-color: rgb(129 140 248);
+    color: rgb(129 140 248);
+  }
+  .dark .ns-add-btn:hover {
+    background: rgb(129 140 248);
+    color: rgb(2 6 23);
+  }
+  .ns-table th.ns-nurse-row-header {
+    position: relative;
+    padding: 0 22px 0 6px;
+  }
+  .ns-remove-btn {
+    position: absolute;
+    right: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 0;
+    background: transparent;
+    color: rgb(148 163 184);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 100ms, background 100ms, color 100ms;
+    z-index: 2;
+  }
+  .ns-table th.ns-nurse-row-header:hover .ns-remove-btn,
+  .ns-remove-btn:focus-visible {
+    opacity: 1;
+  }
+  .ns-remove-btn:hover {
+    background: rgb(254 226 226);
+    color: rgb(185 28 28);
+  }
+  .dark .ns-remove-btn:hover {
+    background: rgb(127 29 29 / 0.6);
+    color: rgb(254 202 202);
+  }
+  .ns-name-text {
+    cursor: pointer;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ns-name-text:hover {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+  }
+  .ns-inline-input {
+    flex: 1;
+    border: 1px solid rgb(99 102 241);
+    border-radius: 4px;
+    background: white;
+    color: rgb(15 23 42);
+    font-size: 0.85rem;
+    padding: 2px 6px;
+    height: 26px;
+    width: 100%;
+    min-width: 80px;
+    outline: none;
+  }
+  .dark .ns-inline-input {
+    background: rgb(2 6 23);
+    color: rgb(241 245 249);
+    border-color: rgb(129 140 248);
+  }
   .ns-table td.ns-cell {
-    width: 28px;
-    min-width: 24px;
+    width: 24px;
+    min-width: 22px;
     cursor: pointer;
     position: relative;
     user-select: none;
@@ -391,6 +512,16 @@ const TR_MONTHS = [
   .ns-table th.ns-weekend {
     background-color: var(--ns-weekend-bg) !important;
   }
+  .ns-table td.ns-holiday {
+    background-color: var(--ns-holiday-bg);
+  }
+  .ns-table th.ns-holiday {
+    background-color: var(--ns-holiday-bg) !important;
+    border-top: 2px solid rgb(217 119 6);
+  }
+  .dark .ns-table th.ns-holiday {
+    border-top-color: rgb(245 158 11);
+  }
   .ns-table td.ns-summary {
     background: rgb(248 250 252);
     color: rgb(15 23 42);
@@ -408,9 +539,10 @@ const TR_MONTHS = [
     background: rgb(248 250 252);
     color: rgb(15 23 42);
     font-weight: 600;
-    padding: 0 6px;
-    width: 90px;
-    font-size: 0.72rem;
+    padding: 0 5px;
+    width: 78px;
+    min-width: 70px;
+    font-size: 0.7rem;
     text-align: right;
     white-space: nowrap;
   }
@@ -820,26 +952,34 @@ const TR_MONTHS = [
 
   function migrateConstraints(raw: Record<string, unknown>): ScheduleConstraints {
     const out: ScheduleConstraints = { ...DEFAULT_CONSTRAINTS };
-    // v2 doğrudan
+    // v2/v3 doğrudan
     if (typeof raw.minDayWeekday === 'number') out.minDayWeekday = Math.round(raw.minDayWeekday);
     if (typeof raw.minDayWeekend === 'number') out.minDayWeekend = Math.round(raw.minDayWeekend);
+    if (typeof raw.minDayHoliday === 'number') out.minDayHoliday = Math.round(raw.minDayHoliday);
     if (typeof raw.minNightWeekday === 'number') out.minNightWeekday = Math.round(raw.minNightWeekday);
     if (typeof raw.minNightWeekend === 'number') out.minNightWeekend = Math.round(raw.minNightWeekend);
+    if (typeof raw.minNightHoliday === 'number') out.minNightHoliday = Math.round(raw.minNightHoliday);
     // v1 ile geriye-uyum: minDayPresent, minNightPresent, weekendReduced
     if (typeof raw.minDayPresent === 'number') {
       out.minDayWeekday = Math.round(raw.minDayPresent);
       out.minDayWeekend = raw.weekendReduced === true ? Math.max(2, Math.round(raw.minDayPresent) - 1) : Math.round(raw.minDayPresent);
+      out.minDayHoliday = out.minDayWeekend;
     }
     if (typeof raw.minNightPresent === 'number') {
       out.minNightWeekday = Math.round(raw.minNightPresent);
       out.minNightWeekend = Math.round(raw.minNightPresent);
+      out.minNightHoliday = Math.round(raw.minNightPresent);
     }
     if (typeof raw.restAfterNight === 'number') out.restAfterNight = Math.max(0, Math.min(7, Math.round(raw.restAfterNight)));
+    if (typeof raw.restAfterEvening === 'number') out.restAfterEvening = Math.max(0, Math.min(7, Math.round(raw.restAfterEvening)));
     if (typeof raw.allowSingleNight === 'boolean') out.allowSingleNight = raw.allowSingleNight;
+    if (typeof raw.preferEveningOverNight === 'boolean') out.preferEveningOverNight = raw.preferEveningOverNight;
     out.minDayWeekday = Math.max(0, out.minDayWeekday);
     out.minDayWeekend = Math.max(0, out.minDayWeekend);
+    out.minDayHoliday = Math.max(0, out.minDayHoliday);
     out.minNightWeekday = Math.max(0, out.minNightWeekday);
     out.minNightWeekend = Math.max(0, out.minNightWeekend);
+    out.minNightHoliday = Math.max(0, out.minNightHoliday);
     return out;
   }
 
@@ -876,11 +1016,15 @@ const TR_MONTHS = [
     for (const [k, v] of Object.entries(pinnedRaw)) {
       if (v === true) pinned[k] = true;
     }
+    const holidays = Array.isArray(o.holidays)
+      ? (o.holidays as unknown[]).filter((d): d is number => typeof d === 'number' && d >= 1 && d <= 31).map((d) => Math.round(d))
+      : [];
     return {
       meta: createMonthMeta(year, month),
       nurses,
       cells,
       pinned,
+      holidays,
       constraints,
     };
   }
@@ -926,10 +1070,6 @@ const TR_MONTHS = [
   /* --------------------------------------------------------- DOM cache */
   const monthSelect = $<HTMLSelectElement>('month-select');
   const yearInput = $<HTMLInputElement>('year-input');
-  const nurseList = $<HTMLUListElement>('nurse-list');
-  const nurseCount = $('nurse-count');
-  const nurseNameInput = $<HTMLInputElement>('nurse-name-input');
-  const nurseAddBtn = $<HTMLButtonElement>('nurse-add-btn');
   const sampleBtn = $<HTMLButtonElement>('sample-btn');
   const resetBtn = $<HTMLButtonElement>('reset-btn');
   const solveGreedyBtn = $<HTMLButtonElement>('solve-greedy-btn');
@@ -955,8 +1095,14 @@ const TR_MONTHS = [
   const conMinNightWd = $<HTMLInputElement>('con-min-night-wd');
   const conMinDayWe = $<HTMLInputElement>('con-min-day-we');
   const conMinNightWe = $<HTMLInputElement>('con-min-night-we');
+  const conMinDayHol = $<HTMLInputElement>('con-min-day-hol');
+  const conMinNightHol = $<HTMLInputElement>('con-min-night-hol');
   const conRest = $<HTMLInputElement>('con-rest');
+  const conRestEve = $<HTMLInputElement>('con-rest-eve');
+  const conPreferEvening = $<HTMLInputElement>('con-prefer-evening');
   const conAllowSingle = $<HTMLInputElement>('con-allow-single');
+  const holidayCount = $('holiday-count');
+  const holidayGrid = $('holiday-grid');
 
   /* --------------------------------------------------------- Render */
 
@@ -967,33 +1113,34 @@ const TR_MONTHS = [
     conMinNightWd.value = String(state.constraints.minNightWeekday);
     conMinDayWe.value = String(state.constraints.minDayWeekend);
     conMinNightWe.value = String(state.constraints.minNightWeekend);
+    conMinDayHol.value = String(state.constraints.minDayHoliday);
+    conMinNightHol.value = String(state.constraints.minNightHoliday);
     conRest.value = String(state.constraints.restAfterNight);
+    conRestEve.value = String(state.constraints.restAfterEvening);
+    conPreferEvening.checked = state.constraints.preferEveningOverNight;
     conAllowSingle.checked = state.constraints.allowSingleNight;
-    nurseCount.textContent = `${state.nurses.length} hemşire`;
-    nurseList.innerHTML = state.nurses.map(renderNurseCard).join('');
-  }
 
-  function renderNurseCard(nurse: Nurse): string {
+    // Resmi tatiller takvim widget
     const D = state.meta.daysInMonth;
+    const holidaysSet = new Set(state.holidays);
     const dayBtns = Array.from({ length: D }, (_, i) => {
       const d = i + 1;
-      const active = nurse.unavailable.includes(d);
-      return `<button type="button" data-nurse="${nurse.id}" data-day="${d}" class="${active ? 'ns-day-active' : ''}" title="Gün ${d}: ${active ? 'izinli' : 'müsait'}">${d}</button>`;
+      const active = holidaysSet.has(d);
+      return `<button type="button" data-holiday-day="${d}" class="${active ? 'ns-day-active' : ''}" title="Gün ${d}: ${active ? 'tatil' : 'normal'}">${d}</button>`;
     }).join('');
-    return `
-      <li class="ns-nurse-card" data-nurse-card="${nurse.id}">
-        <div class="ns-nurse-row">
-          <input type="text" class="ns-nurse-name" data-nurse-name="${nurse.id}" value="${escapeHtml(nurse.name)}" maxlength="40" />
-          <button type="button" class="ns-icon-btn" data-toggle-leaves="${nurse.id}">İzinler ${nurse.unavailable.length > 0 ? `(${nurse.unavailable.length})` : ''}</button>
-          <button type="button" class="ns-icon-btn" data-remove-nurse="${nurse.id}" title="Hemşireyi sil">×</button>
-        </div>
-        <div class="ns-day-grid hidden" data-leaves-grid="${nurse.id}">${dayBtns}</div>
-      </li>`;
+    holidayGrid.innerHTML = dayBtns;
+    holidayCount.textContent = `${state.holidays.length} gün`;
   }
 
   function renderGrid(): void {
     const D = state.meta.daysInMonth;
     const weekendSet = new Set(state.meta.weekendDays);
+    const holidaySet = new Set(state.holidays);
+    const dayKindFor = (d: number): 'weekday' | 'weekend' | 'holiday' => {
+      if (holidaySet.has(d)) return 'holiday';
+      if (weekendSet.has(d)) return 'weekend';
+      return 'weekday';
+    };
     const issues = validate(state);
     const violationCells = new Set<string>();
     for (const issue of issues) {
@@ -1006,11 +1153,11 @@ const TR_MONTHS = [
       const d = i + 1;
       const dow = new Date(state.meta.year, state.meta.month - 1, d).getDay();
       const dayLabel = TR_DAYS[(dow + 6) % 7];
-      const isWeekend = weekendSet.has(d);
-      const cls = isWeekend ? 'ns-weekend' : '';
+      const kind = dayKindFor(d);
+      const cls = kind === 'holiday' ? 'ns-holiday' : kind === 'weekend' ? 'ns-weekend' : '';
       return `<th class="${cls}" data-day-header="${d}"><div>${d}</div><div style="font-weight:400; font-size: 0.65rem; opacity: 0.7;">${dayLabel}</div></th>`;
     }).join('');
-    const headRow = `<tr><th class="ns-row-name">Hemşire</th>${headCells}<th class="ns-row-name" style="text-align:right;">Aylık</th></tr>`;
+    const headRow = `<tr><th class="ns-row-name" data-nurse-header><span>Hemşire</span><button type="button" data-add-nurse class="ns-add-btn" title="Hemşire ekle" aria-label="Hemşire ekle">+</button></th>${headCells}<th class="ns-row-name" style="text-align:right;">Aylık</th></tr>`;
 
     const stats = computeStats(state);
     const rows = state.nurses.map((nurse) => {
@@ -1019,27 +1166,27 @@ const TR_MONTHS = [
         const k = cellKey(nurse.id, d);
         const code = state.cells[k];
         const isPinned = !!state.pinned[k];
-        const isWeekend = weekendSet.has(d);
+        const kind = dayKindFor(d);
         const isViolation = violationCells.has(k);
         const cls = [
           'ns-cell',
-          isWeekend ? 'ns-weekend' : '',
+          kind === 'holiday' ? 'ns-holiday' : kind === 'weekend' ? 'ns-weekend' : '',
           isPinned ? 'ns-pinned' : '',
           isViolation ? 'ns-violation' : '',
         ].filter(Boolean).join(' ');
         const shiftAttr = code ? `data-shift="${code}"` : '';
         const label = code ? SHIFT_LABEL[code] : '';
-        return `<td class="${cls}" ${shiftAttr} data-nurse="${nurse.id}" data-day="${d}" tabindex="0" title="${escapeHtml(nurse.name)} • ${d}. gün • ${label || 'Boş'}">${label}</td>`;
+        return `<td class="${cls}" ${shiftAttr} data-nurse="${nurse.id}" data-day="${d}" tabindex="0" title="${escapeHtml(nurse.name)} • ${d}. gün${kind === 'holiday' ? ' (tatil)' : ''} • ${label || 'Boş'}">${label}</td>`;
       }).join('');
       const counts = stats.countsByNurse[nurse.id] || { G8: 0, GC16: 0, N24: 0, DN: 0, YI: 0, RP: 0 };
       const total = stats.hoursByNurse[nurse.id] ?? 0;
       const summary = `${total}sa · N${counts.N24} · 8×${counts.G8}${counts.GC16 ? ' · 16×' + counts.GC16 : ''}`;
-      return `<tr><th class="ns-row-name" title="${escapeHtml(nurse.name)}">${escapeHtml(nurse.name)}</th>${cells}<td class="ns-row-total" title="Aylık toplam: ${total} saat">${summary}</td></tr>`;
+      return `<tr><th class="ns-row-name ns-nurse-row-header" title="${escapeHtml(nurse.name)}"><button type="button" data-remove-nurse="${nurse.id}" class="ns-remove-btn" title="${escapeHtml(nurse.name)}'i sil" aria-label="Sil">×</button><span data-rename-nurse="${nurse.id}" class="ns-name-text" title="Yeniden adlandır">${escapeHtml(nurse.name)}</span></th>${cells}<td class="ns-row-total" title="Aylık toplam: ${total} saat">${summary}</td></tr>`;
     }).join('');
 
     const summaryCells = Array.from({ length: D }, (_, i) => {
       const d = i + 1;
-      const isWeekend = weekendSet.has(d);
+      const kind = dayKindFor(d);
       let dayCount = 0, nightCount = 0;
       for (const nurse of state.nurses) {
         const c = state.cells[cellKey(nurse.id, d)];
@@ -1047,14 +1194,25 @@ const TR_MONTHS = [
         if (isDayCovering(c)) dayCount++;
         if (isNightCovering(c)) nightCount++;
       }
-      const minDay = isWeekend ? state.constraints.minDayWeekend : state.constraints.minDayWeekday;
-      const minNightBase = isWeekend ? state.constraints.minNightWeekend : state.constraints.minNightWeekday;
+      let minDay: number, minNightBase: number;
+      if (kind === 'holiday') {
+        minDay = state.constraints.minDayHoliday;
+        minNightBase = state.constraints.minNightHoliday;
+      } else if (kind === 'weekend') {
+        minDay = state.constraints.minDayWeekend;
+        minNightBase = state.constraints.minNightWeekend;
+      } else {
+        minDay = state.constraints.minDayWeekday;
+        minNightBase = state.constraints.minNightWeekday;
+      }
       const minNight = state.constraints.allowSingleNight ? Math.min(1, minNightBase) : minNightBase;
       const dayBad = dayCount < minDay;
       const nightBad = nightCount < minNight;
       const overallBad = dayBad || nightBad;
-      const cls = `ns-summary ${isWeekend ? 'ns-weekend' : ''} ${overallBad ? 'ns-summary-bad' : 'ns-summary-ok'}`;
-      const tooltip = `Gün ${d}: gündüz ${dayCount}/${minDay} · gece ${nightCount}/${minNight}`;
+      const kindClass = kind === 'holiday' ? 'ns-holiday' : kind === 'weekend' ? 'ns-weekend' : '';
+      const cls = `ns-summary ${kindClass} ${overallBad ? 'ns-summary-bad' : 'ns-summary-ok'}`.trim();
+      const kindLbl = kind === 'holiday' ? ' (tatil)' : kind === 'weekend' ? ' (hafta sonu)' : '';
+      const tooltip = `Gün ${d}${kindLbl}: gündüz ${dayCount}/${minDay} · gece ${nightCount}/${minNight}`;
       return `<td class="${cls}" title="${escapeHtml(tooltip)}">${nightCount}/${dayCount}</td>`;
     }).join('');
     const summaryRow = `<tr><td class="ns-row-name" style="font-size: 0.7rem; font-weight:600;">Gece/Gündüz</td>${summaryCells}<td class="ns-row-total"></td></tr>`;
@@ -1080,63 +1238,45 @@ const TR_MONTHS = [
 
   function renderStats(): void {
     const stats = computeStats(state);
-    const totalHours = Object.values(stats.hoursByNurse).reduce((a, b) => a + b, 0);
-    const avg = state.nurses.length > 0 ? totalHours / state.nurses.length : 0;
     const D = state.meta.daysInMonth;
-    const monthTotal = D * 24; // Ayın toplam saati: gün sayısı × 24
+    const monthTotal = D * 24;
 
     const cards = state.nurses.map((nurse) => {
       const work = stats.hoursByNurse[nurse.id] ?? 0;
       const c = stats.countsByNurse[nurse.id] || { G8: 0, GC16: 0, N24: 0, DN: 0, YI: 0, RP: 0 };
-      const diff = work - avg;
-      const diffStr = diff > 0 ? `+${Math.round(diff)}` : Math.round(diff);
 
-      // Her vardiya kodu için saat dağılımı (toplam = 24*N)
-      // G8 günü:   8 sa çalışma + 16 sa dinlenme
-      // GC16 günü: 16 sa çalışma + 8 sa dinlenme
-      // N24 günü:  24 sa çalışma + 0 sa dinlenme
-      // DN günü:   24 sa dinlenme
-      // YI günü:   24 sa yıllık izin
-      // RP günü:   24 sa rapor
+      // Bar segment'leri: çalışma (mavi) + dinlenme (yeşil) + yıllık (mor) + rapor (gri)
       const restHours = c.G8 * 16 + c.GC16 * 8 + c.DN * 24;
       const yiHours = c.YI * 24;
       const rpHours = c.RP * 24;
-      const total = work + restHours + yiHours + rpHours; // monthTotal'a eşit olmalı
-
       const workPct = monthTotal > 0 ? (work / monthTotal) * 100 : 0;
       const restPct = monthTotal > 0 ? (restHours / monthTotal) * 100 : 0;
       const yiPct = monthTotal > 0 ? (yiHours / monthTotal) * 100 : 0;
       const rpPct = monthTotal > 0 ? (rpHours / monthTotal) * 100 : 0;
 
       const segs: string[] = [];
-      if (workPct > 0) segs.push(`<div class="ns-bar-seg ns-bar-work" style="width: ${workPct}%;" title="Çalışma: ${work} saat (${workPct.toFixed(1)}%)"></div>`);
-      if (restPct > 0) segs.push(`<div class="ns-bar-seg ns-bar-rest" style="width: ${restPct}%;" title="Dinlenme: ${restHours} saat (${restPct.toFixed(1)}%)"></div>`);
-      if (yiPct > 0) segs.push(`<div class="ns-bar-seg ns-bar-yi" style="width: ${yiPct}%;" title="Yıllık izin: ${yiHours} saat (${yiPct.toFixed(1)}%)"></div>`);
-      if (rpPct > 0) segs.push(`<div class="ns-bar-seg ns-bar-rp" style="width: ${rpPct}%;" title="Rapor: ${rpHours} saat (${rpPct.toFixed(1)}%)"></div>`);
+      if (workPct > 0) segs.push(`<div class="ns-bar-seg ns-bar-work" style="width: ${workPct}%;" title="Çalışma: ${work} saat"></div>`);
+      if (restPct > 0) segs.push(`<div class="ns-bar-seg ns-bar-rest" style="width: ${restPct}%;" title="Dinlenme: ${restHours} saat"></div>`);
+      if (yiPct > 0) segs.push(`<div class="ns-bar-seg ns-bar-yi" style="width: ${yiPct}%;" title="Yıllık izin: ${yiHours} saat"></div>`);
+      if (rpPct > 0) segs.push(`<div class="ns-bar-seg ns-bar-rp" style="width: ${rpPct}%;" title="Rapor: ${rpHours} saat"></div>`);
+
+      // Tag'leri sadece sıfır olmayanlar için göster
+      const tags: string[] = [];
+      if (c.N24 > 0) tags.push(`<span class="ns-tag" data-shift="N24"><strong>${c.N24}</strong> nöbet</span>`);
+      if (c.G8 > 0) tags.push(`<span class="ns-tag" data-shift="G8"><strong>${c.G8}</strong> gündüz</span>`);
+      if (c.GC16 > 0) tags.push(`<span class="ns-tag" data-shift="GC16"><strong>${c.GC16}</strong> gece</span>`);
+      if (c.DN > 0) tags.push(`<span class="ns-tag" data-shift="DN"><strong>${c.DN}</strong> dinlenme</span>`);
+      if (c.YI > 0) tags.push(`<span class="ns-tag" data-shift="YI"><strong>${c.YI}</strong> yıllık</span>`);
+      if (c.RP > 0) tags.push(`<span class="ns-tag" data-shift="RP"><strong>${c.RP}</strong> rapor</span>`);
 
       return `
         <div class="ns-stats-card">
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-semibold text-slate-900 dark:text-white">${escapeHtml(nurse.name)}</span>
-            <span class="text-xs text-slate-500 dark:text-slate-400">${diffStr} sa ortalamaya göre</span>
-          </div>
-          <div class="mt-2 flex items-baseline gap-2">
-            <div class="text-2xl font-display font-bold text-slate-900 dark:text-white">${work}<span class="text-sm font-normal text-slate-500"> sa çalışma</span></div>
-            <div class="ml-auto text-sm text-slate-700 dark:text-slate-300">${restHours + yiHours + rpHours}<span class="text-xs text-slate-500"> sa boş</span></div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-base font-semibold text-slate-900 dark:text-white">${escapeHtml(nurse.name)}</span>
+            <span class="text-xl font-display font-bold text-slate-900 dark:text-white">${work}<span class="text-xs font-normal text-slate-500 ml-1">saat</span></span>
           </div>
           <div class="ns-bar mt-2" aria-label="Aylık saat dağılımı">${segs.join('')}</div>
-          <div class="mt-1.5 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-            <span>Toplam ${total} / ${monthTotal} sa (${D} gün × 24)</span>
-            <span>%${workPct.toFixed(0)} çalışma</span>
-          </div>
-          <div class="mt-2 flex flex-wrap gap-1.5 text-xs">
-            <span class="ns-tag" data-shift="N24"><strong>${c.N24}</strong> nöbet</span>
-            <span class="ns-tag" data-shift="G8"><strong>${c.G8}</strong> gündüz</span>
-            ${c.GC16 > 0 ? `<span class="ns-tag" data-shift="GC16"><strong>${c.GC16}</strong> gece</span>` : ''}
-            ${c.DN > 0 ? `<span class="ns-tag" data-shift="DN"><strong>${c.DN}</strong> dinlenme</span>` : ''}
-            ${c.YI > 0 ? `<span class="ns-tag" data-shift="YI"><strong>${c.YI}</strong> yıllık</span>` : ''}
-            ${c.RP > 0 ? `<span class="ns-tag" data-shift="RP"><strong>${c.RP}</strong> rapor</span>` : ''}
-          </div>
+          <div class="mt-2 flex flex-wrap gap-1.5 text-xs">${tags.join('')}</div>
         </div>`;
     }).join('');
     statsGrid.innerHTML = cards || `<p class="text-sm text-slate-500 dark:text-slate-400">Önce hemşire ekleyin.</p>`;
@@ -1220,8 +1360,24 @@ const TR_MONTHS = [
     state.constraints.minNightWeekend = Math.max(0, parseInt(conMinNightWe.value, 10) || 0);
     commit();
   });
+  conMinDayHol.addEventListener('change', () => {
+    state.constraints.minDayHoliday = Math.max(0, parseInt(conMinDayHol.value, 10) || 0);
+    commit();
+  });
+  conMinNightHol.addEventListener('change', () => {
+    state.constraints.minNightHoliday = Math.max(0, parseInt(conMinNightHol.value, 10) || 0);
+    commit();
+  });
   conRest.addEventListener('change', () => {
     state.constraints.restAfterNight = Math.max(0, Math.min(7, parseInt(conRest.value, 10) || 0));
+    commit();
+  });
+  conRestEve.addEventListener('change', () => {
+    state.constraints.restAfterEvening = Math.max(0, Math.min(7, parseInt(conRestEve.value, 10) || 0));
+    commit();
+  });
+  conPreferEvening.addEventListener('change', () => {
+    state.constraints.preferEveningOverNight = conPreferEvening.checked;
     commit();
   });
   conAllowSingle.addEventListener('change', () => {
@@ -1229,74 +1385,164 @@ const TR_MONTHS = [
     commit();
   });
 
-  /* ---------------------------------------------------- Nurse mgmt */
-
-  nurseAddBtn.addEventListener('click', () => addNurse());
-  nurseNameInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addNurse();
+  // Tatil günü tıklamaları
+  holidayGrid.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const dayStr = target.getAttribute('data-holiday-day');
+    if (!dayStr) return;
+    const d = parseInt(dayStr, 10);
+    if (state.holidays.includes(d)) {
+      state.holidays = state.holidays.filter((x) => x !== d);
+    } else {
+      state.holidays.push(d);
+      state.holidays.sort((a, b) => a - b);
     }
+    commit();
   });
 
-  function addNurse(): void {
-    const name = nurseNameInput.value.trim();
-    if (!name) {
-      nurseNameInput.focus();
-      return;
-    }
-    state.nurses.push({ id: uniqueId(), name, unavailable: [] });
-    nurseNameInput.value = '';
+  /* ---------------------------------------------------- Nurse mgmt
+   * Hemşire ekleme: tablonun "Hemşire +" başlığındaki butonla.
+   * + butonu inline bir input görünümüne dönüşür; Enter/yan tikle ekle, Esc/dış tıkla iptal.
+   * Hemşire silme: her satır başlığındaki × butonu.
+   * Hemşire adını düzenleme: ad metnine çift tıkla → inline input.
+   */
+
+  function addNurse(name: string): void {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    state.nurses.push({ id: uniqueId(), name: trimmed, unavailable: [] });
     commit();
   }
 
-  nurseList.addEventListener('click', (e) => {
+  function removeNurse(nurseId: string): void {
+    state.nurses = state.nurses.filter((n) => n.id !== nurseId);
+    for (const k of Object.keys(state.cells)) {
+      if (k.startsWith(nurseId + ':')) {
+        delete state.cells[k];
+        delete state.pinned[k];
+      }
+    }
+    commit();
+  }
+
+  function renameNurse(nurseId: string, newName: string): void {
+    const nurse = state.nurses.find((n) => n.id === nurseId);
+    if (!nurse) return;
+    nurse.name = newName.trim() || 'İsimsiz';
+    commit();
+  }
+
+  // Inline input toggle — başlığa enjekte edilen yeni hemşire formu
+  function showAddNurseInput(): void {
+    const headerEl = scheduleTable.querySelector<HTMLElement>('th.ns-row-name[data-nurse-header]');
+    if (!headerEl) return;
+    headerEl.innerHTML = `
+      <input type="text" id="ns-new-nurse-input" maxlength="40" autocomplete="off" placeholder="Hemşire adı"
+        class="ns-inline-input" />
+      <button type="button" id="ns-new-nurse-cancel" class="ns-icon-btn" title="İptal (Esc)">×</button>
+    `;
+    const input = headerEl.querySelector<HTMLInputElement>('#ns-new-nurse-input');
+    const cancel = headerEl.querySelector<HTMLButtonElement>('#ns-new-nurse-cancel');
+    input?.focus();
+    let processed = false;
+    const submit = (): void => {
+      if (processed) return;
+      processed = true;
+      const v = input?.value.trim() ?? '';
+      if (v) addNurse(v);
+      else commit(); // sadece kapat (yeniden render)
+    };
+    const cancelInput = (): void => {
+      if (processed) return;
+      processed = true;
+      commit();
+    };
+    input?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submit();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelInput();
+      }
+    });
+    cancel?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      cancelInput();
+    });
+  }
+
+  scheduleTable.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
-    const removeId = target.getAttribute('data-remove-nurse');
-    if (removeId) {
-      state.nurses = state.nurses.filter((n) => n.id !== removeId);
-      for (const k of Object.keys(state.cells)) {
-        if (k.startsWith(removeId + ':')) {
-          delete state.cells[k];
-          delete state.pinned[k];
-        }
-      }
-      commit();
+    const addBtn = target.closest<HTMLElement>('[data-add-nurse]');
+    if (addBtn) {
+      e.stopPropagation();
+      showAddNurseInput();
       return;
     }
-    const toggleId = target.getAttribute('data-toggle-leaves');
-    if (toggleId) {
-      const grid = nurseList.querySelector<HTMLElement>(`[data-leaves-grid="${toggleId}"]`);
-      if (grid) grid.classList.toggle('hidden');
+    const removeBtn = target.closest<HTMLElement>('[data-remove-nurse]');
+    if (removeBtn) {
+      e.stopPropagation();
+      const id = removeBtn.getAttribute('data-remove-nurse');
+      if (!id) return;
+      const nurse = state.nurses.find((n) => n.id === id);
+      if (nurse && !confirm(`${nurse.name} silinsin mi? Bu hemşirenin tüm vardiyaları kaldırılacak.`)) return;
+      removeNurse(id);
       return;
     }
-    const dayBtnNurse = target.getAttribute('data-nurse');
-    const dayBtnDay = target.getAttribute('data-day');
-    if (dayBtnNurse && dayBtnDay && target.closest('[data-leaves-grid]')) {
-      const nurse = state.nurses.find((n) => n.id === dayBtnNurse);
-      if (!nurse) return;
-      const d = parseInt(dayBtnDay, 10);
-      if (nurse.unavailable.includes(d)) {
-        nurse.unavailable = nurse.unavailable.filter((x) => x !== d);
-      } else {
-        nurse.unavailable.push(d);
-        nurse.unavailable.sort((a, b) => a - b);
-      }
-      commit();
+    const renameTrigger = target.closest<HTMLElement>('[data-rename-nurse]');
+    if (renameTrigger) {
+      e.stopPropagation();
+      const id = renameTrigger.getAttribute('data-rename-nurse');
+      if (!id) return;
+      startInlineRename(id, renameTrigger);
     }
   });
 
-  nurseList.addEventListener('change', (e) => {
-    const target = e.target as HTMLInputElement;
-    const nameFor = target.getAttribute('data-nurse-name');
-    if (nameFor) {
-      const nurse = state.nurses.find((n) => n.id === nameFor);
-      if (nurse) {
-        nurse.name = target.value.trim() || 'İsimsiz';
-        commit();
+  function startInlineRename(nurseId: string, trigger: HTMLElement): void {
+    const nurse = state.nurses.find((n) => n.id === nurseId);
+    if (!nurse) return;
+    // Trigger span'ı bir input'a çevir
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = nurse.name;
+    input.maxLength = 40;
+    input.className = 'ns-inline-input ns-inline-rename';
+    input.setAttribute('data-rename-input', nurseId);
+    trigger.replaceWith(input);
+    input.focus();
+    input.select();
+
+    let processed = false;
+    const submit = (): void => {
+      if (processed) return;
+      processed = true;
+      const v = input.value.trim();
+      if (v && v !== nurse.name) {
+        renameNurse(nurseId, v);
+      } else {
+        commit(); // sadece yeniden render → input geri spana dönüşür
       }
-    }
-  });
+    };
+    const cancelEdit = (): void => {
+      if (processed) return;
+      processed = true;
+      commit();
+    };
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submit();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelEdit();
+      }
+    });
+    input.addEventListener('blur', () => {
+      // Esc ile çıkmadıysa kaydet
+      submit();
+    });
+  }
 
   /* ---------------------------------------------------- Sample / Reset */
 

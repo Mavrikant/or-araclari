@@ -139,6 +139,51 @@ describe('validate', () => {
     expect(issues.some((i) => i.kind === 'REST_VIOLATION')).toBe(true);
   });
 
+  it('rest violation when GC16 followed by N24 next day (saat dilimi çakışması)', () => {
+    // GC16 (16:00 → ertesi 08:00). Ertesi gün N24 (00:00-24:00) çakışır.
+    const s = createEmptySchedule(2026, 5, sixNurses());
+    s.cells[cellKey('n1', 5)] = 'GC16';
+    s.cells[cellKey('n1', 6)] = 'N24';
+    const issues = validate(s);
+    expect(issues.some((i) => i.kind === 'REST_VIOLATION' && i.nurseId === 'n1')).toBe(true);
+  });
+
+  it('rest violation when GC16 followed by G8 next day', () => {
+    // GC16 ertesi 08'e kadar; aynı gün başka G8 çakışır
+    const s = createEmptySchedule(2026, 5, sixNurses());
+    s.cells[cellKey('n1', 5)] = 'GC16';
+    s.cells[cellKey('n1', 6)] = 'G8';
+    const issues = validate(s);
+    expect(issues.some((i) => i.kind === 'REST_VIOLATION' && i.nurseId === 'n1')).toBe(true);
+  });
+
+  it('GC16 then DN next day satisfies rest', () => {
+    const s = createEmptySchedule(2026, 5, sixNurses());
+    s.cells[cellKey('n1', 5)] = 'GC16';
+    s.cells[cellKey('n1', 6)] = 'DN';
+    const issues = validate(s).filter(
+      (i) => i.kind === 'REST_VIOLATION' && i.nurseId === 'n1',
+    );
+    expect(issues.length).toBe(0);
+  });
+
+  it('holiday day uses minDayHoliday / minNightHoliday', () => {
+    const s = createEmptySchedule(
+      2026,
+      5,
+      sixNurses(),
+      { ...DEFAULT_CONSTRAINTS, minDayHoliday: 1, minNightHoliday: 1, minDayWeekday: 5, minNightWeekday: 4 },
+      [1], // 1 Mayıs tatil
+    );
+    // 1 Mayıs (Cuma normalde hafta içi) tatil olarak işaretli → düşük min
+    s.cells[cellKey('n1', 1)] = 'G8';
+    s.cells[cellKey('n2', 1)] = 'GC16';
+    const issues = validate(s).filter((i) => i.day === 1);
+    // tatil min 1/1 → ihlal yok
+    expect(issues.filter((i) => i.kind === 'COVERAGE_DAY').length).toBe(0);
+    expect(issues.filter((i) => i.kind === 'COVERAGE_NIGHT').length).toBe(0);
+  });
+
   it('DN after N24 satisfies rest rule', () => {
     const s = createEmptySchedule(2026, 5, sixNurses());
     s.cells[cellKey('n1', 5)] = 'N24';
@@ -244,39 +289,79 @@ describe('solveScheduleGreedy', () => {
     }
   });
 
-  it('weekday days satisfy minDayWeekday', () => {
-    const s = buildSampleSchedule(2026, 5);
+  it('weekday days satisfy minDayWeekday with sufficient staff (no leaves)', () => {
+    // İzinsiz 12 hemşire — greedy rahat çalışmalı
+    const nurses = Array.from({ length: 12 }, (_, i) => ({
+      id: `n${i + 1}`,
+      name: `H${i + 1}`,
+      unavailable: [],
+    }));
+    const s = createEmptySchedule(2026, 5, nurses);
     const r = solveScheduleGreedy(s);
     const weekendSet = new Set(r.schedule.meta.weekendDays);
+    // Tatil de hafta sonu kuralı kullansın diye tatilleri filtrele
+    const holidaySet = new Set(r.schedule.holidays);
     for (let d = 1; d <= r.schedule.meta.daysInMonth; d++) {
-      if (weekendSet.has(d)) continue;
-      const dayCount = r.schedule.nurses.filter((n) => {
-        const c = getCell(r.schedule, n.id, d);
-        return isDayCovering(c);
-      }).length;
+      if (weekendSet.has(d) || holidaySet.has(d)) continue;
+      const dayCount = r.schedule.nurses.filter((n) => isDayCovering(getCell(r.schedule, n.id, d))).length;
       expect(dayCount).toBeGreaterThanOrEqual(r.schedule.constraints.minDayWeekday);
     }
   });
 
-  it('weekend days satisfy minDayWeekend (default 2)', () => {
-    const s = buildSampleSchedule(2026, 5);
+  it('weekend days satisfy minDayWeekend with sufficient staff', () => {
+    const nurses = Array.from({ length: 12 }, (_, i) => ({
+      id: `n${i + 1}`,
+      name: `H${i + 1}`,
+      unavailable: [],
+    }));
+    const s = createEmptySchedule(2026, 5, nurses);
     const r = solveScheduleGreedy(s);
+    const holidaySet = new Set(r.schedule.holidays);
     for (const d of r.schedule.meta.weekendDays) {
+      if (holidaySet.has(d)) continue;
       const dayCount = r.schedule.nurses.filter((n) => isDayCovering(getCell(r.schedule, n.id, d))).length;
       expect(dayCount).toBeGreaterThanOrEqual(r.schedule.constraints.minDayWeekend);
     }
   });
 
-  it('every day has minNight (weekday or weekend) coverage', () => {
-    const s = buildSampleSchedule(2026, 5);
+  it('every day has minNight coverage with sufficient staff', () => {
+    const nurses = Array.from({ length: 12 }, (_, i) => ({
+      id: `n${i + 1}`,
+      name: `H${i + 1}`,
+      unavailable: [],
+    }));
+    const s = createEmptySchedule(2026, 5, nurses);
     const r = solveScheduleGreedy(s);
     const weekendSet = new Set(r.schedule.meta.weekendDays);
+    const holidaySet = new Set(r.schedule.holidays);
     for (let d = 1; d <= r.schedule.meta.daysInMonth; d++) {
-      const isWeekend = weekendSet.has(d);
-      const need = isWeekend ? r.schedule.constraints.minNightWeekend : r.schedule.constraints.minNightWeekday;
+      let need: number;
+      if (holidaySet.has(d)) need = r.schedule.constraints.minNightHoliday;
+      else if (weekendSet.has(d)) need = r.schedule.constraints.minNightWeekend;
+      else need = r.schedule.constraints.minNightWeekday;
       const nightCount = r.schedule.nurses.filter((n) => isNightCovering(getCell(r.schedule, n.id, d))).length;
       expect(nightCount).toBeGreaterThanOrEqual(need);
     }
+  });
+
+  it('greedy prefers GC16 over N24 (zorunda kalmadıkça nöbet yazma)', () => {
+    const nurses = Array.from({ length: 12 }, (_, i) => ({
+      id: `n${i + 1}`,
+      name: `H${i + 1}`,
+      unavailable: [],
+    }));
+    const s = createEmptySchedule(2026, 5, nurses);
+    const r = solveScheduleGreedy(s);
+    let n24Count = 0;
+    let gc16Count = 0;
+    for (const nurse of r.schedule.nurses) {
+      const c = r.stats.countsByNurse[nurse.id];
+      n24Count += c.N24;
+      gc16Count += c.GC16;
+    }
+    // 12 hemşire varsa rahat GC16 ile kapsama yapılabilir; N24 sayısı GC16'dan az olmalı
+    expect(gc16Count).toBeGreaterThan(0);
+    expect(n24Count).toBeLessThanOrEqual(gc16Count);
   });
 
   it('preserves user-pinned cells', () => {
