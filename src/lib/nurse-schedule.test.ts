@@ -16,6 +16,8 @@ import {
   isLeaveShift,
   isNightCovering,
   isWorkingShift,
+  monthlyBaseTargetHours,
+  monthlyTargetHoursForNurse,
   shiftHoursOf,
   solveScheduleGreedy,
   validate,
@@ -454,12 +456,11 @@ describe('buildSampleSchedule', () => {
     expect(s.nurses[8].name).toBe('Gülnihal');
   });
 
-  it('ships at least one oncall and one minDays nurse for demo', () => {
+  it('ships at least one yogun and several normal nurses for demo', () => {
     const s = buildSampleSchedule(2026, 5);
-    const styles = s.nurses.map((n) => n.workStyle ?? 'standard');
-    expect(styles).toContain('oncall');
-    expect(styles).toContain('minDays');
-    expect(styles.filter((w) => w === 'standard').length).toBeGreaterThan(0);
+    const styles = s.nurses.map((n) => n.workStyle ?? 'normal');
+    expect(styles).toContain('yogun');
+    expect(styles.filter((w) => w === 'normal').length).toBeGreaterThan(0);
   });
 });
 
@@ -485,14 +486,14 @@ describe('weekBucketsOfMonth', () => {
 });
 
 describe('work styles', () => {
-  it('getWorkStyle defaults to standard when unset', () => {
+  it('getWorkStyle defaults to normal when unset', () => {
     const n: Nurse = { id: 'n1', name: 'X', unavailable: [] };
-    expect(getWorkStyle(n)).toBe('standard');
+    expect(getWorkStyle(n)).toBe('normal');
   });
 
-  it('validate flags G8 / GC16 on an oncall nurse as WORKSTYLE_VIOLATION', () => {
+  it('validate flags G8 / GC16 on a yogun nurse as WORKSTYLE_VIOLATION', () => {
     const nurses = sixNurses();
-    nurses[0].workStyle = 'oncall';
+    nurses[0].workStyle = 'yogun';
     const s = createEmptySchedule(2026, 5, nurses);
     s.cells[cellKey('n1', 1)] = 'G8';
     s.cells[cellKey('n1', 4)] = 'GC16';
@@ -503,59 +504,82 @@ describe('work styles', () => {
     expect(issues.every((i) => i.severity === 'error')).toBe(true);
   });
 
-  it('validate does NOT flag N24 on an oncall nurse', () => {
+  it('validate does NOT flag N24 on a yogun nurse', () => {
     const nurses = sixNurses();
-    nurses[0].workStyle = 'oncall';
+    nurses[0].workStyle = 'yogun';
     const s = createEmptySchedule(2026, 5, nurses);
     s.cells[cellKey('n1', 1)] = 'N24';
     const ws = validate(s).filter((i) => i.kind === 'WORKSTYLE_VIOLATION');
     expect(ws.length).toBe(0);
   });
 
-  it('greedy: oncall nurse only ever receives N24 (or non-working)', () => {
-    // 12 hemşire — solver oncall'a G8/GC16 atamak zorunda kalmamalı
+  it('greedy: yogun nurse only ever receives N24 (or non-working)', () => {
+    // 12 hemşire — solver yogun'a G8/GC16 atamak zorunda kalmamalı
     const nurses: Nurse[] = Array.from({ length: 12 }, (_, i) => ({
       id: `n${i + 1}`,
       name: `H${i + 1}`,
       unavailable: [],
     }));
-    nurses[0].workStyle = 'oncall';
+    nurses[0].workStyle = 'yogun';
     const s = createEmptySchedule(2026, 5, nurses);
     const r = solveScheduleGreedy(s);
     const counts = r.stats.countsByNurse['n1'];
     expect(counts.G8).toBe(0);
     expect(counts.GC16).toBe(0);
-    // Oncall hemşire en azından bir N24 yapmış olmalı (12 hemşirelik takımda
+    // Yoğun hemşire en azından bir N24 yapmış olmalı (12 hemşirelik takımda
     // greedy onu nöbete tercih eder).
     expect(counts.N24).toBeGreaterThan(0);
     // Tarz ihlali yok
     const wsIssues = r.issues.filter((i) => i.kind === 'WORKSTYLE_VIOLATION');
     expect(wsIssues.length).toBe(0);
   });
+});
 
-  it('greedy: minDays nurse keeps active days low (clustering)', () => {
-    // 12 hemşire — biri minDays
-    const nurses: Nurse[] = Array.from({ length: 12 }, (_, i) => ({
+describe('target hours / izin saat ayarı', () => {
+  it('monthlyBaseTargetHours: 31 günlü ayda yaklaşık 177 saat (40h × 31/7)', () => {
+    const meta = createMonthMeta(2026, 5); // Mayıs = 31 gün
+    expect(monthlyBaseTargetHours(meta)).toBe(Math.round((40 * 31) / 7));
+  });
+
+  it('monthlyTargetHoursForNurse: izin günü başına 8 saat azalır', () => {
+    const meta = createMonthMeta(2026, 5);
+    const base = monthlyBaseTargetHours(meta);
+    expect(monthlyTargetHoursForNurse(meta, 0)).toBe(base);
+    expect(monthlyTargetHoursForNurse(meta, 3)).toBe(base - 24);
+    expect(monthlyTargetHoursForNurse(meta, 5)).toBe(base - 40);
+  });
+
+  it('monthlyTargetHoursForNurse: aşırı izinli durumda 0 alt sınırı', () => {
+    const meta = createMonthMeta(2026, 2); // 28 gün → base ≈ 160
+    expect(monthlyTargetHoursForNurse(meta, 100)).toBe(0);
+  });
+
+  it('greedy: izinli hemşire çalışma saati eşit ayarlanır (saat + 8 × izin)', () => {
+    // 9 hemşire, biri 5 gün izinli. Greedy adjusted hours üzerinden eşitler.
+    const nurses: Nurse[] = Array.from({ length: 9 }, (_, i) => ({
       id: `n${i + 1}`,
       name: `H${i + 1}`,
       unavailable: [],
+      workStyle: 'normal' as const,
     }));
-    nurses[0].workStyle = 'minDays';
+    nurses[0].unavailable = [10, 11, 12, 13, 14]; // 5 gün YI
     const s = createEmptySchedule(2026, 5, nurses);
     const r = solveScheduleGreedy(s);
-    const minDaysActiveCount =
-      r.stats.countsByNurse['n1'].G8 +
-      r.stats.countsByNurse['n1'].GC16 +
-      r.stats.countsByNurse['n1'].N24;
-    // Diğer nurse'lerin ortalama aktif gün sayısı
-    const others = r.schedule.nurses.slice(1);
-    const otherAvg =
-      others.reduce((sum, n) => {
-        const c = r.stats.countsByNurse[n.id];
-        return sum + c.G8 + c.GC16 + c.N24;
-      }, 0) / others.length;
-    // Min-Gün hemşire ortalamadan az ya da eşit aktif gün kullansın.
-    // (Saat eşitliği önemliyken bu yumuşak bir hedef; tolerans 1 gün.)
-    expect(minDaysActiveCount).toBeLessThanOrEqual(otherAvg + 1);
+    const adjustedAll = r.schedule.nurses.map((n) => {
+      const c = r.stats.countsByNurse[n.id];
+      const work = r.stats.hoursByNurse[n.id];
+      const leave = c.YI + c.RP;
+      return { id: n.id, hours: work, adjusted: work + 8 * leave };
+    });
+    const min = Math.min(...adjustedAll.map((x) => x.adjusted));
+    const max = Math.max(...adjustedAll.map((x) => x.adjusted));
+    // Adjusted hours arasında dar bir aralık olsun (≤ 32 saat fark, 1 vardiya
+    // tolerans). İzinli hemşire raw saatte daha az çalışmalı.
+    expect(max - min).toBeLessThanOrEqual(32);
+    // İzinli hemşire ham saatte ortalamadan düşük çalışmalı
+    const rawAvg =
+      adjustedAll.reduce((s, x) => s + x.hours, 0) / adjustedAll.length;
+    const izinli = adjustedAll.find((x) => x.id === 'n1')!;
+    expect(izinli.hours).toBeLessThan(rawAvg);
   });
 });
