@@ -53,7 +53,7 @@ export const TOOLS: readonly Tool[] = [
     title: 'Gezgin Satıcı (TSP) Çözücü',
     shortTitle: 'TSP Çözücü',
     description:
-      'Noktaların koordinatlarını gir, en kısa turu nearest-neighbor + 2-opt sezgiseliyle bul. Görsel önizleme dahil.',
+      'Noktaları satır satır gir veya Türkiye şehirlerinden seç; nearest-neighbor + 2-opt en kısa turu bulsun, sonuç interaktif Plotly haritasında çizilsin.',
     category: 'graf',
     status: 'ready',
     guideSlug: 'tsp-rota-optimizasyonu',

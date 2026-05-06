@@ -201,6 +201,27 @@ export function solveTSP(input: TSPInput): TSPResult {
 }
 
 /**
+ * Serialise points back into the textual format that `parsePoints` accepts.
+ * Round-trip stable: parsePoints(pointsToText(p)) reconstructs an equivalent
+ * Point[] (modulo float formatting at very high precision).
+ *
+ * Numbers are rendered with a `.` decimal separator. parsePoints accepts both
+ * `.` and `,`, so the textual editor stays Turkish-comma friendly while the
+ * generated text is unambiguous.
+ */
+export function pointsToText(points: ReadonlyArray<Point>): string {
+  return points
+    .map((p) => `${p.label}\t${formatNum(p.x)}\t${formatNum(p.y)}`)
+    .join('\n');
+}
+
+function formatNum(n: number): string {
+  if (Number.isInteger(n)) return String(n);
+  /* Avoid trailing zeros from naive toString. */
+  return n.toString();
+}
+
+/**
  * Parse "label<TAB>x<TAB>y" lines into Points. Comma reserved as Turkish
  * decimal separator.
  */
