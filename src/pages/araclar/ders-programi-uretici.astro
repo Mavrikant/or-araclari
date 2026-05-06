@@ -405,7 +405,6 @@ const softwareJsonLd = {
   /* ---------- last solve cache (for CSV / re-render on tab switch) ---------- */
 
   let lastResult: ReturnType<typeof solveTimetable> | null = null;
-  let lastDays = state.daysCount;
   let lastPeriods = state.periodsPerDay;
 
   /* ---------- renderers ---------- */
@@ -672,7 +671,6 @@ const softwareJsonLd = {
         slotLabels: slotLabels(days, periods),
       });
       lastResult = result;
-      lastDays = days;
       lastPeriods = periods;
 
       const totalHours = result.assignments.length;

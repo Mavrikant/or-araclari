@@ -59,7 +59,7 @@ export const TOOLS: readonly Tool[] = [
     title: 'Atama Problemi Çözücü',
     shortTitle: 'Atama (Hungarian)',
     description:
-      'Maliyet matrisini gir, Macar (Hungarian) algoritmasıyla optimum atamayı bul. Min veya max yönü, dikdörtgen matris desteği.',
+      'Düzenlenebilir matris ızgarasında satır/sütun etiketlerini ve maliyetleri gir; Macar (Hungarian) algoritması optimum atamayı bulup hücreleri vurgular.',
     category: 'optimizasyon',
     status: 'ready',
     guideSlug: 'macar-algoritmasi',

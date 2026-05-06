@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Container from '../../components/Container.astro';
-import AdSlot from '../../components/AdSlot.astro';
 import { withBase, SITE } from '../../data/site';
 import { TOOLS } from '../../data/tools';
 
@@ -37,140 +36,445 @@ const softwareJsonLd = {
       {tool.title}
     </h1>
     <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
-      Maliyet matrisini gir, Macar (Hungarian) algoritması ile optimum atamayı
-      saniyeler içinde bul. {guideHref && (
-        <>
-          <a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300">Rehbere git →</a>
-        </>
+      Boyutu seç, satır ve sütun etiketlerini doğrudan tabloda düzenle, hücrelere
+      maliyet/skoru gir. Macar (Hungarian) algoritması optimum atamayı bulup
+      ilgili hücreleri vurgular.
+      {guideHref && (
+        <a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>
       )}
     </p>
   </Container>
 
-  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,360px)_1fr] print:block">
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,300px)_1fr] print:block">
     <form id="assign-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="sample-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Örnek doldur
+        </button>
+        <button type="button" id="reset-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+          Sıfırla
+        </button>
+      </div>
+
       <fieldset class="space-y-3">
-        <div class="flex items-center justify-between">
-          <label for="matrix" class="block font-display text-sm font-semibold text-slate-900 dark:text-white">Maliyet matrisi</label>
-          <span id="matrix-info" class="text-xs text-slate-500 dark:text-slate-400" aria-live="polite">— × —</span>
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Boyut
+        </legend>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Satır (agent)</span>
+            <input type="number" id="rows-input" min="1" max="32" step="1" value="3"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Sütun (görev)</span>
+            <input type="number" id="cols-input" min="1" max="32" step="1" value="3"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
         </div>
-        <textarea id="matrix" name="matrix" rows="9" required autocomplete="off" spellcheck="false"
-          class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-          placeholder="Her satıra bir agent yaz, hücreleri tab veya boşlukla ayır.&#10;Türkçe ondalık (1,5) desteklenir.&#10;&#10;4 1 3&#10;2 0 5&#10;3 2 2"></textarea>
-        <div class="flex flex-wrap gap-2">
-          <button type="button" id="sample-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">Örnek doldur</button>
-          <button type="button" id="clear-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">Temizle</button>
-        </div>
+        <p id="size-preview" class="text-xs text-slate-500 dark:text-slate-400" aria-live="polite">
+          3 × 3 (kare matris)
+        </p>
       </fieldset>
 
       <fieldset>
-        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">Etiketler <span class="font-normal text-slate-500">(opsiyonel)</span></legend>
-        <div class="mt-3 space-y-3">
-          <label class="block">
-            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Satır etiketleri (her satıra bir tane)</span>
-            <textarea id="row-labels" rows="3" autocomplete="off" spellcheck="false"
-              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              placeholder="Ali&#10;Veli&#10;Ayşe"></textarea>
-          </label>
-          <label class="block">
-            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Sütun etiketleri (her satıra bir tane)</span>
-            <textarea id="col-labels" rows="3" autocomplete="off" spellcheck="false"
-              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              placeholder="Görev A&#10;Görev B&#10;Görev C"></textarea>
-          </label>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">Optimizasyon yönü</legend>
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Optimizasyon yönü
+        </legend>
         <div class="mt-3 space-y-2">
           <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
             <input type="radio" name="dir" value="min" checked class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
             <span class="flex-1">
-              <span class="block text-sm font-medium text-slate-900 dark:text-white">Minimize et</span>
-              <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Toplam maliyeti en aza indir (varsayılan).</span>
+              <span class="block text-sm font-medium text-slate-900 dark:text-white">Minimize</span>
+              <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Maliyet, süre, mesafe gibi düşürülecek değerler.</span>
             </span>
           </label>
           <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
             <input type="radio" name="dir" value="max" class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
             <span class="flex-1">
-              <span class="block text-sm font-medium text-slate-900 dark:text-white">Maximize et</span>
-              <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Hücreler kâr/skor ise toplamı en üst seviyeye çıkar.</span>
+              <span class="block text-sm font-medium text-slate-900 dark:text-white">Maximize</span>
+              <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Kâr, skor, uyumluluk gibi yükseltilecek değerler.</span>
             </span>
           </label>
         </div>
       </fieldset>
 
-      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">Atamayı çöz</button>
+      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">
+        Atamayı çöz
+      </button>
+
+      <div id="result-summary" hidden class="rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm dark:border-emerald-800/60 dark:bg-emerald-950/30">
+        <div class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+          Optimum bulundu
+        </div>
+        <div id="summary-total" class="mt-1 font-display text-2xl font-bold text-emerald-900 dark:text-emerald-100"></div>
+        <div id="summary-detail" class="mt-1 text-xs text-emerald-800 dark:text-emerald-300"></div>
+      </div>
+
+      <div id="result-actions" hidden class="flex flex-wrap gap-2">
+        <button type="button" id="csv-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          CSV indir
+        </button>
+        <button type="button" id="print-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Yazdır
+        </button>
+      </div>
 
       <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
     </form>
 
-    <section id="output" hidden aria-live="polite" class="space-y-6">
-      <header>
-        <h2 class="font-display text-xl font-semibold tracking-tight text-slate-900 dark:text-white">Sonuç</h2>
-        <p id="summary" class="mt-1 text-sm text-slate-600 dark:text-slate-400"></p>
-      </header>
-      <div id="result-table"></div>
+    <section aria-live="polite" class="space-y-6">
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Maliyet matrisi
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Etiketleri ve hücreleri doğrudan tabloda düzenle. Çöz'e basınca optimum
+          atama hücreleri vurgulanır.
+        </p>
+      </div>
+
+      <div id="matrix-container" class="overflow-x-auto"></div>
+
+      <div id="assignment-list" hidden class="space-y-3">
+        <h3 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Atamalar
+        </h3>
+        <div id="assignment-rows"></div>
+      </div>
     </section>
   </Container>
 
   {guideHref && (
     <Container as="section" size="wide" class="py-12 sm:py-16">
       <div class="rounded-2xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900/40">
-        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">Konuyu derinleştir</p>
-        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Macar algoritması nasıl çalışır?</h2>
-        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">Atama probleminin matematiksel formülasyonu, Munkres adımları, gerçek dünya örnekleri ve performans analizi üzerine kapsamlı rehber.</p>
-        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">Rehberi oku →</a>
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">
+          Konuyu derinleştir
+        </p>
+        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          Macar algoritması nasıl çalışır?
+        </h2>
+        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+          Atama probleminin matematiksel formülasyonu, Munkres adımları, gerçek
+          dünya örnekleri ve performans analizi üzerine kapsamlı rehber.
+        </p>
+        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">
+          Rehberi oku →
+        </a>
       </div>
     </Container>
   )}
 </BaseLayout>
 
 <script>
-  import { solveAssignment, parseCostMatrix, AssignmentError } from '../../lib/hungarian';
+  import { solveAssignment, AssignmentError } from '../../lib/hungarian';
 
-  const SAMPLE = '4\t1\t3\n2\t0\t5\n3\t2\t2';
+  /* ---------- types & constants ---------- */
 
-  const $ = (id: string): HTMLElement => {
-    const el = document.getElementById(id);
-    if (!el) throw new Error(`Missing element: #${id}`);
-    return el;
+  interface FormState {
+    rows: number;
+    cols: number;
+    rowLabels: string[];
+    colLabels: string[];
+    cells: number[][];
+    maximize: boolean;
+  }
+
+  const STORAGE_KEY = 'atama-state-v2';
+  const MIN_DIM = 1;
+  const MAX_DIM = 32;
+
+  const SAMPLE_STATE: FormState = {
+    rows: 3,
+    cols: 3,
+    rowLabels: ['Ali', 'Veli', 'Ayşe'],
+    colLabels: ['Görev A', 'Görev B', 'Görev C'],
+    cells: [
+      [4, 1, 3],
+      [2, 0, 5],
+      [3, 2, 2],
+    ],
+    maximize: false,
   };
 
-  const form = $('assign-form') as HTMLFormElement;
-  const matrixInput = $('matrix') as HTMLTextAreaElement;
-  const matrixInfo = $('matrix-info');
-  const rowLabelsInput = $('row-labels') as HTMLTextAreaElement;
-  const colLabelsInput = $('col-labels') as HTMLTextAreaElement;
-  const errorBox = $('error-box');
-  const output = $('output');
-  const summary = $('summary');
-  const resultTable = $('result-table');
-  const sampleBtn = $('sample-btn');
-  const clearBtn = $('clear-btn');
+  function defaultRowLabel(i: number): string {
+    return `Agent ${i + 1}`;
+  }
+  function defaultColLabel(i: number): string {
+    return `Görev ${i + 1}`;
+  }
+
+  function emptyState(rows = 3, cols = 3): FormState {
+    return {
+      rows,
+      cols,
+      rowLabels: Array.from({ length: rows }, (_, i) => defaultRowLabel(i)),
+      colLabels: Array.from({ length: cols }, (_, i) => defaultColLabel(i)),
+      cells: Array.from({ length: rows }, () => Array.from({ length: cols }, () => 0)),
+      maximize: false,
+    };
+  }
+
+  /* ---------- DOM helpers ---------- */
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el as T;
+  };
 
   function escapeHtml(s: string): string {
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
-  function readLines(s: string): string[] {
-    return s.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  function fmt(n: number): string {
+    return Number.isInteger(n) ? String(n) : n.toFixed(2);
   }
 
-  function updateMatrixInfo(): void {
+  /* ---------- state persistence ---------- */
+
+  function saveState(state: FormState): void {
     try {
-      const m = parseCostMatrix(matrixInput.value);
-      if (m.length && m[0].length) matrixInfo.textContent = `${m.length} × ${m[0].length}`;
-      else matrixInfo.textContent = '— × —';
-    } catch {
-      matrixInfo.textContent = '— × —';
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (_e) {
+      /* storage unavailable */
     }
   }
+
+  function loadState(): FormState {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return emptyState();
+      const parsed = JSON.parse(raw) as Partial<FormState>;
+      const rows = clampDim(parsed.rows ?? 3);
+      const cols = clampDim(parsed.cols ?? 3);
+      const state = emptyState(rows, cols);
+      if (Array.isArray(parsed.rowLabels)) {
+        for (let i = 0; i < rows; i++) {
+          if (typeof parsed.rowLabels[i] === 'string') state.rowLabels[i] = parsed.rowLabels[i] as string;
+        }
+      }
+      if (Array.isArray(parsed.colLabels)) {
+        for (let j = 0; j < cols; j++) {
+          if (typeof parsed.colLabels[j] === 'string') state.colLabels[j] = parsed.colLabels[j] as string;
+        }
+      }
+      if (Array.isArray(parsed.cells)) {
+        for (let i = 0; i < rows; i++) {
+          if (!Array.isArray(parsed.cells[i])) continue;
+          for (let j = 0; j < cols; j++) {
+            const v = (parsed.cells[i] as unknown[])[j];
+            if (typeof v === 'number' && Number.isFinite(v)) state.cells[i][j] = v;
+          }
+        }
+      }
+      state.maximize = parsed.maximize === true;
+      return state;
+    } catch {
+      return emptyState();
+    }
+  }
+
+  function clampDim(n: number): number {
+    if (!Number.isFinite(n)) return 3;
+    return Math.max(MIN_DIM, Math.min(MAX_DIM, Math.round(n)));
+  }
+
+  function resizeState(state: FormState, newRows: number, newCols: number): void {
+    newRows = clampDim(newRows);
+    newCols = clampDim(newCols);
+
+    /* Resize rowLabels */
+    if (newRows > state.rowLabels.length) {
+      for (let i = state.rowLabels.length; i < newRows; i++) {
+        state.rowLabels.push(defaultRowLabel(i));
+      }
+    } else {
+      state.rowLabels.length = newRows;
+    }
+
+    /* Resize colLabels */
+    if (newCols > state.colLabels.length) {
+      for (let j = state.colLabels.length; j < newCols; j++) {
+        state.colLabels.push(defaultColLabel(j));
+      }
+    } else {
+      state.colLabels.length = newCols;
+    }
+
+    /* Resize cells (preserve existing) */
+    if (newRows > state.cells.length) {
+      for (let i = state.cells.length; i < newRows; i++) {
+        state.cells.push(Array.from({ length: newCols }, () => 0));
+      }
+    } else {
+      state.cells.length = newRows;
+    }
+    for (let i = 0; i < newRows; i++) {
+      const row = state.cells[i];
+      if (newCols > row.length) {
+        for (let j = row.length; j < newCols; j++) row.push(0);
+      } else {
+        row.length = newCols;
+      }
+    }
+
+    state.rows = newRows;
+    state.cols = newCols;
+  }
+
+  /* ---------- in-memory state ---------- */
+
+  const state: FormState = loadState();
+  let lastResult: ReturnType<typeof solveAssignment> | null = null;
+  let highlightSet: Set<string> = new Set();
+
+  /* ---------- element refs ---------- */
+
+  const form = $<HTMLFormElement>('assign-form');
+  const sampleBtn = $('sample-btn');
+  const resetBtn = $('reset-btn');
+  const rowsInput = $<HTMLInputElement>('rows-input');
+  const colsInput = $<HTMLInputElement>('cols-input');
+  const sizePreview = $('size-preview');
+  const matrixContainer = $('matrix-container');
+  const errorBox = $('error-box');
+  const resultSummary = $('result-summary');
+  const summaryTotal = $('summary-total');
+  const summaryDetail = $('summary-detail');
+  const resultActions = $('result-actions');
+  const csvBtn = $<HTMLButtonElement>('csv-btn');
+  const printBtn = $<HTMLButtonElement>('print-btn');
+  const assignmentList = $('assignment-list');
+  const assignmentRows = $('assignment-rows');
+
+  /* ---------- renderers ---------- */
+
+  function renderSizePreview(): void {
+    const square = state.rows === state.cols;
+    const note = square
+      ? 'kare matris'
+      : state.rows < state.cols
+        ? `${state.cols - state.rows} sütun açıkta kalabilir`
+        : `${state.rows - state.cols} satır açıkta kalabilir`;
+    sizePreview.textContent = `${state.rows} × ${state.cols} (${note})`;
+  }
+
+  function renderMatrix(): void {
+    const { rows, cols, rowLabels, colLabels, cells } = state;
+
+    const cellInputCls = (r: number, c: number): string => {
+      const key = `${r}-${c}`;
+      const highlighted = highlightSet.has(key);
+      const base =
+        'block w-full rounded border bg-white px-2 py-1.5 text-center font-mono text-sm tabular-nums focus:ring-2 dark:bg-slate-950';
+      return highlighted
+        ? `${base} border-emerald-500 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-500 focus:border-emerald-600 focus:ring-emerald-500/30 dark:border-emerald-400 dark:bg-emerald-950/40 dark:text-emerald-100 dark:ring-emerald-400`
+        : `${base} border-slate-300 text-slate-900 focus:border-brand-500 focus:ring-brand-500/20 dark:border-slate-700 dark:text-slate-100`;
+    };
+
+    const labelInputCls =
+      'block w-full rounded border border-transparent bg-transparent px-1.5 py-1 text-sm font-medium text-slate-800 hover:border-slate-300 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20 dark:text-slate-100 dark:hover:border-slate-700 dark:focus:bg-slate-950';
+
+    /* Header row: empty corner + col labels */
+    const headerCells = [
+      `<div role="columnheader" class="bg-slate-50 dark:bg-slate-900"></div>`,
+      ...colLabels.map(
+        (label, j) =>
+          `<div role="columnheader" class="bg-slate-50 px-1 py-1 dark:bg-slate-900">
+            <input type="text" data-col-label="${j}" value="${escapeHtml(label)}" placeholder="${defaultColLabel(j)}" aria-label="Sütun ${j + 1} etiketi"
+              class="${labelInputCls} text-center" />
+          </div>`,
+      ),
+    ].join('');
+
+    /* Body rows: row label + cells */
+    const bodyRows = Array.from({ length: rows }, (_, i) => {
+      const labelCell = `<div role="rowheader" class="sticky left-0 z-10 bg-slate-50 px-1 py-1 dark:bg-slate-900">
+        <input type="text" data-row-label="${i}" value="${escapeHtml(rowLabels[i])}" placeholder="${defaultRowLabel(i)}" aria-label="Satır ${i + 1} etiketi"
+          class="${labelInputCls}" />
+      </div>`;
+      const dataCells = Array.from({ length: cols }, (_, j) => {
+        const v = cells[i]?.[j] ?? 0;
+        return `<div role="gridcell" class="bg-white p-1 dark:bg-slate-900/40">
+          <input type="number" data-cell="${i}-${j}" value="${v}" step="any" inputmode="decimal" aria-label="Satır ${i + 1}, sütun ${j + 1}: ${escapeHtml(rowLabels[i])} → ${escapeHtml(colLabels[j])}"
+            class="${cellInputCls(i, j)}" />
+        </div>`;
+      }).join('');
+      return labelCell + dataCells;
+    }).join('');
+
+    matrixContainer.innerHTML = `
+      <div role="grid" class="inline-block overflow-hidden rounded-xl border border-slate-200 align-top dark:border-slate-800">
+        <div class="grid gap-px bg-slate-200 dark:bg-slate-800" style="grid-template-columns: minmax(7rem, max-content) repeat(${cols}, minmax(5rem, 1fr));">
+          ${headerCells}
+          ${bodyRows}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderAssignmentList(): void {
+    if (!lastResult) {
+      assignmentList.hidden = true;
+      return;
+    }
+    const dirNoun = state.maximize ? 'kâr' : 'maliyet';
+    const rows = lastResult.assignments
+      .map((a) => {
+        const rLabel = a.rowLabel ?? defaultRowLabel(a.row);
+        const cLabel = a.colLabel ?? defaultColLabel(a.col);
+        return `<li class="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-2 last:border-0 dark:border-slate-800">
+          <span class="text-sm text-slate-900 dark:text-slate-100">
+            <span class="font-medium">${escapeHtml(rLabel)}</span>
+            <span class="mx-2 text-slate-400">→</span>
+            <span>${escapeHtml(cLabel)}</span>
+          </span>
+          <span class="font-mono text-sm tabular-nums text-slate-600 dark:text-slate-400">${fmt(a.cost)}</span>
+        </li>`;
+      })
+      .join('');
+    const unmatched = lastResult.square
+      ? ''
+      : `<p class="mt-3 text-xs text-amber-700 dark:text-amber-300">Matris kare değil — ${
+          lastResult.rows < lastResult.cols
+            ? `${lastResult.cols - lastResult.rows} sütun atanamadı`
+            : `${lastResult.rows - lastResult.cols} satır atanamadı`
+        }.</p>`;
+    assignmentRows.innerHTML = `<ul class="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40">${rows}</ul>${unmatched}`;
+    assignmentList.hidden = false;
+
+    /* Update summary in sidebar */
+    summaryTotal.textContent = `Toplam ${dirNoun}: ${fmt(lastResult.totalCost)}`;
+    summaryDetail.textContent = `${lastResult.assignments.length} eşleşme · ${state.rows} × ${state.cols} matris`;
+  }
+
+  function renderAll(): void {
+    rowsInput.value = String(state.rows);
+    colsInput.value = String(state.cols);
+    (form.elements.namedItem('dir') as RadioNodeList).value = state.maximize
+      ? 'max'
+      : 'min';
+    renderSizePreview();
+    renderMatrix();
+    renderAssignmentList();
+  }
+
+  /* ---------- solve & display ---------- */
 
   function showError(msg: string): void {
     errorBox.textContent = msg;
     errorBox.hidden = false;
-    output.hidden = true;
+    resultSummary.hidden = true;
+    resultActions.hidden = true;
+    assignmentList.hidden = true;
+    lastResult = null;
+    highlightSet = new Set();
+    renderMatrix();
   }
 
   function clearError(): void {
@@ -178,57 +482,198 @@ const softwareJsonLd = {
     errorBox.textContent = '';
   }
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
+  function solve(): void {
     clearError();
+    state.maximize =
+      (form.elements.namedItem('dir') as RadioNodeList).value === 'max';
+    saveState(state);
+
     try {
-      const costs = parseCostMatrix(matrixInput.value);
-      const dir = (form.elements.namedItem('dir') as RadioNodeList)?.value;
-      const rowLabels = readLines(rowLabelsInput.value);
-      const colLabels = readLines(colLabelsInput.value);
       const result = solveAssignment({
-        costs,
-        maximize: dir === 'max',
-        ...(rowLabels.length === costs.length ? { rowLabels } : {}),
-        ...(colLabels.length === costs[0].length ? { colLabels } : {}),
+        costs: state.cells,
+        maximize: state.maximize,
+        rowLabels: state.rowLabels,
+        colLabels: state.colLabels,
       });
-
-      summary.textContent = [
-        `${result.assignments.length} atama`,
-        `Toplam ${dir === 'max' ? 'kâr' : 'maliyet'}: ${result.totalCost}`,
-        result.square ? null : `${result.rows}×${result.cols} (kare değil — ${Math.abs(result.rows - result.cols)} ${result.rows < result.cols ? 'sütun' : 'satır'} eşleşmedi)`,
-      ].filter(Boolean).join(' · ');
-
-      const rows = result.assignments.map((a) => {
-        const r = a.rowLabel ?? `Satır ${a.row + 1}`;
-        const c = a.colLabel ?? `Sütun ${a.col + 1}`;
-        return `<tr class="border-t border-slate-100 dark:border-slate-800"><td class="px-3 py-2 text-sm text-slate-900 dark:text-slate-100">${escapeHtml(r)}</td><td class="px-3 py-2 text-center text-xs text-slate-400">→</td><td class="px-3 py-2 text-sm text-slate-900 dark:text-slate-100">${escapeHtml(c)}</td><td class="px-3 py-2 text-right font-mono text-sm text-slate-700 dark:text-slate-300">${a.cost}</td></tr>`;
-      }).join('');
-
-      resultTable.innerHTML = `<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40"><table class="w-full"><thead><tr class="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"><th class="px-3 py-2">Agent</th><th class="px-3 py-2"></th><th class="px-3 py-2">Görev</th><th class="px-3 py-2 text-right">Maliyet</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-      output.hidden = false;
-      output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      lastResult = result;
+      highlightSet = new Set(result.assignments.map((a) => `${a.row}-${a.col}`));
+      resultSummary.hidden = false;
+      resultActions.hidden = false;
+      renderMatrix();
+      renderAssignmentList();
+      assignmentList.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } catch (err) {
-      const msg = err instanceof AssignmentError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
+      const msg =
+        err instanceof AssignmentError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Bilinmeyen hata.';
       showError(msg);
+    }
+  }
+
+  /* ---------- CSV export ---------- */
+
+  function downloadCsv(): void {
+    if (!lastResult) return;
+    const escape = (v: string): string => {
+      if (v.includes(',') || v.includes('"') || v.includes('\n')) {
+        return `"${v.replace(/"/g, '""')}"`;
+      }
+      return v;
+    };
+
+    const lines: string[] = [];
+    /* Matrix block */
+    lines.push(['', ...state.colLabels].map(escape).join(','));
+    for (let i = 0; i < state.rows; i++) {
+      const cells = state.cells[i].map((v, j) => {
+        const isOptimum = highlightSet.has(`${i}-${j}`);
+        return isOptimum ? `*${fmt(v)}*` : fmt(v);
+      });
+      lines.push([state.rowLabels[i], ...cells].map(escape).join(','));
+    }
+    lines.push('');
+    /* Assignment list */
+    lines.push(['Agent', 'Görev', state.maximize ? 'Kâr' : 'Maliyet'].join(','));
+    for (const a of lastResult.assignments) {
+      const r = a.rowLabel ?? defaultRowLabel(a.row);
+      const c = a.colLabel ?? defaultColLabel(a.col);
+      lines.push([r, c, fmt(a.cost)].map(escape).join(','));
+    }
+    lines.push(`Toplam,,${fmt(lastResult.totalCost)}`);
+
+    const csv = lines.join('\n') + '\n';
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'atama.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  /* ---------- input handlers ---------- */
+
+  function commitState(): void {
+    saveState(state);
+  }
+
+  /* Invalidate the previous result whenever the inputs change. */
+  function invalidateResult(): void {
+    if (!lastResult && highlightSet.size === 0) return;
+    lastResult = null;
+    highlightSet = new Set();
+    resultSummary.hidden = true;
+    resultActions.hidden = true;
+    assignmentList.hidden = true;
+  }
+
+  rowsInput.addEventListener('input', () => {
+    const v = clampDim(Number(rowsInput.value));
+    if (v === state.rows) return;
+    resizeState(state, v, state.cols);
+    renderSizePreview();
+    invalidateResult();
+    renderMatrix();
+    commitState();
+  });
+
+  colsInput.addEventListener('input', () => {
+    const v = clampDim(Number(colsInput.value));
+    if (v === state.cols) return;
+    resizeState(state, state.rows, v);
+    renderSizePreview();
+    invalidateResult();
+    renderMatrix();
+    commitState();
+  });
+
+  form.addEventListener('change', (e) => {
+    const t = e.target as HTMLElement;
+    if (t instanceof HTMLInputElement && t.name === 'dir') {
+      state.maximize = t.value === 'max';
+      invalidateResult();
+      renderMatrix();
+      commitState();
     }
   });
 
-  matrixInput.addEventListener('input', updateMatrixInfo);
+  /* Matrix delegated events: cell number, row/col label edits */
+  matrixContainer.addEventListener('input', (e) => {
+    const t = e.target as HTMLElement;
+    if (!(t instanceof HTMLInputElement)) return;
+
+    if (t.dataset.cell) {
+      const [iStr, jStr] = t.dataset.cell.split('-');
+      const i = Number(iStr);
+      const j = Number(jStr);
+      const v = Number(t.value);
+      state.cells[i][j] = Number.isFinite(v) ? v : 0;
+      invalidateResult();
+      commitState();
+      return;
+    }
+    if (t.dataset.rowLabel !== undefined) {
+      const i = Number(t.dataset.rowLabel);
+      state.rowLabels[i] = t.value;
+      commitState();
+      return;
+    }
+    if (t.dataset.colLabel !== undefined) {
+      const j = Number(t.dataset.colLabel);
+      state.colLabels[j] = t.value;
+      commitState();
+      return;
+    }
+  });
+
+  /* ---------- form submit & top-level buttons ---------- */
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    solve();
+  });
 
   sampleBtn.addEventListener('click', () => {
-    matrixInput.value = SAMPLE;
-    rowLabelsInput.value = 'Ali\nVeli\nAyşe';
-    colLabelsInput.value = 'Görev A\nGörev B\nGörev C';
-    updateMatrixInfo();
-  });
-
-  clearBtn.addEventListener('click', () => {
-    form.reset();
-    updateMatrixInfo();
+    Object.assign(state, structuredClone(SAMPLE_STATE));
+    invalidateResult();
+    renderAll();
+    commitState();
     clearError();
-    output.hidden = true;
   });
 
-  updateMatrixInfo();
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('Matris sıfırlanacak. Devam edilsin mi?')) return;
+    Object.assign(state, emptyState());
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    invalidateResult();
+    renderAll();
+    clearError();
+  });
+
+  csvBtn.addEventListener('click', downloadCsv);
+  printBtn.addEventListener('click', () => window.print());
+
+  /* ---------- boot ---------- */
+
+  renderAll();
 </script>
+
+<style>
+  @media print {
+    @page {
+      margin: 1.5cm;
+    }
+    body {
+      background: white !important;
+    }
+  }
+</style>
