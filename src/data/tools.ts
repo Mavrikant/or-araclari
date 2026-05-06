@@ -118,6 +118,16 @@ export const TOOLS: readonly Tool[] = [
     status: 'ready',
     guideSlug: 'hemsire-vardiya-planlama',
   },
+  {
+    slug: 'pert-cpm-kritik-yol',
+    title: 'PERT / CPM Kritik Yol Analizci',
+    shortTitle: 'PERT / CPM',
+    description:
+      'Aktivite, süre ve öncelleri gir; ileri/geri pas ile ES, EF, LS, LF ve slack hesaplansın. Kritik yol vurgulu Gantt çizelgesi otomatik üretilir.',
+    category: 'cizelgeleme',
+    status: 'ready',
+    guideSlug: 'pert-cpm-proje-yonetimi',
+  },
 ] as const;
 
 export function getReadyTools(): readonly Tool[] {
