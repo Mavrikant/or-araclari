@@ -1,0 +1,359 @@
+---
+title: "Ekonomik Sipariş Miktarı (EOQ) ve Stok Yönetiminin Temelleri"
+description: "EOQ (Economic Order Quantity) nedir, Wilson formülü nereden geliyor, varsayımları nelerdir? Miktar indirimi, güvenlik stoğu ve modern envanter optimizasyonu üzerine kapsamlı Türkçe rehber."
+pubDate: 2026-05-06
+relatedTool: "eoq-hesaplayici"
+keywords:
+  - "EOQ"
+  - "Ekonomik sipariş miktarı"
+  - "Wilson formülü"
+  - "stok yönetimi"
+  - "envanter optimizasyonu"
+  - "tedarik zinciri"
+  - "sipariş büyüklüğü"
+readingMinutes: 11
+faq:
+  - question: "EOQ formülü nereden geliyor?"
+    answer: "EOQ formülü 1913'te Ford W. Harris tarafından bir General Electric mühendis dergisinde yayımlandı; 1934'te R.H. Wilson aynı sonucu daha geniş bir yöneticisel çerçevede ele aldı, bu yüzden literatürde hem 'Harris-Wilson formülü' hem de 'Wilson formülü' adıyla geçer. Türev alarak yıllık toplam maliyetin Q'ya göre minimum noktasını bulan zarif bir analitik sonuç."
+  - question: "EOQ varsayımları gerçekçi mi?"
+    answer: "Klasik EOQ dört güçlü varsayım yapar: sabit ve deterministik talep, anlık tedarik (sıfır lead time), iskontosuz tek fiyat, eksik stok yok. Gerçek dünya bunların hiçbirini tam karşılamaz. Buna rağmen formül pratik bir başlangıç noktasıdır; varsayımları gevşeten genelleştirmeler (EOQ-D, stochastic EOQ, EPQ, newsvendor) klasik formülün üzerine inşa edilir."
+  - question: "Q* her zaman tam sayı mıdır?"
+    answer: "Hayır, Wilson formülü kesirli bir Q* üretir. Pratikte sipariş palet, kasa veya birim ambalajı bazlı olduğundan Q* en yakın uygulanabilir tam sayıya yuvarlanır. Yuvarlama %1-2 maliyet artışı yaratır; bu da formülün maliyet eğrisinin Q* etrafında oldukça düz olması sayesinde önemsizdir."
+  - question: "Yıllık talep değişkense ne yaparım?"
+    answer: "Klasik EOQ sabit talep varsayar. Talep değişkense üç yaklaşım var: (1) Yıllık ortalamaya göre EOQ kullan ve dönemsel revize et; (2) sezonluk parçalı uygula (Q1, Q2, Q3, Q4 için ayrı EOQ); (3) stochastic EOQ veya newsvendor modeline geç. Çoğu pratik durumda yıllık ortalama EOQ + güvenlik stoğu kombinasyonu yeterlidir."
+  - question: "Tedarikçi miktar indirimi sunuyorsa EOQ nasıl değişir?"
+    answer: "Bu durum EOQ-D (EOQ with quantity discounts) varyantına girer. Her indirim seviyesinde EOQ ayrı hesaplanır, indirim aralığına düşmüyorsa o aralığın alt sınırına çekilir, tüm adayların toplam maliyeti karşılaştırılır. Genelde sipariş miktarı klasik EOQ'dan büyük çıkar çünkü birim maliyet azalmasının taşıma maliyeti artışından getirisi daha büyük olur."
+---
+
+Bir mağaza müdürü olduğunu hayal et. Aynı ürünü her hafta küçük partilerle
+sipariş edebilir, ya da ayda bir kez büyük parti getirebilirsin. Küçük
+partilerin avantajı: stok yığılmaz, depo doluluğu az, raf rotasyonu
+hızlı. Büyük partilerin avantajı: sipariş başına sabit maliyetler (kargo,
+fatura işleme, mesai) az sayıda tetiklenir, birim sipariş maliyeti düşer.
+Bu iki gücün arasındaki denge, **stok yönetiminin** klasik problemidir
+ve **Ekonomik Sipariş Miktarı (EOQ)** modeli onun en eski, en zarif
+çözümüdür.
+
+## EOQ nedir?
+
+Economic Order Quantity (Ekonomik Sipariş Miktarı), sabit talepli bir
+ürün için **toplam yıllık envanter maliyetini** minimize eden sipariş
+büyüklüğüdür. Toplam maliyet iki bileşenden oluşur:
+
+- **Sipariş maliyeti** (ordering cost): Her sipariş için ödenen sabit
+  maliyet — kargo ücreti, idari işlem, kalite kontrol, ürün hazırlığı.
+  Sipariş miktarından bağımsız; sadece kaç sipariş verildiğine bağlı.
+- **Taşıma maliyeti** (holding cost): Stokta tutulan her birimin yıl
+  boyunca yarattığı maliyet — depo kirası, sigorta, sermaye maliyeti
+  (parayı stokta bağlamak yerine yatırıma yatırma fırsatı), eskime, hırsızlık.
+
+Yıllık talep $D$ sabit, sipariş başına maliyet $S$, birim taşıma maliyeti
+$H$ ile gösterilir. Sipariş büyüklüğü $Q$ olduğunda:
+
+- Yıllık sipariş sayısı = $D / Q$
+- Yıllık toplam sipariş maliyeti = $D \cdot S / Q$
+- Ortalama stok = $Q / 2$ (lineer azalma varsayımıyla)
+- Yıllık toplam taşıma maliyeti = $Q \cdot H / 2$
+- Toplam yıllık maliyet $TC(Q) = D \cdot S / Q + Q \cdot H / 2$
+
+$Q$'ya göre türevi alıp sıfıra eşitlersek:
+
+$$
+\frac{dTC}{dQ} = -\frac{D \cdot S}{Q^2} + \frac{H}{2} = 0
+$$
+
+Bu denklemi çözüp **Wilson formülünü** elde ederiz:
+
+$$
+Q^* = \sqrt{\frac{2 \cdot D \cdot S}{H}}
+$$
+
+Bu formülün güzelliği şu: optimum noktasında **sipariş maliyeti taşıma
+maliyetine eşittir**. Bu özellik, türevin sıfır olmasının doğrudan bir
+sonucudur ve EOQ'nun sezgisel "dengesi"dir.
+
+## Tarihçe ve önemi
+
+EOQ formülü 1913'te ABD'li mühendis **Ford Whitman Harris** tarafından
+*Factory, The Magazine of Management* dergisinde yayımlandı; o sırada
+Harris Westinghouse Electric'te genç bir mühendisti. Sonradan **R.H.
+Wilson** 1934'te aynı sonucu daha geniş bir yöneticisel çerçevede
+formüle etti ve formül onun adıyla yaygınlaştı. Bu yüzden literatürde
+hem "Harris-Wilson formülü" hem de "Wilson formülü" diye geçer.
+
+EOQ, yöneylem araştırması doğmadan önce geliştirilmiş bir formüldür.
+1940'larda yöneylemin kurumsallaşmasıyla birlikte stok yönetimi
+disiplinin önemli bir alt başlığı oldu; **envanter teorisi** bugün hâlâ
+aktif bir araştırma alanıdır. Walmart, Amazon, Procter & Gamble gibi
+büyük tedarik zinciri işletmecilerinin günlük operasyonlarında EOQ'nun
+modern varyantları kullanılmaya devam ediyor.
+
+## Klasik varsayımlar
+
+Klasik EOQ modeli dört güçlü varsayıma dayanır:
+
+1. **Talep sabit ve deterministiktir** — yıl boyunca yıllık $D$ birim
+   eşit hızla tüketilir.
+2. **Tedarik anlıktır** (sıfır lead time) — sipariş verildiği anda
+   stoğa girer.
+3. **Eksik stok yok** — talep her zaman karşılanır.
+4. **Birim fiyat sabittir** — miktar indirimi yoktur.
+
+Bu varsayımlar gerçek dünyada çoğu zaman hatalıdır. Talep oynak,
+tedarik gecikmeli, eksik stok mümkün, miktar indirimi yaygındır. Yine
+de EOQ pratikte değerini korur çünkü:
+
+- Maliyet eğrisi $Q^*$ etrafında oldukça düzdür — Q*'nun %20 etrafındaki
+  bir değer toplam maliyeti %2-3 artırır. Yani küçük sapmalar pahalı
+  değildir.
+- Klasik EOQ, varsayımları daha gerçekçi olan modellerin **temel
+  başlangıç noktası**dır; literatürdeki her gelişmiş model EOQ'nun
+  varyantı veya genişletilmesidir.
+- Pratik amaçlar için "yeterince iyi" cevap verir; kompleks modeller
+  ek %2-5 iyileştirme sağlasa da implementasyon zorluğu çoğu zaman bu
+  kazanca değmeyebilir.
+
+## Toplam maliyet eğrisinin şekli
+
+EOQ'nun pedagojik gücü, toplam maliyet eğrisinin **U şeklinde** olmasından
+gelir. Sol kısımda (küçük Q): sipariş sıklığı yüksek, sipariş maliyeti
+patlar. Sağ kısımda (büyük Q): stok yığılır, taşıma maliyeti patlar. İki
+gücün dengelendiği nokta U eğrisinin dibinde Q*'da bulunur.
+
+Bu sitenin
+[EOQ Hesaplayıcı](/or-araclari/araclar/eoq-hesaplayici) aracı bu eğriyi
+canlı olarak çiziyor: ordering, holding ve total cost'u ayrı renklerde
+göstererek hangi gücün hangi Q aralığında baskın olduğunu hemen
+sezmeni sağlıyor.
+
+## Maliyet eğrisinin matematiksel özellikleri
+
+EOQ formülünün ortaya çıktığı U-eğrisinin birkaç ilginç özelliği vardır.
+
+**Robustluk:** Q'yu Q*'dan %50 saptırırsan toplam maliyet sadece %5-8
+artar. Yani Q*'nun çevresinde maliyet eğrisi oldukça düzdür. Bu pratikte
+çok önemli bir özellik: sipariş büyüklüğünün tam Q* olması gerekmez,
+yakın bir tam sayı veya palet katı yeterli olur.
+
+**Optimumda eşitlik:** Wilson formülü hem $TC(Q)$'yu minimize ederken
+hem de **sipariş maliyetini taşıma maliyetine eşitler**. Bu iki ifade
+matematiksel olarak eşdeğer ama farklı sezgilere zemin sağlar:
+"masraflarımı dengeleyene kadar sipariş büyüt" pratik bir kural.
+
+**Karekök ölçeklemesi:** Yıllık talep 4 katına çıkarsa Q* sadece 2
+katına çıkar (karekök). Bu, ölçek ekonomisinin bir yansımasıdır:
+büyük şirketler aynı ürün için orantılı olarak daha az sipariş verir.
+Walmart'ın bir tedarikçiden ayda bir kez büyük sipariş alırken, küçük
+mağazaların aynı tedarikçiden haftada bir küçük sipariş alma sebebi
+budur.
+
+**Birim hassasiyet:** Sipariş maliyeti S'nin %20 yanlış tahmin edilmesi
+Q*'da sadece %10 sapma yaratır (yine karekök). Yani parametre
+tahminlerinin son derece doğru olması gerekmiyor; kabaca doğru girdiler
+kabaca doğru sonuç üretir. Bu, EOQ'nun pratik kullanımdaki dayanıklılığının
+temelidir.
+
+## EOQ varyantları
+
+Klasik EOQ'nun varsayımlarını gevşeten birçok varyant vardır.
+
+### EOQ-D (miktar indirimli)
+
+Tedarikçi belirli miktar üzerinde indirim sunarsa, sipariş büyüklüğü
+artıkça birim fiyat düşer. Bu durumda her indirim seviyesinde ayrı
+EOQ hesaplanır, indirim aralığına düşmeyen Q*'lar o aralığın alt sınırına
+çekilir, tüm adayların toplam maliyeti karşılaştırılır. Endüstride
+yaygın bir varyanttır.
+
+### EPQ (Economic Production Quantity)
+
+Tedarik anlık değil de sabit bir üretim oranıyla geliyorsa (örneğin
+sipariş verildiği anda fabrikadan günde X birim üretilir), klasik EOQ
+biraz değişir. Üretim oranı ile talep oranı arasındaki fark stoğa
+yansır. EPQ, EOQ'nun fabrika-içi üretim kontrolüne uyarlanmış hâlidir.
+
+### Newsvendor modeli
+
+Tek dönemlik bir karar (örneğin gazete bayisinin günlük gazete sayısı,
+kafenin günlük taze hamur işi) ve belirsiz talep söz konusuysa
+newsvendor modeli kullanılır. Optimum sipariş, **kritik oran**
+(eksik stok maliyeti / (eksik + fazla stok maliyeti)) noktasındaki
+talep dağılımı kuantilidir. Stochastic envanter teorisinin temel
+örneğidir.
+
+### Stochastic EOQ ve güvenlik stoğu
+
+Talep belirsizse klasik EOQ üzerine **güvenlik stoğu** eklenir: lead time
+boyunca beklenen talep + Z · σ. Z, istenen servis seviyesinin standart
+normal kuantilidir (örn. %95 servis için Z ≈ 1.645). EOQ ile birleşince
+"reorder point" politikası oluşur: stok seviyesi reorder point'in altına
+düştüğünde EOQ kadar sipariş ver.
+
+### (s, S) ve (Q, R) politikaları
+
+Daha karmaşık stochastic modeller için (s, S) policy: stok s'in altına
+düşünce S'e tamamlayıcı sipariş ver. (Q, R) policy: stok R'nin altına
+düşünce sabit Q sipariş ver. Her ikisi de EOQ'nun sezgilerini stochastic
+ortama taşır.
+
+## Türkiye'de EOQ uygulamaları
+
+Türkiye'de EOQ ve modern envanter modelleri pek çok sektörde aktif
+kullanılıyor.
+
+**Perakende:** A101, BİM, Migros gibi büyük zincirlerin merkez sipariş
+sistemleri EOQ tabanlı algoritmalar kullanır. Her ürün için yıllık talep
+tahmini, tedarikçi sipariş maliyeti ve depo taşıma maliyeti hesaplanır;
+çıkan EOQ değeri sipariş otomasyonunda referans olur.
+
+**E-ticaret:** Trendyol, Hepsiburada gibi platformların kendi marka
+ürünlerinde (private label) ve depolarda tutulan stoklarda EOQ benzeri
+modeller iş görür. Buradaki ek karmaşıklık çok-kanallı talep ve
+hızlı revize ihtiyacıdır.
+
+**Üretim:** Otomotiv (Tofaş, Ford Otosan), beyaz eşya (Arçelik, Vestel)
+ve gıda üretim hatlarında ham madde sipariş büyüklükleri EOQ ve EPQ
+modelleriyle planlanır. SAP MM modülü gibi ERP sistemlerinde bu
+hesaplamalar dahili olarak yapılır.
+
+**İlaç ve sağlık:** Hastane eczanelerinin ilaç stoğu yönetimi,
+hastane malzeme siparişleri için EOQ + güvenlik stoğu kombinasyonu
+standart. İlaçların raf ömrü ve stokta tutma maliyetinin yüksek olması
+EOQ'yu stratejik karar aracına dönüştürür.
+
+**Kamu hizmetleri:** Belediyelerin yedek parça stokları, askeri
+mühimmat envanteri, devlet hastanelerinin tıbbi cihaz parçaları —
+hepsi büyük çaplı envanter optimizasyon problemleri.
+
+## Ne zaman EOQ kullanılmaz?
+
+EOQ klasik formundan kaçınılması gereken bazı durumlar var:
+
+- **Çok düşük talep, yüksek değer:** Lüks ürünlerde, hava aracı
+  parçalarında EOQ formülü saçma sayılarda Q* üretebilir (örn. yılda
+  3 sipariş ama her biri çok büyük). Burada özelleşmiş tek-tek karar
+  yaklaşımları kullanılır.
+- **Eskiyen ürün:** Moda, gıda, ilaç gibi raf ömürlü ürünlerde
+  EOQ standart formu yetersiz; perishable inventory modelleri gerekir.
+- **Çok dalgalı talep:** Newsvendor veya stochastic dynamic
+  programming kullanılır.
+- **Birden fazla ürün ortak kapasite:** Multi-product inventory
+  modelleri devreye girer; depo ya da kamyon kapasitesi paylaşıldığında
+  EOQ'lar birbirine bağlı çözülmelidir.
+
+## Sayısal bir örnek üzerinden gidelim
+
+Somut bir senaryoyla ilerleyelim. İstanbul'da bir küçük market
+zincirinin günlük 4 birim satılan bir ürün için EOQ hesabı:
+
+- Yıllık talep $D = 4 \times 365 = 1460$ birim
+- Sipariş maliyeti $S = 50$ ₺ (kargo + sipariş işlemi)
+- Taşıma maliyeti $H = 8$ ₺/birim/yıl (depo + sermaye + risk)
+
+Wilson formülünü uygula:
+
+$$
+Q^* = \sqrt{\frac{2 \times 1460 \times 50}{8}} = \sqrt{18250} \approx 135 \text{ birim}
+$$
+
+Bu sayıların pratik anlamı:
+- Sipariş frekansı: $1460 / 135 \approx 10.8$ sipariş/yıl, yani
+  ortalama $365 / 10.8 \approx 34$ günde bir sipariş
+- Yıllık sipariş maliyeti: $1460 \times 50 / 135 \approx 540$ ₺
+- Yıllık taşıma maliyeti: $135 \times 8 / 2 = 540$ ₺ (eşit, tipik EOQ
+  imzası)
+- Toplam yıllık maliyet: $\approx 1080$ ₺
+
+Pratik karar: ürünü 130-140 birim aralığında haftada bir yerine
+ayda bir kez sipariş et. Üst sınır kasa kapasitesine uygun olduğu
+sürece optimum bu civardadır.
+
+Bu hesabı bu sitenin
+[EOQ Hesaplayıcı](/or-araclari/araclar/eoq-hesaplayici) aracında
+girip toplam maliyet eğrisini görsel olarak da inceleyebilirsin.
+
+## Pratik uygulama önerileri
+
+Bir işletmede EOQ uygulamak isteyenler için pratik adımlar:
+
+1. **Talep verisini topla** — son 12 ayın aylık satış adetleri.
+2. **Sipariş maliyetini ayrıştır** — kargo + idari işlem + kalite
+   kontrolü her sipariş için ayrı hesapla. Birçok işletme bu sayıyı
+   olduğundan düşük tahmin eder.
+3. **Taşıma maliyetini hesapla** — birim maliyetin %20-30'u tipik
+   bir tahmin: %5-10 sermaye maliyeti, %5-10 depo, %3-5 sigorta + risk.
+4. **EOQ'yu hesapla** — bu siteyi veya basit bir Excel formülünü
+   kullan.
+5. **Sonucu eleştir** — Q* gerçekçi mi? Tedarikçi minimum sipariş
+   miktarı (MOQ) ile uyumlu mu? Depo kapasitesini aşıyor mu?
+6. **Yuvarla ve duyur** — Q*'yu palet veya kasa katlarına yuvarla,
+   sipariş kararlarını bu değerle al.
+7. **Aylık revize** — talep değiştikçe EOQ'yu yeniden hesapla.
+
+Bu sürecin ilk uygulanışı genellikle zorludur (özellikle veri toplama
+adımı), ama bir kez kurulduktan sonra otomatik döngü hâline gelir.
+
+## Sonuç
+
+EOQ, yöneylem araştırmasının en eski ve en zarif klasik modellerinden
+biridir. 100 yılı aşkın süredir kullanılıyor olması, basitliğinin
+gücünün bir göstergesi. Pratik kararların büyük çoğunluğu için EOQ
+ya da küçük varyantları yeterli; daha karmaşık stochastic modeller
+katma değer sağlasa da implementasyon maliyeti çoğu zaman bu kazancı
+aşar.
+
+Bu sitenin
+[EOQ Hesaplayıcı](/or-araclari/araclar/eoq-hesaplayici) aracı klasik
+modelin tam karşılığını sunar; toplam maliyet eğrisini görsel olarak
+incelemek formülün arkasındaki sezgiyi pekiştirir. Modern envanter
+optimizasyonunun daha geniş bir resmi için
+[Doğrusal Programlama](/or-araclari/rehberler/dogrusal-programlama-nedir)
+ve [Çizelgeleme Problemleri](/or-araclari/rehberler/cizelgeleme-problemleri)
+rehberlerine de göz atmak yararlı olur — modern tedarik zinciri
+optimizasyonu çoğunlukla bu üç başlığın kesişiminde işler.
+
+Stok yönetimi, görünüşten çok daha derin bir konu; bu rehber sana
+başlangıç haritasını çizdi. İleri seviyede ilerlemek istersen
+Sven Axsäter'in "Inventory Control" kitabı standart akademik referanstır;
+endüstriyel pratik için APICS sertifikasyon eğitimleri (CPIM, CSCP)
+kapsamlı bir yol sunar.
+
+## Yaygın hatalar ve kaçınma yolları
+
+EOQ hesaplamasında ve uygulamasında sıkça yapılan birkaç tipik hata var.
+
+**Birinci hata — sipariş maliyetini olduğundan düşük tahmin etmek.**
+İşletmeler genelde "kargo ücretini" sipariş maliyeti olarak alır ama
+gerçek S çok daha yüksektir: sipariş hazırlama (satın alma birimi
+mesaisi), faturalama, kalite kontrol, içe alım kayıtları. Bu kalemler
+sipariş başına 50-200 ₺ ek maliyet getirir. Eksik tahmin Q*'nun
+gerektiğinden küçük çıkmasına ve gereksiz çok sipariş verilmesine yol
+açar.
+
+**İkinci hata — taşıma maliyetini sadece depo kirası olarak görmek.**
+Gerçek H = depo + sermaye fırsat maliyeti + sigorta + eskime + hırsızlık
++ verim kaybı. Sermaye maliyeti özellikle önemli: bir birim ürün depoda
+durduğu sürece o paranın yatırıma yatırılma fırsatı kaybedilir. Bugünkü
+TL faiz oranlarında bu tek başına %20-30'a denk gelir.
+
+**Üçüncü hata — tedarikçi MOQ'sunu görmezden gelmek.** EOQ Q* = 50
+birim verirse ama tedarikçi minimum 100 birim sipariş alıyorsa, gerçek
+karar Q = 100 olur. EOQ formülü tek başına yeterli değil; pratik
+kısıtlar (MOQ, palet katı, depo kapasitesi) sonradan üzerine bindirilir.
+
+**Dördüncü hata — mevsimsel ürünler için yıllık ortalama kullanmak.**
+Bir doğa harikası gözlemevi dürbünleri için yıllık talep 360 birimse
+ama bunun 300'ü yaz aylarındaysa, yıllık ortalama EOQ kış stoğunu
+abartır. Mevsimsel parçalı uygulama (her sezon için ayrı EOQ)
+gereklidir.
+
+**Beşinci hata — formülün varsayımlarını sorgusuz kabul etmek.**
+EOQ "sabit talep, sıfır lead time, eksik stok yok" varsayımlarına
+dayanır. Bu varsayımlar ihlal ediliyorsa formül uygulanmamalı; daha
+gelişmiş modeller (newsvendor, (s,S) policy) tercih edilmelidir.
+
+İyi optimizasyonlar dileriz; herhangi bir EOQ uygulama sorunu için
+GitHub Issues üzerinden geri bildirim bekleriz. Tedarik zinciri ve
+envanter yönetimi alanı, modern Türkiye ekonomisinde sürekli büyüyen
+bir uzmanlık alanı; bu temelden başlayarak adım atan biri için kariyer
+fırsatları geniş bir yelpazede açık duruyor.
