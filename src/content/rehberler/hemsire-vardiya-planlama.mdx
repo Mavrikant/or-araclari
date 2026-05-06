@@ -1,6 +1,6 @@
 ---
 title: "Hemşire Vardiya Planlama: Kurallar, Kısıtlar ve Adillik"
-description: "Hastane servisinde 1 aylık hemşire vardiya çizelgesi nasıl kurulur? Sabah/akşam/24-saat nöbet kombinasyonları, dinlenme kuralı, gece kapsama, adil saat dağılımı ve otomatik çizelgeleme algoritmaları."
+description: "Hastane servisinde 1 aylık hemşire vardiya çizelgesi nasıl kurulur? Gündüz/gece/nöbet kombinasyonları, dinlenme kuralı, adil saat dağılımı ve otomatik çizelgeleme algoritmaları."
 pubDate: 2026-05-06
 relatedTool: "hemsire-vardiya-planlayici"
 keywords:
@@ -22,8 +22,8 @@ faq:
     answer: "Otomatik doldur, açgözlü (greedy) bir sezgisel kullanır: her gün için en az nöbet tutan hemşireden başlayarak boşlukları doldurur, sonunda küçük bir tamir adımıyla geriye kalan ihlalleri kapatmaya çalışır. Hızlıdır (~50 ms) ama optimallik garantisi vermez. Optimum çöz ise tüm planı bir tam sayılı doğrusal programlama (ILP) modeli olarak kurar ve glpk.js çözücüsünü çalıştırır; en yüklü hemşirenin saatini minimize ederek adillik hedefler. Kısıtlar yoğunsa 1-5 saniye sürebilir."
   - question: "Plan tablosu nereye kaydediliyor?"
     answer: "Tüm veri yalnız tarayıcının localStorage alanında tutulur; sunucuya hiçbir bilgi gönderilmez. Kapatıp yeniden açtığınızda kaldığınız yerden devam edersiniz. Bilgisayar değiştirirseniz CSV indir butonu ile dışa aktarabilir, başka bilgisayarda elle aktarabilirsiniz."
-  - question: "Akşam (16:00-24:00) vardiyası nasıl modellenir?"
-    answer: "Araç akşam vardiyasını opsiyonel bir kapsama olarak ele alır. Varsayılanda 'Akşam min' 0'dır; çoğu serviste iki adet 24-saat nöbetçi 16:00-24:00 aralığını da örtmek için yeterli kabul edilir. Eğer servisinizde akşam saatlerinde mutlaka ek bir hemşire olmalıysa 'Akşam min' değerini 1 veya 2 yapın. Bu, sezgisel ve ILP'nin her ikisinin de E16 vardiyaları atamasını sağlar."
+  - question: "Hafta içi ve hafta sonu min sayıları nasıl ayarlanır?"
+    answer: "Aracın 'Kapsama kuralları' bölümünde dört bağımsız değer vardır: Hafta içi gündüz, Hafta içi gece, Hafta sonu gündüz, Hafta sonu gece. Çoğu serviste hafta sonu gündüz minimumu hafta içinden 1-2 düşüktür (örn. hafta içi 3, hafta sonu 2); gece minimumu ise genelde aynı kalır. Bu sayılar 'sahada minimum hemşire' demektir; gündüz için 'Gündüz vardiyası + Nöbet', gece için 'Gece vardiyası + Nöbet' birlikte sayılır."
   - question: "Bir hücreyi 'Kilitle' deyince ne oluyor?"
     answer: "Kilitlenen hücre artık otomatik doldur veya optimum çöz tarafından değiştirilmez. Manuel olarak yaptığınız atamalar otomatik kilitlenir. Birkaç günü ön-rezervasyon yapmak istiyorsanız (kıdemli hemşireye Pazartesi-Çarşamba sabah vermek gibi), o hücreleri ayarlayıp bırakın; çözücü kalan boşlukları o sabit ayarlarla uyumlu olacak şekilde doldurur."
 ---
@@ -45,38 +45,35 @@ aracının arkasındaki algoritma.
 
 ## Vardiya tipleri ve günlük kapsama
 
-Türkiye'deki hastane servislerinde en yaygın yapı üç vardiya etrafında
+Türkiye'deki hastane servislerinde yaygın bir yapı üç vardiya etrafında
 şekillenir:
 
-- **Sabah (08-16, 8 saat)** — gündüz hizmetinin omurgası. Doktor vizitleri,
+- **Gündüz (08-16, 8 saat)** — gündüz hizmetinin omurgası. Doktor vizitleri,
   ilaç dağıtımları, ameliyathane bağlantıları yoğun.
-- **Akşam (16-24, 8 saat)** — gündüzün gerilediği, gecenin başladığı
-  geçiş dilimi. Bazı servislerde ayrı bir vardiya olarak bulunur, bazılarında
-  24-saat nöbetçilerin kapsadığı saatlere bırakılır.
-- **24-saat nöbet** — sabah 08'den ertesi sabah 08'e kadar süren tek
-  vardiya. Hem akşam hem de gece saatlerini kapsar. Yorucu olduğu için
-  takip eden günlerde dinlenme zorunludur.
+- **Gece (16-08, 16 saat)** — akşam ve geceyi tek bir vardiyada birleştirir.
+  16:00'da başlar, ertesi sabah 08:00'da biter; tek bir hemşire bu pencerede
+  servisin gece kapsamasını üstlenir.
+- **Nöbet (00-24, 24 saat)** — günün tamamını kapsar. Hem gündüze hem geceye
+  sayılır. Yorucu olduğu için takip eden günlerde dinlenme zorunludur.
 
-Bir günün **gündüz** (08-24 dilimi) sahada en az 3 hemşire görmesi
-beklenir; bu üçün içinde 24-saatçiler de sayılır. **Gece** (00-08 dilimi)
-ise yalnız 24-saat nöbetçilere kalır; minimum 2 olmaları kuraldır.
-
-Hafta sonları yoğunluk düştüğü için kapsama kuralı genellikle gevşetilir:
-sadece 2 adet 24-saat nöbetçi yeterli kabul edilebilir, ek bir gündüz
-vardiyasına gerek kalmaz.
+Bir günün **gündüzünde (08-16)** sahada minimum hemşire = `Gündüz vardiyası
+sayısı + Nöbet sayısı`. **Gecesinde (16-08)** ise `Gece vardiyası sayısı +
+Nöbet sayısı`. Hafta içi ve hafta sonu için bu minimumlar ayrı ayrı
+ayarlanır — örneğin hafta içi 3/2 (gündüz/gece), hafta sonu 2/2.
 
 ## Hangi kombinasyonlar geçerli?
 
 Aynı kapsamayı sağlayan birden çok atama biçimi vardır. Tipik bir hafta
 içi günü için:
 
-| Kombinasyon | 24-saat | Sabah | Akşam | Gündüz toplamı | Gece |
-|-------------|---------|-------|-------|----------------|------|
-| Klasik      | 2       | 1     | 0     | 3              | 2    |
-| Akşam dahil | 1       | 2     | 1     | 3              | 1*   |
-| Yoğun       | 2       | 3     | 2     | 5              | 2    |
+| Kombinasyon | Nöbet (24) | Gündüz (8) | Gece (16) | Gündüz toplamı | Gece toplamı |
+|-------------|------------|------------|-----------|----------------|--------------|
+| Klasik       | 2          | 1          | 0         | 3              | 2            |
+| Gece dahil   | 1          | 2          | 1         | 3              | 2            |
+| Yoğun        | 2          | 3          | 1         | 5              | 3            |
 
-*Akşam dahil senaryosunda gece sayımı tek olur — bu da "Tek nöbet kabul"
+Gündüz toplamı = `Gündüz vardiyası + Nöbet`. Gece toplamı = `Gece vardiyası + Nöbet`.
+Tek nöbetli senaryolarda gece sayımı 1'e düşebilir — bu da "Tek nöbet kabul"
 modunda izinlidir, normal modda ihlal sayılır.
 
 Burada önemli olan görüş: kapsama hedefleri **toplamlardır**, hangi
@@ -135,9 +132,10 @@ Algoritma her günü sırayla işler:
 
 1. Müsait hemşireleri toplar (izinli değil, son iki günde nöbet tutmamış).
 2. Skora göre sıralar — düşük nöbet sayısı, düşük saat toplamı önde.
-3. İlk 2'ye 24-saat nöbet, sonraki 1'ine sabah vardiyası verir.
-4. Bir nöbet sonrası 2 günü `Nİ` olarak işaretler.
-5. Akşam vardiyası gerektiyse aynı sıradan atar.
+3. Gece kapsama eksikse önce nöbet (24-saat) atar, hala eksikse gece vardiyası (16-saat) ekler.
+4. Gündüz kapsama eksikse gündüz vardiyası (8-saat) atar.
+5. Bir nöbet sonrası `restAfterNight` günü `DN` (Dinlenme) olarak işaretler.
+6. Atanmamış kalan tüm hücreleri `DN` ile doldurur — boş hücre kalmaz.
 
 Sonra **tamir adımı**: validate fonksiyonu hangi günlerin eksik kaldığını
 söyler, çözücü o günleri kapsayacak küçük takaslar dener. 100 iterasyona
@@ -149,21 +147,27 @@ pratik kalitede sonuçlar verir, kullanıcı kalan açıkları manuel kapatır.
 ### Tam Sayılı Doğrusal Programlama (ILP)
 
 Aynı problem matematiksel olarak şöyle kurulur. Her hemşire $n$, gün $d$
-ve aktif vardiya $s \in \{D8, E16, N24\}$ için ikili karar değişkeni:
+ve aktif vardiya $s \in \{G8, GC16, N24\}$ için ikili karar değişkeni:
 
 $$x_{n,d,s} \in \{0, 1\}$$
 
 Kısıtlar (kısaca):
 
-- Tek vardiya: $\sum_s x_{n,d,s} \leq 1$
-- Gündüz kapsama: $\sum_n (x_{n,d,D8} + x_{n,d,N24}) \geq 3$
-- Gece kapsama: $\sum_n x_{n,d,N24} \geq 2$
-- Dinlenme: $x_{n,d,N24} + x_{n,d',\text{aktif}} \leq 1$ for $d' \in \{d+1, d+2\}$
+- En çok bir aktif vardiya per (n,d): $\sum_s x_{n,d,s} \leq 1$
+- Gündüz kapsama: $\sum_n (x_{n,d,G8} + x_{n,d,N24}) \geq \text{minDay}_d$
+- Gece kapsama: $\sum_n (x_{n,d,GC16} + x_{n,d,N24}) \geq \text{minNight}_d$
+- Dinlenme: $x_{n,d,N24} + x_{n,d',\text{aktif}} \leq 1$ for $d' \in \{d+1, \dots, d+r\}$
 - İzin günleri: ilgili $x$'ler sıfır.
 
-Adillik amacı:
+Saatler: $h_n = \sum_d (8 x_{n,d,G8} + 16 x_{n,d,GC16} + 24 x_{n,d,N24})$.
 
-$$\min Z \quad \text{öyle ki} \quad Z \geq \sum_d (8 x_{n,d,D8} + 8 x_{n,d,E16} + 24 x_{n,d,N24}) \quad \forall n$$
+Adillik amacı (saat sapmasını minimize):
+
+$$\min (Z_1 - Z_2) \quad \text{öyle ki} \quad Z_1 \geq h_n \;\;\text{ve}\;\; Z_2 \leq h_n \quad \forall n$$
+
+Burada $Z_1$ en yüklü, $Z_2$ en az yüklü hemşirenin saat sayısıdır; aradaki
+fark "spread" ve doğrudan minimize edilir. Boş gün yoktur — atanmamış
+her gün otomatik olarak DN (Dinlenme) sayılır.
 
 Bu model **glpk.js**'in WebAssembly motoruyla tarayıcıda çözülür — sunucu
 yok, veri yerel kalır. Tipik boyutta (~1500 ikili değişken) çözüm 1-5
@@ -178,7 +182,7 @@ olduğunu gösterir.
 
 Aracı kullanırken birkaç akış işe yarar:
 
-**1. İzinleri önce gir.** Yıllık izin (Yİ), rapor (RT) ve bilinen istek
+**1. İzinleri önce gir.** Yıllık izin (Yİ), rapor (RP) ve bilinen istek
 günleri her hemşire kartından "İzinler" butonuyla işaretlenir. Bu hücreler
 otomatik olarak kilitlenir; çözücü onlara dokunmaz.
 
@@ -187,7 +191,7 @@ bütün ayı bir bakışta sunar; kırmızı ihlal noktaları varsa altta
 listelenir.
 
 **3. Manuel rötuş yap.** Bir hücreye tıkla, popoverdan vardiya seç ya da
-klavyeden `8`, `A` (akşam), `N` (24), `Y` (Yİ), `R` (RT), `İ` (Nİ) tuşlarına
+klavyeden `8` (gündüz), `G` (gece 16h), `N` (24h nöbet), `Y` (yıllık izin), `R` (rapor), `D` (dinlenme), `L` (kilitle) tuşlarına
 bas. Ok tuşları ile hücreden hücreye geç.
 
 **4. İhlaller varsa Optimum çöz dene.** ILP saniyeler içinde tutarlı bir
