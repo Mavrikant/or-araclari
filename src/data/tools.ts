@@ -126,7 +126,6 @@ export const TOOLS: readonly Tool[] = [
       'Aktivite, süre ve öncelleri gir; ileri/geri pas ile ES, EF, LS, LF ve slack hesaplansın. Kritik yol vurgulu Gantt çizelgesi otomatik üretilir.',
     category: 'cizelgeleme',
     status: 'ready',
-    guideSlug: 'pert-cpm-proje-yonetimi',
   },
 ] as const;
 
