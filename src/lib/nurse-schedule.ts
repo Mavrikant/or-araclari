@@ -1330,7 +1330,7 @@ export function buildSampleSchedule(year: number, month: number): Schedule {
     { id: 'n4', name: 'Elif', unavailable: [], workStyle: 'normal' },
     { id: 'n5', name: 'Hanife', unavailable: [], workStyle: 'normal' },
     { id: 'n6', name: 'Sevgi', unavailable: [], workStyle: 'normal' },
-    { id: 'n7', name: 'Merve', unavailable: [], workStyle: 'yogun' },
+    { id: 'n7', name: 'Merve', unavailable: [], workStyle: 'normal' },
     { id: 'n8', name: 'Selin', unavailable: [], workStyle: 'yogun' },
     { id: 'n9', name: 'Gülnihal', unavailable: [], workStyle: 'normal' },
   ];
