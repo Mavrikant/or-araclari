@@ -1,9 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Container from '../components/Container.astro';
-import { withBase } from '../data/site';
+import { withBase, GA_ID, ADSENSE_CLIENT_ID } from '../data/site';
 
 const lastUpdated = '6 Mayıs 2026';
+const analyticsActive = Boolean(GA_ID);
+const adsActive = Boolean(ADSENSE_CLIENT_ID);
+const anyActive = analyticsActive || adsActive;
 ---
 
 <BaseLayout
@@ -33,9 +36,19 @@ const lastUpdated = '6 Mayıs 2026';
 
       <h2>Çerez tercih akışı</h2>
 
+      {!anyActive && (
+        <p>
+          <strong>Şu anda site hiçbir analitik veya reklam çerezi
+          yerleştirmiyor.</strong> Bu nedenle çerez tercih bandı da
+          görünmüyor; aşağıdaki akış, ileride Google Analytics 4 veya
+          Google AdSense aktive edildiğinde nasıl işleyeceğini anlatır.
+        </p>
+      )}
+
       <p>
-        Siteye ilk girişinde sayfanın altında bir <strong>çerez tercih
-        bandı</strong> görürsün. İki seçenek sunulur:
+        {anyActive
+          ? 'Siteye ilk girişinde sayfanın altında bir çerez tercih bandı görürsün. İki seçenek sunulur:'
+          : 'Etkinleştirildiğinde, ilk ziyarette sayfanın altında bir çerez tercih bandı görünecektir. İki seçenek sunulacaktır:'}
       </p>
 
       <ul>
@@ -83,7 +96,9 @@ const lastUpdated = '6 Mayıs 2026';
         </li>
       </ul>
 
-      <h3>Analitik (yalnızca "Tümünü kabul et" seçildiyse)</h3>
+      <h3>
+        Analitik {analyticsActive ? '(yalnızca "Tümünü kabul et" seçildiyse)' : '(şu an aktif değil)'}
+      </h3>
 
       <ul>
         <li>
@@ -95,7 +110,9 @@ const lastUpdated = '6 Mayıs 2026';
         </li>
       </ul>
 
-      <h3>Reklam (yalnızca "Tümünü kabul et" seçildiyse)</h3>
+      <h3>
+        Reklam {adsActive ? '(yalnızca "Tümünü kabul et" seçildiyse)' : '(şu an aktif değil)'}
+      </h3>
 
       <ul>
         <li>

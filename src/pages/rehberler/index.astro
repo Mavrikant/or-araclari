@@ -9,23 +9,7 @@ const publishedGuides = allGuides.sort(
   (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime(),
 );
 
-const upcomingGuides = [
-  {
-    title: 'Macar Algoritması: Atama Probleminin Çözümü',
-    summary:
-      'İş–makine, görev–çalışan eşlemelerinde optimum atama. Hungarian method adım adım.',
-  },
-  {
-    title: 'Knapsack Probleminin Çeşitleri',
-    summary:
-      '0/1, fractional ve unbounded knapsack — dinamik programlama ve greedy yaklaşımları.',
-  },
-  {
-    title: 'TSP ve VRP: Rota Optimizasyonu',
-    summary:
-      'Gezgin satıcı probleminin sezgiselleri (nearest-neighbor, 2-opt) ve VRP varyantları.',
-  },
-];
+const upcomingGuides: Array<{ title: string; summary: string }> = [];
 
 const dateFormatter = new Intl.DateTimeFormat('tr-TR', {
   day: 'numeric',

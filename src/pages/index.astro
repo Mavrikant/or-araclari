@@ -7,6 +7,9 @@ import AdSlot from '../components/AdSlot.astro';
 import { TOOLS } from '../data/tools';
 import { withBase } from '../data/site';
 
+const readyCount = TOOLS.filter((t) => t.status === 'ready').length;
+const soonCount = TOOLS.filter((t) => t.status === 'soon').length;
+
 const recentGuides = (await getCollection('rehberler'))
   .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime())
   .slice(0, 3);
@@ -44,7 +47,7 @@ const valueProps = [
         class="inline-flex items-center gap-2 rounded-full bg-accent-500/10 px-3 py-1 text-xs font-medium text-accent-700 ring-1 ring-accent-500/30 dark:text-accent-300"
       >
         <span class="size-1.5 rounded-full bg-accent-500"></span>
-        Yapım aşamasında — yeni araçlar yolda
+        {readyCount} araç hazır{soonCount > 0 ? ` · ${soonCount} yapım aşamasında` : ''}
       </span>
       <h1
         class="mt-5 font-display text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl dark:text-white"
@@ -94,7 +97,7 @@ const valueProps = [
           Araçlar
         </h2>
         <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
-          {TOOLS.length} araç planlanıyor. İlki yolda.
+          {readyCount} araç hazır{soonCount > 0 ? `, ${soonCount} yapım aşamasında` : ''}.
         </p>
       </div>
       <a

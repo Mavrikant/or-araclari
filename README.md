@@ -78,7 +78,7 @@ yollanmaz (Google Consent Mode v2).
 | 2 | İlk araç: Lig Fikstürü Oluşturucu | ✅ |
 | 3 | Blog/rehber sistemi + 5 başlangıç yazısı | ✅ |
 | 4 | GA4 + AdSense altyapısı | ✅ |
-| 5 | LP, TSP, Atama, Knapsack, Çizelgeleme araçları | ⏳ |
+| 5 | TSP, Atama, Knapsack, Ders Programı (LP solver hâlâ yapım aşamasında) | ✅ |
 
 ## Lisans
 

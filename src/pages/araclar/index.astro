@@ -17,6 +17,7 @@ const categories = (Object.keys(groupedTools) as ToolCategory[]).sort((a, b) =>
 );
 
 const readyCount = TOOLS.filter((t) => t.status === 'ready').length;
+const soonCount = TOOLS.filter((t) => t.status === 'soon').length;
 ---
 
 <BaseLayout
@@ -34,7 +35,7 @@ const readyCount = TOOLS.filter((t) => t.status === 'ready').length;
         listesi. Şu an
         {readyCount === 0
           ? 'henüz araç yayında değil — ilki çok yakında'
-          : `${readyCount} araç hazır`}.
+          : `${readyCount} araç hazır${soonCount > 0 ? `, ${soonCount} yapım aşamasında` : ''}`}.
       </p>
     </header>
 
