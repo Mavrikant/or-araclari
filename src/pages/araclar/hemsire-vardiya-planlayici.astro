@@ -41,9 +41,9 @@ const TR_MONTHS = [
       {tool.title}
     </h1>
     <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
-      Hemşireleri ve izinli günlerini gir, kapsama kurallarını ayarla, tek tuşla
-      tüm ayın vardiya planını dolur. Hücreye tıklayarak veya klavyeden
-      değiştir; gece kapsama / dinlenme ihlalleri canlı vurgulanır.
+      Hemşireleri ve izinli günlerini gir, hafta içi/sonu kapsama kurallarını ayarla,
+      tek tuşla tüm ayın vardiya planını dolur. Vardiyalar: 8 gündüz (08-16), 16 gece (16-08),
+      24 nöbet (00-24). Hücreye tıkla veya klavyeden değiştir; ihlaller canlı vurgulanır.
       {guideHref && (
         <a
           href={guideHref}
@@ -78,7 +78,6 @@ const TR_MONTHS = [
         </p>
       </div>
 
-      {/* Ay / Yıl */}
       <fieldset class="space-y-3">
         <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
           Plan dönemi
@@ -100,7 +99,6 @@ const TR_MONTHS = [
         </div>
       </fieldset>
 
-      {/* Hemşireler */}
       <fieldset class="space-y-3">
         <div class="flex items-center justify-between">
           <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
@@ -122,38 +120,30 @@ const TR_MONTHS = [
         </p>
       </fieldset>
 
-      {/* Kısıtlar */}
       <fieldset class="space-y-3">
         <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
-          Kısıtlar
+          Kapsama kuralları
         </legend>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="block">
-            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Gündüz min</span>
-            <input type="number" id="con-min-day" min="0" max="20" step="1"
-              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
-          </label>
-          <label class="block">
-            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Akşam min</span>
-            <input type="number" id="con-min-eve" min="0" max="20" step="1"
-              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
-          </label>
-          <label class="block">
-            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Gece min</span>
-            <input type="number" id="con-min-night" min="0" max="20" step="1"
-              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
-          </label>
-          <label class="block">
-            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Nöbet sonrası dinlenme (gün)</span>
-            <input type="number" id="con-rest" min="0" max="7" step="1"
-              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
-          </label>
+        <div class="grid grid-cols-2 gap-x-3 gap-y-2 rounded-lg border border-slate-200 bg-slate-50/40 p-3 dark:border-slate-800 dark:bg-slate-900/20">
+          <div></div>
+          <div class="text-center text-xs font-medium text-slate-600 dark:text-slate-400">Min hemşire</div>
+          <label class="self-center text-xs font-medium text-slate-700 dark:text-slate-300">Hafta içi gündüz</label>
+          <input type="number" id="con-min-day-wd" min="0" max="20" step="1"
+            class="block w-full rounded border border-slate-300 bg-white px-2 py-1 text-sm text-center text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          <label class="self-center text-xs font-medium text-slate-700 dark:text-slate-300">Hafta içi gece</label>
+          <input type="number" id="con-min-night-wd" min="0" max="20" step="1"
+            class="block w-full rounded border border-slate-300 bg-white px-2 py-1 text-sm text-center text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          <label class="self-center text-xs font-medium text-slate-700 dark:text-slate-300">Hafta sonu gündüz</label>
+          <input type="number" id="con-min-day-we" min="0" max="20" step="1"
+            class="block w-full rounded border border-slate-300 bg-white px-2 py-1 text-sm text-center text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          <label class="self-center text-xs font-medium text-slate-700 dark:text-slate-300">Hafta sonu gece</label>
+          <input type="number" id="con-min-night-we" min="0" max="20" step="1"
+            class="block w-full rounded border border-slate-300 bg-white px-2 py-1 text-sm text-center text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
         </div>
-        <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white p-2.5 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
-          <input type="checkbox" id="con-weekend-reduced" class="size-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
-          <span class="text-xs text-slate-700 dark:text-slate-300">
-            <strong>Hafta sonu gevşetilmiş</strong> — yalnız gece kapsama gerek (gündüz 8 zorunlu değil)
-          </span>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Nöbet sonrası dinlenme (gün)</span>
+          <input type="number" id="con-rest" min="0" max="7" step="1"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
         </label>
         <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white p-2.5 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-amber-500 dark:has-[:checked]:bg-slate-900">
           <input type="checkbox" id="con-allow-single" class="size-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500" />
@@ -166,7 +156,6 @@ const TR_MONTHS = [
 
     {/* ------------------------------------------------------------ IZGARA */}
     <div class="space-y-6 min-w-0 print:px-0">
-      {/* Tutorial / nasıl kullanılır */}
       <div id="tutorial-banner" class="ns-tutorial print:hidden" role="region" aria-label="Nasıl kullanılır">
         <button type="button" id="tutorial-close" class="ns-tutorial-close" aria-label="Kapat">×</button>
         <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
@@ -180,26 +169,27 @@ const TR_MONTHS = [
           </li>
           <li>
             <strong class="text-brand-700 dark:text-accent-400">2.</strong>
-            "<strong>Otomatik doldur</strong>" — ızgarayı saniyenin altında dolduran sezgisel.
-            Daha sonra "<strong>Optimum çöz (ILP)</strong>" ile saatleri eşitleyebilirsin (1-5 sn).
+            Hafta içi ve hafta sonu için ayrı <strong>min gündüz / min gece</strong>
+            sayılarını ayarla. Vardiyalar: <kbd class="ns-kbd">8</kbd> Gündüz 08-16,
+            <kbd class="ns-kbd">16</kbd> Gece 16-08, <kbd class="ns-kbd">24</kbd> Nöbet 00-24.
           </li>
           <li>
             <strong class="text-brand-700 dark:text-accent-400">3.</strong>
-            Bir hücreye <strong>tıkla</strong>: vardiya seçim menüsü açılır. Klavyeden hızlı:
-            <kbd class="ns-kbd">8</kbd> sabah,
-            <kbd class="ns-kbd">A</kbd> akşam,
-            <kbd class="ns-kbd">N</kbd> 24-saat nöbet,
-            <kbd class="ns-kbd">Y</kbd> yıllık izin,
-            <kbd class="ns-kbd">R</kbd> rapor,
-            <kbd class="ns-kbd">İ</kbd> dinlenme,
-            <kbd class="ns-kbd">⌫</kbd> boş.
-            Ok tuşları ile hücreden hücreye geç. <kbd class="ns-kbd">L</kbd> ile bir hücreyi <strong>kilitle</strong> (otomatik çözücü dokunmaz).
+            "<strong>Otomatik doldur</strong>" — ızgarayı saniyenin altında dolduran sezgisel.
+            Daha sonra "<strong>Optimum çöz (ILP)</strong>" ile saatleri eşitle.
+            Boş hücre kalmaz; çalışılmayan günler <strong>DN</strong> (dinlenme) olarak işaretlenir.
           </li>
           <li>
             <strong class="text-brand-700 dark:text-accent-400">4.</strong>
-            Kapsama veya dinlenme ihlalleri varsa <strong>kırmızı nokta</strong> ile işaretlenir
-            ve aşağıdaki listede gerekçesi gösterilir. <strong>CSV indir</strong> veya
-            <strong>Yazdır</strong> ile çıktıya geç.
+            Bir hücreye <strong>tıkla</strong>: vardiya seçim menüsü. Klavye:
+            <kbd class="ns-kbd">8</kbd> gündüz,
+            <kbd class="ns-kbd">G</kbd> gece (16),
+            <kbd class="ns-kbd">N</kbd> nöbet,
+            <kbd class="ns-kbd">D</kbd> dinlenme,
+            <kbd class="ns-kbd">Y</kbd> yıllık izin,
+            <kbd class="ns-kbd">R</kbd> rapor,
+            <kbd class="ns-kbd">L</kbd> kilitle,
+            ok tuşları ile dolaş, <kbd class="ns-kbd">Esc</kbd> popover kapat.
           </li>
         </ol>
         <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">
@@ -216,32 +206,27 @@ const TR_MONTHS = [
         </button>
       </div>
 
-      {/* Solver durum / hata */}
       <div id="solver-status" class="hidden rounded-lg border px-4 py-3 text-sm" role="status" aria-live="polite"></div>
       <div id="solver-error" class="hidden rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/30 dark:text-red-200" role="alert"></div>
 
-      {/* Renk / kod açıklaması */}
       <div id="legend" class="flex flex-wrap gap-2 text-xs print:hidden">
-        <span class="ns-legend" data-shift="D8"><span class="ns-swatch" data-shift="D8"></span>8 — Sabah (08-16)</span>
-        <span class="ns-legend" data-shift="E16"><span class="ns-swatch" data-shift="E16"></span>16 — Akşam (16-24)</span>
-        <span class="ns-legend" data-shift="N24"><span class="ns-swatch" data-shift="N24"></span>24 — Nöbet</span>
-        <span class="ns-legend" data-shift="NI"><span class="ns-swatch" data-shift="NI"></span>Nİ — Dinlenme</span>
-        <span class="ns-legend" data-shift="YI"><span class="ns-swatch" data-shift="YI"></span>Yİ — Yıllık izin</span>
-        <span class="ns-legend" data-shift="RT"><span class="ns-swatch" data-shift="RT"></span>RT — Rapor</span>
+        <span class="ns-legend"><span class="ns-swatch" data-shift="G8"></span>8 — Gündüz (08-16)</span>
+        <span class="ns-legend"><span class="ns-swatch" data-shift="GC16"></span>16 — Gece (16-08)</span>
+        <span class="ns-legend"><span class="ns-swatch" data-shift="N24"></span>24 — Nöbet (00-24)</span>
+        <span class="ns-legend"><span class="ns-swatch" data-shift="DN"></span>DN — Dinlenme</span>
+        <span class="ns-legend"><span class="ns-swatch" data-shift="YI"></span>Yİ — Yıllık izin</span>
+        <span class="ns-legend"><span class="ns-swatch" data-shift="RP"></span>RP — Rapor</span>
       </div>
 
-      {/* Schedule grid */}
       <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:overflow-visible print:p-0 print:shadow-none">
         <table id="schedule-table" class="ns-table"></table>
       </div>
 
-      {/* Issues */}
       <div id="issues-block" class="hidden rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm dark:border-amber-800 dark:bg-amber-900/20 print:hidden">
         <h2 class="mb-2 font-display font-semibold text-amber-900 dark:text-amber-200">İhlaller</h2>
         <ul id="issues-list" class="space-y-1 text-amber-900 dark:text-amber-100"></ul>
       </div>
 
-      {/* Per-nurse stats */}
       <div>
         <h2 class="mb-3 font-display text-base font-semibold text-slate-900 dark:text-white">
           Hemşire başına aylık özet
@@ -249,7 +234,6 @@ const TR_MONTHS = [
         <div id="stats-grid" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>
       </div>
 
-      {/* Export aksiyonları */}
       <div class="flex flex-wrap gap-2 print:hidden">
         <button type="button" id="export-csv-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
           CSV indir
@@ -270,62 +254,59 @@ const TR_MONTHS = [
     </div>
   </Container>
 
-  {/* Hücre popover — sayfa düzeyinde, dinamik konumlandırılır */}
   <div id="cell-popover" class="ns-popover hidden" role="menu" aria-label="Vardiya seç">
     <div class="ns-popover-header">
       <span class="ns-popover-title" id="popover-title">Vardiya seç</span>
       <button type="button" id="popover-close-btn" class="ns-popover-close" aria-label="Kapat (Esc)" title="Kapat (Esc)">×</button>
     </div>
     <div class="ns-popover-grid">
-      <button type="button" data-shift="D8" data-shortcut="8">8 <span class="ns-shortcut">8</span></button>
-      <button type="button" data-shift="E16" data-shortcut="A">16 <span class="ns-shortcut">A</span></button>
-      <button type="button" data-shift="N24" data-shortcut="N">24 <span class="ns-shortcut">N</span></button>
-      <button type="button" data-shift="NI" data-shortcut="I">Nİ <span class="ns-shortcut">İ</span></button>
-      <button type="button" data-shift="YI" data-shortcut="Y">Yİ <span class="ns-shortcut">Y</span></button>
-      <button type="button" data-shift="RT" data-shortcut="R">RT <span class="ns-shortcut">R</span></button>
-      <button type="button" data-shift="OFF" data-shortcut="0">Boş <span class="ns-shortcut">⌫</span></button>
+      <button type="button" data-shift="G8">8 <span class="ns-shortcut">8</span></button>
+      <button type="button" data-shift="GC16">16 <span class="ns-shortcut">G</span></button>
+      <button type="button" data-shift="N24">24 <span class="ns-shortcut">N</span></button>
+      <button type="button" data-shift="DN">DN <span class="ns-shortcut">D</span></button>
+      <button type="button" data-shift="YI">Yİ <span class="ns-shortcut">Y</span></button>
+      <button type="button" data-shift="RP">RP <span class="ns-shortcut">R</span></button>
       <button type="button" data-action="toggle-pin" data-shortcut="L">Kilitle <span class="ns-shortcut">L</span></button>
     </div>
   </div>
 </BaseLayout>
 
 <style is:global>
-  /* Hücre rengi paleti — CSS değişkenleri ile light/dark geçişi */
+  /* CSS değişkenleri ile light/dark renk paleti */
   :root {
-    --ns-D8-bg: rgb(224 242 254);
-    --ns-D8-fg: rgb(7 89 133);
-    --ns-E16-bg: rgb(254 243 199);
-    --ns-E16-fg: rgb(120 53 15);
+    --ns-G8-bg: rgb(224 242 254);
+    --ns-G8-fg: rgb(7 89 133);
+    --ns-GC16-bg: rgb(224 231 255);
+    --ns-GC16-fg: rgb(49 46 129);
     --ns-N24-bg: rgb(255 228 230);
     --ns-N24-fg: rgb(159 18 57);
-    --ns-NI-bg: rgb(220 252 231);
-    --ns-NI-fg: rgb(6 95 70);
+    --ns-DN-bg: rgb(220 252 231);
+    --ns-DN-fg: rgb(6 95 70);
     --ns-YI-bg: rgb(237 233 254);
     --ns-YI-fg: rgb(91 33 182);
-    --ns-RT-bg: rgb(226 232 240);
-    --ns-RT-fg: rgb(51 65 85);
+    --ns-RP-bg: rgb(226 232 240);
+    --ns-RP-fg: rgb(51 65 85);
     --ns-weekend-bg: rgb(248 250 252);
     --ns-grid-border: rgb(226 232 240);
   }
 
   .dark {
-    --ns-D8-bg: rgb(12 74 110 / 0.45);
-    --ns-D8-fg: rgb(186 230 253);
-    --ns-E16-bg: rgb(120 53 15 / 0.45);
-    --ns-E16-fg: rgb(254 215 170);
+    --ns-G8-bg: rgb(12 74 110 / 0.45);
+    --ns-G8-fg: rgb(186 230 253);
+    --ns-GC16-bg: rgb(49 46 129 / 0.55);
+    --ns-GC16-fg: rgb(199 210 254);
     --ns-N24-bg: rgb(159 18 57 / 0.45);
     --ns-N24-fg: rgb(254 205 211);
-    --ns-NI-bg: rgb(6 95 70 / 0.35);
-    --ns-NI-fg: rgb(167 243 208);
+    --ns-DN-bg: rgb(6 95 70 / 0.35);
+    --ns-DN-fg: rgb(167 243 208);
     --ns-YI-bg: rgb(91 33 182 / 0.35);
     --ns-YI-fg: rgb(216 180 254);
-    --ns-RT-bg: rgb(30 41 59);
-    --ns-RT-fg: rgb(148 163 184);
+    --ns-RP-bg: rgb(30 41 59);
+    --ns-RP-fg: rgb(148 163 184);
     --ns-weekend-bg: rgb(15 23 42);
     --ns-grid-border: rgb(30 41 59);
   }
 
-  /* Schedule table */
   .ns-table {
     border-collapse: collapse;
     font-size: 0.78rem;
@@ -428,7 +409,7 @@ const TR_MONTHS = [
     color: rgb(15 23 42);
     font-weight: 600;
     padding: 0 6px;
-    width: 80px;
+    width: 90px;
     font-size: 0.72rem;
     text-align: right;
     white-space: nowrap;
@@ -439,36 +420,36 @@ const TR_MONTHS = [
   }
 
   /* Shift cell colors via data-shift attribute */
-  [data-shift="D8"]   { background-color: var(--ns-D8-bg);  color: var(--ns-D8-fg); }
-  [data-shift="E16"]  { background-color: var(--ns-E16-bg); color: var(--ns-E16-fg); }
+  [data-shift="G8"]   { background-color: var(--ns-G8-bg);  color: var(--ns-G8-fg); }
+  [data-shift="GC16"] { background-color: var(--ns-GC16-bg); color: var(--ns-GC16-fg); }
   [data-shift="N24"]  { background-color: var(--ns-N24-bg); color: var(--ns-N24-fg); font-weight: 700; }
   [data-shift="YI"]   { background-color: var(--ns-YI-bg);  color: var(--ns-YI-fg); }
-  [data-shift="NI"] {
-    background-color: var(--ns-NI-bg);
-    color: var(--ns-NI-fg);
+  [data-shift="DN"] {
+    background-color: var(--ns-DN-bg);
+    color: var(--ns-DN-fg);
     background-image: repeating-linear-gradient(
       45deg,
       transparent, transparent 4px,
       rgb(0 0 0 / 0.06) 4px, rgb(0 0 0 / 0.06) 5px
     );
   }
-  .dark [data-shift="NI"] {
+  .dark [data-shift="DN"] {
     background-image: repeating-linear-gradient(
       45deg,
       transparent, transparent 4px,
       rgb(255 255 255 / 0.05) 4px, rgb(255 255 255 / 0.05) 5px
     );
   }
-  [data-shift="RT"] {
-    background-color: var(--ns-RT-bg);
-    color: var(--ns-RT-fg);
+  [data-shift="RP"] {
+    background-color: var(--ns-RP-bg);
+    color: var(--ns-RP-fg);
     background-image: repeating-linear-gradient(
       -45deg,
       transparent, transparent 3px,
       rgb(0 0 0 / 0.08) 3px, rgb(0 0 0 / 0.08) 5px
     );
   }
-  .dark [data-shift="RT"] {
+  .dark [data-shift="RP"] {
     background-image: repeating-linear-gradient(
       -45deg,
       transparent, transparent 3px,
@@ -476,7 +457,6 @@ const TR_MONTHS = [
     );
   }
 
-  /* Legend swatches */
   .ns-legend {
     display: inline-flex;
     align-items: center;
@@ -499,7 +479,6 @@ const TR_MONTHS = [
     border: 1px solid rgb(0 0 0 / 0.06);
   }
 
-  /* Popover */
   .ns-popover {
     position: absolute;
     z-index: 60;
@@ -554,7 +533,7 @@ const TR_MONTHS = [
   }
   .ns-popover-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(54px, 1fr));
+    grid-template-columns: repeat(3, minmax(54px, 1fr));
     gap: 4px;
   }
   .ns-popover-grid button {
@@ -577,14 +556,21 @@ const TR_MONTHS = [
     transform: translateY(-1px);
   }
   .ns-popover-grid button[data-action="toggle-pin"] {
-    grid-column: span 4;
+    grid-column: span 3;
     background: rgb(241 245 249);
   }
   .dark .ns-popover-grid button[data-action="toggle-pin"] {
     background: rgb(30 41 59);
   }
+  .ns-shortcut {
+    position: absolute;
+    bottom: 1px;
+    right: 3px;
+    font-size: 9px;
+    opacity: 0.6;
+    font-weight: 400;
+  }
 
-  /* Tutorial banner */
   .ns-tutorial {
     position: relative;
     padding: 16px 40px 16px 18px;
@@ -640,16 +626,7 @@ const TR_MONTHS = [
     color: rgb(241 245 249);
     box-shadow: 0 1px 0 rgb(0 0 0 / 0.3);
   }
-  .ns-shortcut {
-    position: absolute;
-    bottom: 1px;
-    right: 3px;
-    font-size: 9px;
-    opacity: 0.6;
-    font-weight: 400;
-  }
 
-  /* Nurse list cards */
   .ns-nurse-card {
     border: 1px solid var(--ns-grid-border);
     border-radius: 8px;
@@ -724,7 +701,6 @@ const TR_MONTHS = [
     font-weight: 600;
   }
 
-  /* Stats card */
   .ns-stats-card {
     border: 1px solid var(--ns-grid-border);
     border-radius: 12px;
@@ -735,7 +711,6 @@ const TR_MONTHS = [
     background: rgb(15 23 42 / 0.4);
   }
 
-  /* Print: keep colors */
   @media print {
     .ns-table { font-size: 0.65rem; }
     .ns-table td.ns-cell { height: 22px; }
@@ -753,15 +728,20 @@ const TR_MONTHS = [
     solveScheduleILP,
     validate,
     buildSampleSchedule,
+    SHIFT_LABEL,
+    isDayCovering,
+    isNightCovering,
     type Nurse,
     type Schedule,
     type ScheduleConstraints,
     type ShiftCode,
   } from '../../lib/nurse-schedule';
 
-  const STORAGE_KEY = 'nurse-schedule-v1';
+  const STORAGE_KEY = 'nurse-schedule-v2';
+  const LEGACY_KEY = 'nurse-schedule-v1';
   const TUTORIAL_KEY = 'nurse-schedule-tutorial-dismissed-v1';
   const TR_DAYS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+  const TR_MONTH_SHORT = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
 
   const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
     const el = document.getElementById(id);
@@ -782,6 +762,46 @@ const TR_MONTHS = [
     return buildSampleSchedule(now.getFullYear(), now.getMonth() + 1);
   }
 
+  /** Eski koddan yeni koda dönüştürür (v1 → v2 migration). */
+  function migrateShiftCode(code: string): ShiftCode | null {
+    const map: Record<string, ShiftCode> = {
+      // v2 (kendi)
+      G8: 'G8', GC16: 'GC16', N24: 'N24', DN: 'DN', YI: 'YI', RP: 'RP',
+      // v1 (eski)
+      D8: 'G8',
+      E16: 'GC16', // 8 saatli akşamı 16 saat geceye dönüştür
+      NI: 'DN',
+      RT: 'RP',
+      OFF: 'DN',
+    };
+    return map[code] ?? null;
+  }
+
+  function migrateConstraints(raw: Record<string, unknown>): ScheduleConstraints {
+    const out: ScheduleConstraints = { ...DEFAULT_CONSTRAINTS };
+    // v2 doğrudan
+    if (typeof raw.minDayWeekday === 'number') out.minDayWeekday = Math.round(raw.minDayWeekday);
+    if (typeof raw.minDayWeekend === 'number') out.minDayWeekend = Math.round(raw.minDayWeekend);
+    if (typeof raw.minNightWeekday === 'number') out.minNightWeekday = Math.round(raw.minNightWeekday);
+    if (typeof raw.minNightWeekend === 'number') out.minNightWeekend = Math.round(raw.minNightWeekend);
+    // v1 ile geriye-uyum: minDayPresent, minNightPresent, weekendReduced
+    if (typeof raw.minDayPresent === 'number') {
+      out.minDayWeekday = Math.round(raw.minDayPresent);
+      out.minDayWeekend = raw.weekendReduced === true ? Math.max(2, Math.round(raw.minDayPresent) - 1) : Math.round(raw.minDayPresent);
+    }
+    if (typeof raw.minNightPresent === 'number') {
+      out.minNightWeekday = Math.round(raw.minNightPresent);
+      out.minNightWeekend = Math.round(raw.minNightPresent);
+    }
+    if (typeof raw.restAfterNight === 'number') out.restAfterNight = Math.max(0, Math.min(7, Math.round(raw.restAfterNight)));
+    if (typeof raw.allowSingleNight === 'boolean') out.allowSingleNight = raw.allowSingleNight;
+    out.minDayWeekday = Math.max(0, out.minDayWeekday);
+    out.minDayWeekend = Math.max(0, out.minDayWeekend);
+    out.minNightWeekday = Math.max(0, out.minNightWeekday);
+    out.minNightWeekend = Math.max(0, out.minNightWeekend);
+    return out;
+  }
+
   function normalize(raw: unknown): Schedule | null {
     if (!raw || typeof raw !== 'object') return null;
     const o = raw as Record<string, unknown>;
@@ -790,13 +810,7 @@ const TR_MONTHS = [
     const year = Math.round(meta.year);
     const month = Math.round(meta.month);
     if (month < 1 || month > 12 || year < 2000 || year > 2100) return null;
-    const constraints: ScheduleConstraints = { ...DEFAULT_CONSTRAINTS, ...(o.constraints as object || {}) };
-    constraints.minDayPresent = Math.max(0, Math.round(constraints.minDayPresent));
-    constraints.minEveningPresent = Math.max(0, Math.round(constraints.minEveningPresent));
-    constraints.minNightPresent = Math.max(0, Math.round(constraints.minNightPresent));
-    constraints.restAfterNight = Math.max(0, Math.min(7, Math.round(constraints.restAfterNight)));
-    constraints.weekendReduced = Boolean(constraints.weekendReduced);
-    constraints.allowSingleNight = Boolean(constraints.allowSingleNight);
+    const constraints = migrateConstraints((o.constraints as Record<string, unknown>) || {});
     const nursesRaw = Array.isArray(o.nurses) ? o.nurses : [];
     const nurses: Nurse[] = nursesRaw.flatMap((n: unknown) => {
       if (!n || typeof n !== 'object') return [];
@@ -810,12 +824,11 @@ const TR_MONTHS = [
       return [{ id, name, unavailable, notes }];
     });
     const cells: Record<string, ShiftCode> = {};
-    const validShifts: ShiftCode[] = ['OFF', 'D8', 'E16', 'N24', 'YI', 'RT', 'NI'];
     const cellsRaw = (o.cells as Record<string, unknown>) || {};
     for (const [k, v] of Object.entries(cellsRaw)) {
       if (typeof v !== 'string') continue;
-      if (!validShifts.includes(v as ShiftCode)) continue;
-      cells[k] = v as ShiftCode;
+      const migrated = migrateShiftCode(v);
+      if (migrated) cells[k] = migrated;
     }
     const pinned: Record<string, true> = {};
     const pinnedRaw = (o.pinned as Record<string, unknown>) || {};
@@ -838,6 +851,20 @@ const TR_MONTHS = [
         const parsed = JSON.parse(raw);
         const norm = normalize(parsed);
         if (norm) return norm;
+      }
+    } catch {
+      /* ignore */
+    }
+    // v1 migrasyonu
+    try {
+      const v1 = localStorage.getItem(LEGACY_KEY);
+      if (v1) {
+        const parsed = JSON.parse(v1);
+        const norm = normalize(parsed);
+        if (norm) {
+          // v1 anahtarını koru, v2 ile yaz
+          return norm;
+        }
       }
     } catch {
       /* ignore */
@@ -883,26 +910,25 @@ const TR_MONTHS = [
   const tutorialCloseBtn = $<HTMLButtonElement>('tutorial-close');
   const tutorialToggleBtn = $<HTMLButtonElement>('tutorial-toggle');
 
-  const conMinDay = $<HTMLInputElement>('con-min-day');
-  const conMinEve = $<HTMLInputElement>('con-min-eve');
-  const conMinNight = $<HTMLInputElement>('con-min-night');
+  const conMinDayWd = $<HTMLInputElement>('con-min-day-wd');
+  const conMinNightWd = $<HTMLInputElement>('con-min-night-wd');
+  const conMinDayWe = $<HTMLInputElement>('con-min-day-we');
+  const conMinNightWe = $<HTMLInputElement>('con-min-night-we');
   const conRest = $<HTMLInputElement>('con-rest');
-  const conWeekendReduced = $<HTMLInputElement>('con-weekend-reduced');
   const conAllowSingle = $<HTMLInputElement>('con-allow-single');
 
-  /* --------------------------------------------------------- Render: form */
+  /* --------------------------------------------------------- Render */
 
   function renderForm(): void {
     monthSelect.value = String(state.meta.month);
     yearInput.value = String(state.meta.year);
-    conMinDay.value = String(state.constraints.minDayPresent);
-    conMinEve.value = String(state.constraints.minEveningPresent);
-    conMinNight.value = String(state.constraints.minNightPresent);
+    conMinDayWd.value = String(state.constraints.minDayWeekday);
+    conMinNightWd.value = String(state.constraints.minNightWeekday);
+    conMinDayWe.value = String(state.constraints.minDayWeekend);
+    conMinNightWe.value = String(state.constraints.minNightWeekend);
     conRest.value = String(state.constraints.restAfterNight);
-    conWeekendReduced.checked = state.constraints.weekendReduced;
     conAllowSingle.checked = state.constraints.allowSingleNight;
     nurseCount.textContent = `${state.nurses.length} hemşire`;
-
     nurseList.innerHTML = state.nurses.map(renderNurseCard).join('');
   }
 
@@ -924,50 +950,33 @@ const TR_MONTHS = [
       </li>`;
   }
 
-  /* --------------------------------------------------------- Render: grid */
-
-  const SHIFT_LABEL: Record<ShiftCode, string> = {
-    OFF: '',
-    D8: '8',
-    E16: '16',
-    N24: '24',
-    YI: 'Yİ',
-    RT: 'RT',
-    NI: 'Nİ',
-  };
-
   function renderGrid(): void {
     const D = state.meta.daysInMonth;
     const weekendSet = new Set(state.meta.weekendDays);
     const issues = validate(state);
     const violationCells = new Set<string>();
-    const violationDays = new Map<number, string>();
     for (const issue of issues) {
-      if (issue.severity === 'error') {
-        if (issue.nurseId) violationCells.add(`${issue.nurseId}:${issue.day}`);
-        const existing = violationDays.get(issue.day);
-        violationDays.set(issue.day, existing ? existing + '\n' + issue.message : issue.message);
+      if (issue.severity === 'error' && issue.nurseId) {
+        violationCells.add(`${issue.nurseId}:${issue.day}`);
       }
     }
 
-    // Header row
     const headCells = Array.from({ length: D }, (_, i) => {
       const d = i + 1;
       const dow = new Date(state.meta.year, state.meta.month - 1, d).getDay();
-      const dayLabel = TR_DAYS[(dow + 6) % 7]; // map JS Sun=0 → Pzr at end
+      const dayLabel = TR_DAYS[(dow + 6) % 7];
       const isWeekend = weekendSet.has(d);
       const cls = isWeekend ? 'ns-weekend' : '';
       return `<th class="${cls}" data-day-header="${d}"><div>${d}</div><div style="font-weight:400; font-size: 0.65rem; opacity: 0.7;">${dayLabel}</div></th>`;
     }).join('');
     const headRow = `<tr><th class="ns-row-name">Hemşire</th>${headCells}<th class="ns-row-name" style="text-align:right;">Aylık</th></tr>`;
 
-    // Nurse rows
     const stats = computeStats(state);
     const rows = state.nurses.map((nurse) => {
       const cells = Array.from({ length: D }, (_, i) => {
         const d = i + 1;
         const k = cellKey(nurse.id, d);
-        const code = state.cells[k] ?? 'OFF';
+        const code = state.cells[k];
         const isPinned = !!state.pinned[k];
         const isWeekend = weekendSet.has(d);
         const isViolation = violationCells.has(k);
@@ -977,43 +986,40 @@ const TR_MONTHS = [
           isPinned ? 'ns-pinned' : '',
           isViolation ? 'ns-violation' : '',
         ].filter(Boolean).join(' ');
-        const shiftAttr = code === 'OFF' ? '' : `data-shift="${code}"`;
-        const tabIndex = 'tabindex="0"';
-        return `<td class="${cls}" ${shiftAttr} data-nurse="${nurse.id}" data-day="${d}" ${tabIndex} title="${escapeHtml(nurse.name)} • ${d}. gün • ${SHIFT_LABEL[code] || 'Boş'}">${SHIFT_LABEL[code]}</td>`;
+        const shiftAttr = code ? `data-shift="${code}"` : '';
+        const label = code ? SHIFT_LABEL[code] : '';
+        return `<td class="${cls}" ${shiftAttr} data-nurse="${nurse.id}" data-day="${d}" tabindex="0" title="${escapeHtml(nurse.name)} • ${d}. gün • ${label || 'Boş'}">${label}</td>`;
       }).join('');
-      const counts = stats.countsByNurse[nurse.id] || { OFF: 0, D8: 0, E16: 0, N24: 0, YI: 0, RT: 0, NI: 0 };
+      const counts = stats.countsByNurse[nurse.id] || { G8: 0, GC16: 0, N24: 0, DN: 0, YI: 0, RP: 0 };
       const total = stats.hoursByNurse[nurse.id] ?? 0;
-      const summary = `${total}sa · N${counts.N24} · 8×${counts.D8}${counts.E16 ? ' · 16×' + counts.E16 : ''}`;
+      const summary = `${total}sa · N${counts.N24} · 8×${counts.G8}${counts.GC16 ? ' · 16×' + counts.GC16 : ''}`;
       return `<tr><th class="ns-row-name" title="${escapeHtml(nurse.name)}">${escapeHtml(nurse.name)}</th>${cells}<td class="ns-row-total" title="Aylık toplam: ${total} saat">${summary}</td></tr>`;
     }).join('');
 
-    // Daily summary row
     const summaryCells = Array.from({ length: D }, (_, i) => {
       const d = i + 1;
       const isWeekend = weekendSet.has(d);
-      let dayCount = 0, eveCount = 0, nightCount = 0;
+      let dayCount = 0, nightCount = 0;
       for (const nurse of state.nurses) {
-        const c = state.cells[cellKey(nurse.id, d)] ?? 'OFF';
-        if (c === 'D8' || c === 'N24') dayCount++;
-        if (c === 'E16' || c === 'N24') eveCount++;
-        if (c === 'N24') nightCount++;
+        const c = state.cells[cellKey(nurse.id, d)];
+        if (!c) continue;
+        if (isDayCovering(c)) dayCount++;
+        if (isNightCovering(c)) nightCount++;
       }
-      const reduceDay = isWeekend && state.constraints.weekendReduced;
-      const minDay = reduceDay ? state.constraints.minNightPresent : state.constraints.minDayPresent;
-      const minNight = state.constraints.allowSingleNight ? 1 : state.constraints.minNightPresent;
+      const minDay = isWeekend ? state.constraints.minDayWeekend : state.constraints.minDayWeekday;
+      const minNightBase = isWeekend ? state.constraints.minNightWeekend : state.constraints.minNightWeekday;
+      const minNight = state.constraints.allowSingleNight ? Math.min(1, minNightBase) : minNightBase;
       const dayBad = dayCount < minDay;
       const nightBad = nightCount < minNight;
       const overallBad = dayBad || nightBad;
       const cls = `ns-summary ${isWeekend ? 'ns-weekend' : ''} ${overallBad ? 'ns-summary-bad' : 'ns-summary-ok'}`;
-      const tooltip = `Gün ${d}: gündüz ${dayCount}/${minDay} · gece ${nightCount}/${minNight}${eveCount ? ' · akşam ' + eveCount : ''}`;
+      const tooltip = `Gün ${d}: gündüz ${dayCount}/${minDay} · gece ${nightCount}/${minNight}`;
       return `<td class="${cls}" title="${escapeHtml(tooltip)}">${nightCount}/${dayCount}</td>`;
     }).join('');
     const summaryRow = `<tr><td class="ns-row-name" style="font-size: 0.7rem; font-weight:600;">Gece/Gündüz</td>${summaryCells}<td class="ns-row-total"></td></tr>`;
 
     scheduleTable.innerHTML = `<thead>${headRow}</thead><tbody>${rows}${summaryRow}</tbody>`;
   }
-
-  /* ---------------------------------------------------- Render: issues */
 
   function renderIssues(): void {
     const issues = validate(state);
@@ -1031,15 +1037,13 @@ const TR_MONTHS = [
     issuesList.innerHTML = items + more;
   }
 
-  /* ---------------------------------------------------- Render: stats */
-
   function renderStats(): void {
     const stats = computeStats(state);
     const totalHours = Object.values(stats.hoursByNurse).reduce((a, b) => a + b, 0);
     const avg = state.nurses.length > 0 ? totalHours / state.nurses.length : 0;
     const cards = state.nurses.map((nurse) => {
       const h = stats.hoursByNurse[nurse.id] ?? 0;
-      const c = stats.countsByNurse[nurse.id] || { OFF: 0, D8: 0, E16: 0, N24: 0, YI: 0, RT: 0, NI: 0 };
+      const c = stats.countsByNurse[nurse.id] || { G8: 0, GC16: 0, N24: 0, DN: 0, YI: 0, RP: 0 };
       const diff = h - avg;
       const diffStr = diff > 0 ? `+${Math.round(diff)}` : Math.round(diff);
       return `
@@ -1051,18 +1055,16 @@ const TR_MONTHS = [
           <div class="mt-2 text-2xl font-display font-bold text-slate-900 dark:text-white">${h} <span class="text-sm font-normal text-slate-500">saat</span></div>
           <div class="mt-2 grid grid-cols-3 gap-2 text-xs">
             <span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.N24}</strong> nöbet</span>
-            <span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.D8}</strong> sabah</span>
-            ${c.E16 > 0 ? `<span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.E16}</strong> akşam</span>` : ''}
+            <span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.G8}</strong> gündüz</span>
+            ${c.GC16 > 0 ? `<span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.GC16}</strong> gece</span>` : ''}
+            ${c.DN > 0 ? `<span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.DN}</strong> dinlenme</span>` : ''}
             ${c.YI > 0 ? `<span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.YI}</strong> yıllık</span>` : ''}
-            ${c.RT > 0 ? `<span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.RT}</strong> rapor</span>` : ''}
-            ${c.NI > 0 ? `<span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.NI}</strong> dinlenme</span>` : ''}
+            ${c.RP > 0 ? `<span class="rounded bg-slate-100 dark:bg-slate-800 px-2 py-1"><strong>${c.RP}</strong> rapor</span>` : ''}
           </div>
         </div>`;
     }).join('');
     statsGrid.innerHTML = cards || `<p class="text-sm text-slate-500 dark:text-slate-400">Önce hemşire ekleyin.</p>`;
   }
-
-  /* ---------------------------------------------------- Render: orchestrate */
 
   function renderAll(): void {
     renderForm();
@@ -1075,8 +1077,6 @@ const TR_MONTHS = [
     saveState();
     renderAll();
   }
-
-  /* ---------------------------------------------------- Status helpers */
 
   function setStatus(msg: string, kind: 'info' | 'success' | 'warn' = 'info'): void {
     const colors: Record<string, string> = {
@@ -1128,24 +1128,24 @@ const TR_MONTHS = [
     }
   }
 
-  conMinDay.addEventListener('change', () => {
-    state.constraints.minDayPresent = Math.max(0, parseInt(conMinDay.value, 10) || 0);
+  conMinDayWd.addEventListener('change', () => {
+    state.constraints.minDayWeekday = Math.max(0, parseInt(conMinDayWd.value, 10) || 0);
     commit();
   });
-  conMinEve.addEventListener('change', () => {
-    state.constraints.minEveningPresent = Math.max(0, parseInt(conMinEve.value, 10) || 0);
+  conMinNightWd.addEventListener('change', () => {
+    state.constraints.minNightWeekday = Math.max(0, parseInt(conMinNightWd.value, 10) || 0);
     commit();
   });
-  conMinNight.addEventListener('change', () => {
-    state.constraints.minNightPresent = Math.max(0, parseInt(conMinNight.value, 10) || 0);
+  conMinDayWe.addEventListener('change', () => {
+    state.constraints.minDayWeekend = Math.max(0, parseInt(conMinDayWe.value, 10) || 0);
+    commit();
+  });
+  conMinNightWe.addEventListener('change', () => {
+    state.constraints.minNightWeekend = Math.max(0, parseInt(conMinNightWe.value, 10) || 0);
     commit();
   });
   conRest.addEventListener('change', () => {
     state.constraints.restAfterNight = Math.max(0, Math.min(7, parseInt(conRest.value, 10) || 0));
-    commit();
-  });
-  conWeekendReduced.addEventListener('change', () => {
-    state.constraints.weekendReduced = conWeekendReduced.checked;
     commit();
   });
   conAllowSingle.addEventListener('change', () => {
@@ -1179,7 +1179,6 @@ const TR_MONTHS = [
     const removeId = target.getAttribute('data-remove-nurse');
     if (removeId) {
       state.nurses = state.nurses.filter((n) => n.id !== removeId);
-      // Cells & pins for this nurse → kaldır
       for (const k of Object.keys(state.cells)) {
         if (k.startsWith(removeId + ':')) {
           delete state.cells[k];
@@ -1235,6 +1234,7 @@ const TR_MONTHS = [
     if (!confirm('Tüm planı sıfırlamak istediğinden emin misin? Bu işlem geri alınamaz.')) return;
     try {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(LEGACY_KEY);
     } catch {
       /* ignore */
     }
@@ -1260,9 +1260,9 @@ const TR_MONTHS = [
       renderAll();
       const errs = result.issues.filter((i) => i.severity === 'error').length;
       if (errs === 0) {
-        setStatus(`Çözüm hazır — ${state.nurses.length} hemşire, ${state.meta.daysInMonth} gün, tüm kısıtlar sağlandı.`, 'success');
+        setStatus(`Çözüm hazır — ${state.nurses.length} hemşire, ${state.meta.daysInMonth} gün, tüm kısıtlar sağlandı. Saat sapması: ${result.stats.hoursSpread} sa.`, 'success');
       } else {
-        setStatus(`Çözüm hazır ama ${errs} ihlal kaldı. Aşağıdaki listeden manuel düzelt veya "Optimum çöz" dene.`, 'warn');
+        setStatus(`Çözüm hazır ama ${errs} ihlal kaldı. Manuel düzelt veya "Optimum çöz" dene.`, 'warn');
       }
     } catch (err) {
       setError(`Hata: ${err instanceof Error ? err.message : String(err)}`);
@@ -1281,7 +1281,7 @@ const TR_MONTHS = [
     solveIlpBtn.disabled = true;
     solveGreedyBtn.disabled = true;
     solveIlpLabel.textContent = 'ILP çözülüyor (1-5 sn)...';
-    setStatus('ILP solver çalışıyor — saatleri eşitlemeye çalışıyor. Bu birkaç saniye sürebilir.', 'info');
+    setStatus('ILP solver çalışıyor — saat sapmasını minimize ediyor.', 'info');
     try {
       const t0 = performance.now();
       const result = await solveScheduleILP(state);
@@ -1291,9 +1291,9 @@ const TR_MONTHS = [
       renderAll();
       const errs = result.issues.filter((i) => i.severity === 'error').length;
       if (errs === 0) {
-        setStatus(`Optimum bulundu (${elapsed} ms). Saat sapması: ${result.stats.hoursStdDev.toFixed(1)} saat.`, 'success');
+        setStatus(`Optimum bulundu (${elapsed} ms). Saat sapması: ${result.stats.hoursSpread} sa.`, 'success');
       } else {
-        setStatus(`ILP feasible çözüm verdi ama ${errs} ihlal var (${elapsed} ms). Bazı kısıtlar gevşetilmesi gerekebilir.`, 'warn');
+        setStatus(`ILP feasible çözüm verdi ama ${errs} ihlal var (${elapsed} ms).`, 'warn');
       }
     } catch (err) {
       setError(`ILP hatası: ${err instanceof Error ? err.message : String(err)}`);
@@ -1314,16 +1314,14 @@ const TR_MONTHS = [
     if (!nurseId || !day) return;
     popoverContext = { nurseId, day, cell };
 
-    // Başlığı güncelle: "Ayşe • 7 Mayıs"
     const nurse = state.nurses.find((n) => n.id === nurseId);
     if (nurse && popoverTitle) {
-      const monthName = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'][state.meta.month - 1];
+      const monthName = TR_MONTH_SHORT[state.meta.month - 1];
       popoverTitle.textContent = `${nurse.name} • ${day} ${monthName}`;
     }
 
     const rect = cell.getBoundingClientRect();
     popover.classList.remove('hidden');
-    // Konumu hesapla (sayfa kaydırmasına dikkat)
     const popRect = popover.getBoundingClientRect();
     let x = rect.left + window.scrollX;
     let y = rect.bottom + window.scrollY + 4;
@@ -1349,12 +1347,8 @@ const TR_MONTHS = [
 
   function applyShift(nurseId: string, day: number, shift: ShiftCode): void {
     const k = cellKey(nurseId, day);
-    if (shift === 'OFF') {
-      delete state.cells[k];
-    } else {
-      state.cells[k] = shift;
-    }
-    state.pinned[k] = true; // user'in elle değiştirmesi → pin
+    state.cells[k] = shift;
+    state.pinned[k] = true;
     commit();
   }
 
@@ -1413,13 +1407,12 @@ const TR_MONTHS = [
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !popover.classList.contains('hidden')) {
       e.preventDefault();
+      const ctx = popoverContext;
       closePopover();
-      // Hücreye odağı geri ver
-      if (popoverContext) {
-        const { nurseId, day } = popoverContext;
+      if (ctx) {
         requestAnimationFrame(() => {
           const cell = scheduleTable.querySelector<HTMLElement>(
-            `td.ns-cell[data-nurse="${nurseId}"][data-day="${day}"]`,
+            `td.ns-cell[data-nurse="${ctx.nurseId}"][data-day="${ctx.day}"]`,
           );
           cell?.focus();
         });
@@ -1430,46 +1423,23 @@ const TR_MONTHS = [
   /* ---------------------------------------------------- Tutorial */
 
   function isTutorialDismissed(): boolean {
-    try {
-      return localStorage.getItem(TUTORIAL_KEY) === '1';
-    } catch {
-      return false;
-    }
+    try { return localStorage.getItem(TUTORIAL_KEY) === '1'; } catch { return false; }
   }
+  function setTutorialDismissed(v: boolean): void {
+    try { if (v) localStorage.setItem(TUTORIAL_KEY, '1'); else localStorage.removeItem(TUTORIAL_KEY); } catch { /* ignore */ }
+  }
+  function showTutorial(): void { tutorialBanner.classList.remove('hidden'); }
+  function hideTutorial(): void { tutorialBanner.classList.add('hidden'); }
 
-  function setTutorialDismissed(dismissed: boolean): void {
-    try {
-      if (dismissed) localStorage.setItem(TUTORIAL_KEY, '1');
-      else localStorage.removeItem(TUTORIAL_KEY);
-    } catch {
-      /* ignore */
-    }
-  }
-
-  function showTutorial(): void {
-    tutorialBanner.classList.remove('hidden');
-  }
-
-  function hideTutorial(): void {
-    tutorialBanner.classList.add('hidden');
-  }
-
-  // İlk açılışta dismissed değilse göster, dismissed ise gizle
-  if (isTutorialDismissed()) {
-    hideTutorial();
-  } else {
-    showTutorial();
-  }
+  if (isTutorialDismissed()) hideTutorial(); else showTutorial();
 
   tutorialCloseBtn.addEventListener('click', () => {
     hideTutorial();
     setTutorialDismissed(true);
   });
-
   tutorialToggleBtn.addEventListener('click', () => {
     if (tutorialBanner.classList.contains('hidden')) {
       showTutorial();
-      // Banner'a yumuşak kaydır
       tutorialBanner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } else {
       hideTutorial();
@@ -1485,25 +1455,18 @@ const TR_MONTHS = [
     const day = parseInt(cell.getAttribute('data-day') || '0', 10);
     if (!nurseId || !day) return;
 
-    // Vardiya kısayolları
-    const k = e.key.toLowerCase();
     let shift: ShiftCode | null = null;
-    if (k === '8') shift = 'D8';
-    else if (k === 'a') shift = 'E16';
+    const k = e.key.toLowerCase();
+    if (k === '8') shift = 'G8';
+    else if (k === 'g') shift = 'GC16';
     else if (k === 'n') shift = 'N24';
-    else if (k === 'i' || e.key === 'İ' || e.key === 'i') {
-      // 'i' might be hit by N24 path; explicit İ matches NI
-      if (e.key === 'İ' || e.key === 'i' && (e.shiftKey || e.altKey)) shift = 'NI';
-    }
-    if (k === 'y') shift = 'YI';
-    else if (k === 'r') shift = 'RT';
-    if (e.key === '0' || e.key === 'Backspace' || e.key === 'Delete') {
-      shift = 'OFF';
-    }
-    if (e.key === 'l' || e.key === 'L') {
+    else if (k === 'd') shift = 'DN';
+    else if (k === 'y') shift = 'YI';
+    else if (k === 'r') shift = 'RP';
+
+    if (k === 'l') {
       e.preventDefault();
       togglePin(nurseId, day);
-      // Refocus: aynı hücre yeniden bulunmalı
       requestAnimationFrame(() => {
         const next = scheduleTable.querySelector<HTMLElement>(`td.ns-cell[data-nurse="${nurseId}"][data-day="${day}"]`);
         next?.focus();
@@ -1520,7 +1483,6 @@ const TR_MONTHS = [
       return;
     }
 
-    // Ok tuşları ile dolaşma
     const dx = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: 0, ArrowDown: 0 }[e.key] ?? 0;
     const dy = { ArrowLeft: 0, ArrowRight: 0, ArrowUp: -1, ArrowDown: 1 }[e.key] ?? 0;
     if (dx !== 0 || dy !== 0) {
@@ -1543,7 +1505,10 @@ const TR_MONTHS = [
     const header = ['Hemşire', ...Array.from({ length: D }, (_, i) => String(i + 1)), 'Toplam saat', 'Nöbet sayısı'];
     const stats = computeStats(state);
     const rows = state.nurses.map((nurse) => {
-      const cells = Array.from({ length: D }, (_, i) => SHIFT_LABEL[state.cells[cellKey(nurse.id, i + 1)] ?? 'OFF']);
+      const cells = Array.from({ length: D }, (_, i) => {
+        const c = state.cells[cellKey(nurse.id, i + 1)];
+        return c ? SHIFT_LABEL[c] : '';
+      });
       return [nurse.name, ...cells, String(stats.hoursByNurse[nurse.id] ?? 0), String(stats.countsByNurse[nurse.id]?.N24 ?? 0)];
     });
     const csv = [header, ...rows]
@@ -1561,8 +1526,6 @@ const TR_MONTHS = [
   });
 
   printBtn.addEventListener('click', () => window.print());
-
-  /* ---------------------------------------------------- Init */
 
   renderAll();
 </script>
