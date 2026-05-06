@@ -421,6 +421,59 @@ const TR_MONTHS = [
     position: relative;
     padding: 0 22px 0 6px;
   }
+  .ns-table th.ns-nurse-row-header .ns-name-text {
+    margin-right: 4px;
+  }
+  .ns-style-badge {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    line-height: 16px;
+    border-radius: 4px;
+    border: 1px solid var(--ns-grid-border);
+    background: white;
+    color: rgb(71 85 105);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 0;
+    cursor: pointer;
+    vertical-align: middle;
+    text-align: center;
+    transition: filter 100ms;
+  }
+  .ns-style-badge:hover {
+    filter: brightness(0.95);
+  }
+  .ns-style-standard {
+    background: rgb(241 245 249);
+    color: rgb(71 85 105);
+    border-color: rgb(203 213 225);
+  }
+  .ns-style-oncall {
+    background: rgb(254 226 226);
+    color: rgb(153 27 27);
+    border-color: rgb(252 165 165);
+  }
+  .ns-style-minDays {
+    background: rgb(254 243 199);
+    color: rgb(120 53 15);
+    border-color: rgb(253 224 71);
+  }
+  .dark .ns-style-standard {
+    background: rgb(30 41 59);
+    color: rgb(203 213 225);
+    border-color: rgb(51 65 85);
+  }
+  .dark .ns-style-oncall {
+    background: rgb(127 29 29 / 0.4);
+    color: rgb(252 165 165);
+    border-color: rgb(127 29 29);
+  }
+  .dark .ns-style-minDays {
+    background: rgb(120 53 15 / 0.4);
+    color: rgb(253 224 71);
+    border-color: rgb(120 53 15);
+  }
   .ns-remove-btn {
     position: absolute;
     right: 2px;
@@ -913,6 +966,9 @@ const TR_MONTHS = [
 <script>
   import {
     DEFAULT_CONSTRAINTS,
+    DEFAULT_WORK_STYLE,
+    WORK_STYLE_LABEL,
+    WORK_STYLE_SHORT,
     cellKey,
     computeStats,
     createMonthMeta,
@@ -927,6 +983,7 @@ const TR_MONTHS = [
     type Schedule,
     type ScheduleConstraints,
     type ShiftCode,
+    type WorkStyle,
   } from '../../lib/nurse-schedule';
 
   const STORAGE_KEY = 'nurse-schedule-v2';
@@ -1021,7 +1078,10 @@ const TR_MONTHS = [
         ? obj.unavailable.filter((d): d is number => typeof d === 'number' && d >= 1 && d <= 31).map((d) => Math.round(d))
         : [];
       const notes = typeof obj.notes === 'string' ? obj.notes : undefined;
-      return [{ id, name, unavailable, notes }];
+      const wsRaw = obj.workStyle;
+      const workStyle: WorkStyle =
+        wsRaw === 'oncall' || wsRaw === 'minDays' ? wsRaw : 'standard';
+      return [{ id, name, unavailable, workStyle, notes }];
     });
     const cells: Record<string, ShiftCode> = {};
     const cellsRaw = (o.cells as Record<string, unknown>) || {};
@@ -1200,7 +1260,9 @@ const TR_MONTHS = [
       const counts = stats.countsByNurse[nurse.id] || { G8: 0, GC16: 0, N24: 0, DN: 0, YI: 0, RP: 0 };
       const total = stats.hoursByNurse[nurse.id] ?? 0;
       const summary = `${total}sa · N${counts.N24} · 8×${counts.G8}${counts.GC16 ? ' · 16×' + counts.GC16 : ''}`;
-      return `<tr><th class="ns-row-name ns-nurse-row-header" title="${escapeHtml(nurse.name)}"><button type="button" data-remove-nurse="${nurse.id}" class="ns-remove-btn" title="${escapeHtml(nurse.name)}'i sil" aria-label="Sil">×</button><span data-rename-nurse="${nurse.id}" class="ns-name-text" title="Yeniden adlandır">${escapeHtml(nurse.name)}</span></th>${cells}<td class="ns-row-total" title="Aylık toplam: ${total} saat">${summary}</td></tr>`;
+      const ws: WorkStyle = nurse.workStyle ?? DEFAULT_WORK_STYLE;
+      const wsBadge = `<button type="button" data-style-nurse="${nurse.id}" class="ns-style-badge ns-style-${ws}" title="Çalışma tarzı: ${WORK_STYLE_LABEL[ws]} (tıkla: değiştir)" aria-label="Çalışma tarzı değiştir">${WORK_STYLE_SHORT[ws]}</button>`;
+      return `<tr><th class="ns-row-name ns-nurse-row-header" title="${escapeHtml(nurse.name)}"><button type="button" data-remove-nurse="${nurse.id}" class="ns-remove-btn" title="${escapeHtml(nurse.name)}'i sil" aria-label="Sil">×</button><span data-rename-nurse="${nurse.id}" class="ns-name-text" title="Yeniden adlandır">${escapeHtml(nurse.name)}</span>${wsBadge}</th>${cells}<td class="ns-row-total" title="Aylık toplam: ${total} saat">${summary}</td></tr>`;
     }).join('');
 
     const summaryCells = Array.from({ length: D }, (_, i) => {
@@ -1429,7 +1491,22 @@ const TR_MONTHS = [
   function addNurse(name: string): void {
     const trimmed = name.trim();
     if (!trimmed) return;
-    state.nurses.push({ id: uniqueId(), name: trimmed, unavailable: [] });
+    state.nurses.push({
+      id: uniqueId(),
+      name: trimmed,
+      unavailable: [],
+      workStyle: DEFAULT_WORK_STYLE,
+    });
+    commit();
+  }
+
+  function cycleWorkStyle(nurseId: string): void {
+    const nurse = state.nurses.find((n) => n.id === nurseId);
+    if (!nurse) return;
+    const order: WorkStyle[] = ['standard', 'oncall', 'minDays'];
+    const cur = nurse.workStyle ?? DEFAULT_WORK_STYLE;
+    const next = order[(order.indexOf(cur) + 1) % order.length];
+    nurse.workStyle = next;
     commit();
   }
 
@@ -1507,6 +1584,14 @@ const TR_MONTHS = [
       const nurse = state.nurses.find((n) => n.id === id);
       if (nurse && !confirm(`${nurse.name} silinsin mi? Bu hemşirenin tüm vardiyaları kaldırılacak.`)) return;
       removeNurse(id);
+      return;
+    }
+    const styleBtn = target.closest<HTMLElement>('[data-style-nurse]');
+    if (styleBtn) {
+      e.stopPropagation();
+      const id = styleBtn.getAttribute('data-style-nurse');
+      if (!id) return;
+      cycleWorkStyle(id);
       return;
     }
     const renameTrigger = target.closest<HTMLElement>('[data-rename-nurse]');

@@ -70,11 +70,43 @@ export function isLeaveShift(code: ShiftCode): boolean {
   return code === 'DN' || code === 'YI' || code === 'RP';
 }
 
+/**
+ * Hemşirenin çalışma tarzı.
+ * - 'standard': mevcut adil dağılım (varsayılan).
+ * - 'oncall' (Nöbetçi): yalnız N24 atanır; G8 / GC16 yasak (sert kısıt).
+ *   Hedef: haftada ~2 nöbet ile iş yükünü tamamlamak.
+ * - 'minDays' (Min-Gün): aktif vardiyalar mümkün olan en az haftalık güne
+ *   sıkıştırılır. G8/GC16/N24 hepsi serbest, ama solver gün sayısını minimize
+ *   eder (yumuşak hedef).
+ */
+export type WorkStyle = 'standard' | 'oncall' | 'minDays';
+
+export const DEFAULT_WORK_STYLE: WorkStyle = 'standard';
+
+export const WORK_STYLE_LABEL: Record<WorkStyle, string> = {
+  standard: 'Standart',
+  oncall: 'Nöbetçi',
+  minDays: 'Min-Gün',
+};
+
+/** Tarz rozeti için kısa kod (UI). */
+export const WORK_STYLE_SHORT: Record<WorkStyle, string> = {
+  standard: 'S',
+  oncall: 'N',
+  minDays: 'M',
+};
+
+export function getWorkStyle(nurse: Nurse): WorkStyle {
+  return nurse.workStyle ?? DEFAULT_WORK_STYLE;
+}
+
 export interface Nurse {
   id: string;
   name: string;
   /** Çalışılamaz gün numaraları (1..31). YI olarak işaretlenir, kilitlenir. */
   unavailable: number[];
+  /** Çalışma tarzı tercihi. Yoksa 'standard'. */
+  workStyle?: WorkStyle;
   notes?: string;
 }
 
@@ -146,7 +178,8 @@ export type ValidationKind =
   | 'COVERAGE_NIGHT'
   | 'REST_VIOLATION'
   | 'UNAVAILABLE_OVERRIDE'
-  | 'EMPTY_CELL';
+  | 'EMPTY_CELL'
+  | 'WORKSTYLE_VIOLATION';
 
 export interface ValidationIssue {
   kind: ValidationKind;
@@ -246,6 +279,43 @@ export function createEmptySchedule(
     holidays: [...holidays],
     constraints: { ...constraints },
   };
+}
+
+/**
+ * Ay içindeki günleri haftalık paketlere ayırır (Pzt başlangıçlı).
+ * Ay başında / sonunda kalan parçalı haftalar da kendi bucket'larında döner.
+ *
+ * Dönüş: her bucket o haftaya ait ay-içi gün numaraları (1..D).
+ *
+ * Örn. Mayıs 2026 (1 Mayıs Cuma) → [[1,2,3], [4,5,6,7,8,9,10], ..., [25..31]]
+ */
+export function weekBucketsOfMonth(meta: MonthMeta): number[][] {
+  const buckets: number[][] = [];
+  let current: number[] = [];
+  for (let d = 1; d <= meta.daysInMonth; d++) {
+    const dow = new Date(meta.year, meta.month - 1, d).getDay(); // 0=Sun..6=Sat
+    // ISO haftası Pazartesi başlar. Pazartesi geldiğinde yeni bucket aç
+    // (ilk gün Pzt değilse de ilk bucket parçalı olur).
+    if (dow === 1 && current.length > 0) {
+      buckets.push(current);
+      current = [];
+    }
+    current.push(d);
+  }
+  if (current.length > 0) buckets.push(current);
+  return buckets;
+}
+
+/**
+ * Verilen `day` gününün ay içindeki haftasını ve aynı haftadaki gün
+ * numaralarını döner. Hafta Pzt ile başlar.
+ */
+export function weekOfDay(meta: MonthMeta, day: number): number[] {
+  const buckets = weekBucketsOfMonth(meta);
+  for (const bucket of buckets) {
+    if (bucket.includes(day)) return bucket;
+  }
+  return [day];
 }
 
 /** Bir günün gün-tipi: 'weekday' | 'weekend' | 'holiday'. Tatil önceliklidir. */
@@ -377,6 +447,23 @@ export function validate(schedule: Schedule): ValidationIssue[] {
           day: d,
           nurseId: nurse.id,
           message: `${nurse.name}: gün ${d} izin gününde aktif vardiya (${SHIFT_LABEL[c]}).`,
+          severity: 'error',
+        });
+      }
+    }
+  }
+
+  // Nöbetçi çalışma tarzı ihlali: G8 / GC16 atanmamalı (sadece N24 serbest).
+  for (const nurse of nurses) {
+    if (getWorkStyle(nurse) !== 'oncall') continue;
+    for (let d = 1; d <= D; d++) {
+      const c = getCell(schedule, nurse.id, d);
+      if (c === 'G8' || c === 'GC16') {
+        issues.push({
+          kind: 'WORKSTYLE_VIOLATION',
+          day: d,
+          nurseId: nurse.id,
+          message: `${nurse.name} (Nöbetçi): gün ${d} ${SHIFT_LABEL[c]} atanmış — Nöbetçi tarzında yalnız 24 saat nöbet yazılabilir.`,
           severity: 'error',
         });
       }
@@ -531,21 +618,81 @@ function countOnDay(schedule: Schedule, day: number): DayCounts {
   return { day: dc, night: nc };
 }
 
-/** O gün için boş (atanmamış) ve dinlenme zorunluluğu olmayan hemşireler. */
-function candidatesForDay(schedule: Schedule, day: number): Nurse[] {
+/**
+ * O gün için boş (atanmamış) ve dinlenme zorunluluğu olmayan hemşireler.
+ *
+ * `forShift` verilirse çalışma tarzı sert kısıtlarına uymayanlar elenir:
+ * - Nöbetçi (oncall) hemşireye yalnız N24 atanabilir.
+ */
+function candidatesForDay(
+  schedule: Schedule,
+  day: number,
+  forShift?: ShiftCode,
+): Nurse[] {
   const out: Nurse[] = [];
   for (const nurse of schedule.nurses) {
     const k = cellKey(nurse.id, day);
     if (schedule.pinned[k]) continue;
     if (schedule.cells[k]) continue; // already assigned
     if (nurseUnavailableDueToRest(schedule, nurse.id, day)) continue;
+    if (forShift && getWorkStyle(nurse) === 'oncall' && forShift !== 'N24') continue;
     out.push(nurse);
   }
   return out;
 }
 
-function rankCandidates(candidates: Nurse[], state: ScoringState): Nurse[] {
+/**
+ * Verilen gün için, nurse'ün o haftada hâlihazırda kaç aktif vardiyası
+ * (G8/GC16/N24) olduğunu döner. Min-Gün tarzı için kümeleme metriği.
+ */
+function nurseActiveDaysInWeek(
+  schedule: Schedule,
+  nurseId: string,
+  day: number,
+): number {
+  const week = weekOfDay(schedule.meta, day);
+  let count = 0;
+  for (const wd of week) {
+    if (wd === day) continue;
+    const c = schedule.cells[cellKey(nurseId, wd)];
+    if (c && isWorkingShift(c)) count++;
+  }
+  return count;
+}
+
+function rankCandidates(
+  candidates: Nurse[],
+  state: ScoringState,
+  schedule: Schedule,
+  day: number,
+  forShift: ShiftCode,
+): Nurse[] {
   return [...candidates].sort((a, b) => {
+    const wa = getWorkStyle(a);
+    const wb = getWorkStyle(b);
+
+    // Nöbetçi hemşireler N24'te öne — yük yine eşitlenir ama pool'da varsa
+    // önce onlardan tüket.
+    if (forShift === 'N24') {
+      const oa = wa === 'oncall' ? 0 : 1;
+      const ob = wb === 'oncall' ? 0 : 1;
+      if (oa !== ob) return oa - ob;
+    }
+
+    // Min-Gün hemşireler: o haftada zaten aktif günleri varsa onlara yaz
+    // (kümeleme). Hem a hem b minDays ise daha yoğun olanı tercih et.
+    const ada = wa === 'minDays' ? nurseActiveDaysInWeek(schedule, a.id, day) : -1;
+    const adb = wb === 'minDays' ? nurseActiveDaysInWeek(schedule, b.id, day) : -1;
+    if (ada !== adb) {
+      // -1 (non-minDays) en sonda kalsın değil — biz minDays nurse'ü
+      // mevcut aktif günleri ÇOK olduğunda tercih ediyoruz.
+      // Eğer biri minDays ve aktif günü > 0 ise, diğerinden öne geçsin.
+      const sa = ada > 0 ? ada * -1 : 0;
+      const sb = adb > 0 ? adb * -1 : 0;
+      // Daha küçük (negatif) skor önce gelir → daha çok aktif gün önce.
+      if (sa !== sb) return sa - sb;
+    }
+
     const dn = state.nCount[a.id] - state.nCount[b.id];
     if (dn !== 0) return dn;
     return state.hours[a.id] - state.hours[b.id];
@@ -560,6 +707,50 @@ function fillEmptyWithRest(schedule: Schedule): void {
       if (schedule.pinned[k]) continue;
       if (!schedule.cells[k]) {
         schedule.cells[k] = 'DN';
+      }
+    }
+  }
+}
+
+/**
+ * Nöbetçi (oncall) hemşireler için haftada ~2 N24 ön-atama.
+ *
+ * Greedy çekirdek pass'i sadece minimum kapsamayı dolduruyor; oysa Nöbetçi
+ * hemşire kendi tercihiyle haftada ~2 nöbet bekliyor. Bu fonksiyon her hafta
+ * için hedef sayıda N24 yazar — hem aktif kapsamayı erken tamamlar hem
+ * hemşirenin tarz tercihini onurlandırır.
+ *
+ * Hedef hafta başına 2 N24, ay başı/sonundaki kısmi haftalarda 1 N24.
+ * Restafternight ve unavailable kısıtları ihlal edilmez.
+ */
+function preAssignOncall(schedule: Schedule, state: ScoringState): void {
+  const buckets = weekBucketsOfMonth(schedule.meta);
+  for (const nurse of schedule.nurses) {
+    if (getWorkStyle(nurse) !== 'oncall') continue;
+    for (const week of buckets) {
+      const target = week.length >= 5 ? 2 : 1;
+      let placed = 0;
+      // Haftadaki günleri tara; ortadan başla ki rest gap'i daha rahat sağlansın
+      const orderedDays = [...week];
+      for (const d of orderedDays) {
+        if (placed >= target) break;
+        const k = cellKey(nurse.id, d);
+        if (schedule.pinned[k]) continue;
+        if (schedule.cells[k]) continue; // YI/RP/diğer
+        if (nurseUnavailableDueToRest(schedule, nurse.id, d)) continue;
+        // Bir sonraki gün(ler) zaten N24 ise rest çakışır → atlama
+        let blocksNext = false;
+        for (let r = 1; r <= schedule.constraints.restAfterNight; r++) {
+          if (d + r > schedule.meta.daysInMonth) break;
+          const c = schedule.cells[cellKey(nurse.id, d + r)];
+          if (c && isWorkingShift(c)) {
+            blocksNext = true;
+            break;
+          }
+        }
+        if (blocksNext) continue;
+        assignShift(schedule, state, nurse.id, d, 'N24');
+        placed++;
       }
     }
   }
@@ -587,6 +778,12 @@ export function solveScheduleGreedy(input: Schedule): SolveResult {
   const D = schedule.meta.daysInMonth;
   const { constraints } = schedule;
 
+  // 0) Nöbetçi (oncall) hemşireler için ön-atama: haftada hedef 2 N24.
+  // Greedy normalde gerek görmedikçe ekstra atama yapmaz; ama Nöbetçi
+  // hemşireler "yalnız nöbet" tarzında çalışmak istediği için onlara
+  // proaktif N24 yazıyoruz.
+  preAssignOncall(schedule, state);
+
   for (let d = 1; d <= D; d++) {
     const kind = dayKindOf(schedule, d);
     const minDay = dayMin(constraints, kind);
@@ -596,7 +793,13 @@ export function solveScheduleGreedy(input: Schedule): SolveResult {
     let counts = countOnDay(schedule, d);
     let needNight = Math.max(0, minNight - counts.night);
     if (needNight > 0) {
-      const cands = rankCandidates(candidatesForDay(schedule, d), state);
+      const cands = rankCandidates(
+        candidatesForDay(schedule, d, 'GC16'),
+        state,
+        schedule,
+        d,
+        'GC16',
+      );
       let i = 0;
       while (needNight > 0 && i < cands.length) {
         assignShift(schedule, state, cands[i++].id, d, 'GC16');
@@ -606,7 +809,13 @@ export function solveScheduleGreedy(input: Schedule): SolveResult {
       counts = countOnDay(schedule, d);
       needNight = Math.max(0, minNight - counts.night);
       if (needNight > 0) {
-        const fallback = rankCandidates(candidatesForDay(schedule, d), state);
+        const fallback = rankCandidates(
+          candidatesForDay(schedule, d, 'N24'),
+          state,
+          schedule,
+          d,
+          'N24',
+        );
         i = 0;
         while (needNight > 0 && i < fallback.length) {
           assignShift(schedule, state, fallback[i++].id, d, 'N24');
@@ -619,7 +828,13 @@ export function solveScheduleGreedy(input: Schedule): SolveResult {
     counts = countOnDay(schedule, d);
     let needDay = Math.max(0, minDay - counts.day);
     if (needDay > 0) {
-      const cands = rankCandidates(candidatesForDay(schedule, d), state);
+      const cands = rankCandidates(
+        candidatesForDay(schedule, d, 'G8'),
+        state,
+        schedule,
+        d,
+        'G8',
+      );
       let i = 0;
       while (needDay > 0 && i < cands.length) {
         assignShift(schedule, state, cands[i++].id, d, 'G8');
@@ -629,7 +844,13 @@ export function solveScheduleGreedy(input: Schedule): SolveResult {
       counts = countOnDay(schedule, d);
       needDay = Math.max(0, minDay - counts.day);
       if (needDay > 0) {
-        const fallback = rankCandidates(candidatesForDay(schedule, d), state);
+        const fallback = rankCandidates(
+          candidatesForDay(schedule, d, 'N24'),
+          state,
+          schedule,
+          d,
+          'N24',
+        );
         let j = 0;
         while (needDay > 0 && j < fallback.length) {
           assignShift(schedule, state, fallback[j++].id, d, 'N24');
@@ -661,10 +882,29 @@ function repairPass(schedule: Schedule, state: ScoringState, maxIter: number): n
       (i) => i.kind === 'COVERAGE_NIGHT' && i.severity === 'error',
     );
     if (nightIssue) {
-      const cands = rankCandidates(candidatesForDay(schedule, nightIssue.day), state);
+      const cands = rankCandidates(
+        candidatesForDay(schedule, nightIssue.day, 'GC16'),
+        state,
+        schedule,
+        nightIssue.day,
+        'GC16',
+      );
       if (cands.length > 0) {
         // Önce GC16 dener (zorunda kalmadıkça nöbet yazma)
         assignShift(schedule, state, cands[0].id, nightIssue.day, 'GC16');
+        iter++;
+        continue;
+      }
+      // GC16 yazılacak aday yoksa (örn. herkes Nöbetçi) → N24 dene
+      const n24Cands = rankCandidates(
+        candidatesForDay(schedule, nightIssue.day, 'N24'),
+        state,
+        schedule,
+        nightIssue.day,
+        'N24',
+      );
+      if (n24Cands.length > 0) {
+        assignShift(schedule, state, n24Cands[0].id, nightIssue.day, 'N24');
         iter++;
         continue;
       }
@@ -674,9 +914,28 @@ function repairPass(schedule: Schedule, state: ScoringState, maxIter: number): n
       (i) => i.kind === 'COVERAGE_DAY' && i.severity === 'error',
     );
     if (dayIssue) {
-      const cands = rankCandidates(candidatesForDay(schedule, dayIssue.day), state);
+      const cands = rankCandidates(
+        candidatesForDay(schedule, dayIssue.day, 'G8'),
+        state,
+        schedule,
+        dayIssue.day,
+        'G8',
+      );
       if (cands.length > 0) {
         assignShift(schedule, state, cands[0].id, dayIssue.day, 'G8');
+        iter++;
+        continue;
+      }
+      // G8 aday yoksa (örn. herkes Nöbetçi) → N24 dene
+      const n24Cands = rankCandidates(
+        candidatesForDay(schedule, dayIssue.day, 'N24'),
+        state,
+        schedule,
+        dayIssue.day,
+        'N24',
+      );
+      if (n24Cands.length > 0) {
+        assignShift(schedule, state, n24Cands[0].id, dayIssue.day, 'N24');
         iter++;
         continue;
       }
@@ -773,10 +1032,18 @@ export async function solveScheduleILP(
     return true;
   };
 
+  // Çalışma tarzına göre izinli vardiyaları belirle (Nöbetçi için sadece N24).
+  const allowedShiftsFor = (nurse: Nurse): readonly ShiftCode[] => {
+    const ws = getWorkStyle(nurse);
+    if (ws === 'oncall') return ['N24'] as const;
+    return ACTIVE_SHIFTS;
+  };
+
   for (const nurse of schedule.nurses) {
+    const allowed = allowedShiftsFor(nurse);
     for (let d = 1; d <= D; d++) {
       if (!isFree(nurse.id, d)) continue;
-      for (const s of ACTIVE_SHIFTS) {
+      for (const s of allowed) {
         binaries.push(varNameOf(nurse.id, d, s));
       }
     }
@@ -786,13 +1053,16 @@ export async function solveScheduleILP(
   const subjectTo: LpRow[] = [];
 
   // 3. En fazla bir aktif vardiya per (n,d): x_G8 + x_GC16 + x_N24 ≤ 1
+  // Nöbetçi için sadece N24 değişkeni var; kısıt N24 ≤ 1 olur (zaten binary).
   for (const nurse of schedule.nurses) {
+    const allowed = allowedShiftsFor(nurse);
     for (let d = 1; d <= D; d++) {
       if (!isFree(nurse.id, d)) continue;
-      const vars: LpVar[] = ACTIVE_SHIFTS.map((s) => ({
+      const vars: LpVar[] = allowed.map((s) => ({
         name: varNameOf(nurse.id, d, s),
         coef: 1,
       }));
+      if (vars.length === 0) continue;
       subjectTo.push({
         name: `one_${nurse.id}_${d}`,
         vars,
@@ -949,10 +1219,44 @@ export async function solveScheduleILP(
     });
   }
 
+  // 9. Min-Gün tarzı: her (nurse, hafta) için yardımcı `daysActive` değişkeni.
+  // daysActive_n_w ≥ Σ x_active over days in that week.
+  // Objektif fonksiyonda β · daysActive eklenir → solver gün sayısını azaltır.
+  const minDaysVars: string[] = [];
+  const weekBuckets = weekBucketsOfMonth(schedule.meta);
+  for (const nurse of schedule.nurses) {
+    if (getWorkStyle(nurse) !== 'minDays') continue;
+    for (let wIdx = 0; wIdx < weekBuckets.length; wIdx++) {
+      const week = weekBuckets[wIdx];
+      const daVar = `da_${nurse.id}_${wIdx}`;
+      const lhs: LpVar[] = [{ name: daVar, coef: -1 }];
+      let added = 0;
+      for (const d of week) {
+        for (const s of ACTIVE_SHIFTS) {
+          const v = varNameOf(nurse.id, d, s);
+          if (binaries.includes(v)) {
+            lhs.push({ name: v, coef: 1 });
+            added++;
+          }
+        }
+      }
+      if (added === 0) continue;
+      // Σ x - daysActive ≤ 0  →  daysActive ≥ Σ x
+      subjectTo.push({
+        name: `mindays_${nurse.id}_${wIdx}`,
+        vars: lhs,
+        bnds: { type: glpk.GLP_UP, ub: 0, lb: 0 },
+      });
+      minDaysVars.push(daVar);
+    }
+  }
+
   // Objective: spread minimize + N24 penalty (zorunda kalmadıkça nöbet yazma)
+  //          + β · Σ daysActive (Min-Gün hemşireleri için kümeleme)
   // - Z1 - Z2 ana terim (saat sapması, tipik aralık 0-200 sa)
   // - α × ΣN24 ek terim (ufak penalty; spread çözümünü bozmayacak büyüklükte)
-  // α=1: her ekstra N24 spread'e 1 sa eşdeğer maliyet
+  // - β × ΣdaysActive (Min-Gün hemşireler için: aktif gün sayısı azaltılır)
+  // α=1, β=1: her ekstra aktif gün ya da N24 spread'e 1 sa eşdeğer maliyet
   const objVars: LpVar[] = [
     { name: 'Z1', coef: 1 },
     { name: 'Z2', coef: -1 },
@@ -960,12 +1264,26 @@ export async function solveScheduleILP(
   if (cons.preferEveningOverNight) {
     const alpha = 1;
     for (const nurse of schedule.nurses) {
+      // Nöbetçi için α=0 (zaten N24 yazmak istiyoruz, cezalandırmaya gerek yok).
+      if (getWorkStyle(nurse) === 'oncall') continue;
       for (let d = 1; d <= D; d++) {
         const v = varNameOf(nurse.id, d, 'N24');
         if (binaries.includes(v)) objVars.push({ name: v, coef: alpha });
       }
     }
   }
+  const beta = 1;
+  for (const daVar of minDaysVars) {
+    objVars.push({ name: daVar, coef: beta });
+  }
+
+  // Yardımcı değişkenler (continuous) için bound'lar.
+  const auxBounds = minDaysVars.map((v) => ({
+    name: v,
+    type: glpk.GLP_LO,
+    lb: 0,
+    ub: 0,
+  }));
 
   const lp = {
     name: 'nurse_schedule',
@@ -978,6 +1296,7 @@ export async function solveScheduleILP(
     bounds: [
       { name: 'Z1', type: glpk.GLP_LO, lb: 0, ub: 0 },
       { name: 'Z2', type: glpk.GLP_LO, lb: 0, ub: 0 },
+      ...auxBounds,
     ],
     binaries,
   };
@@ -1041,15 +1360,15 @@ export async function solveScheduleILP(
 
 export function buildSampleSchedule(year: number, month: number): Schedule {
   const nurses: Nurse[] = [
-    { id: 'n1', name: 'Ayşe', unavailable: [] },
-    { id: 'n2', name: 'Fatma', unavailable: [] },
-    { id: 'n3', name: 'Zeynep', unavailable: [] },
-    { id: 'n4', name: 'Elif', unavailable: [] },
-    { id: 'n5', name: 'Hanife', unavailable: [] },
-    { id: 'n6', name: 'Sevgi', unavailable: [] },
-    { id: 'n7', name: 'Merve', unavailable: [] },
-    { id: 'n8', name: 'Selin', unavailable: [] },
-    { id: 'n9', name: 'Gülnihal', unavailable: [] },
+    { id: 'n1', name: 'Ayşe', unavailable: [], workStyle: 'standard' },
+    { id: 'n2', name: 'Fatma', unavailable: [], workStyle: 'standard' },
+    { id: 'n3', name: 'Zeynep', unavailable: [], workStyle: 'standard' },
+    { id: 'n4', name: 'Elif', unavailable: [], workStyle: 'standard' },
+    { id: 'n5', name: 'Hanife', unavailable: [], workStyle: 'minDays' },
+    { id: 'n6', name: 'Sevgi', unavailable: [], workStyle: 'standard' },
+    { id: 'n7', name: 'Merve', unavailable: [], workStyle: 'standard' },
+    { id: 'n8', name: 'Selin', unavailable: [], workStyle: 'oncall' },
+    { id: 'n9', name: 'Gülnihal', unavailable: [], workStyle: 'standard' },
   ];
   const meta = createMonthMeta(year, month);
   if (meta.daysInMonth >= 5) {

@@ -11,6 +11,7 @@ import {
   createMonthMeta,
   daysInMonth,
   getCell,
+  getWorkStyle,
   isDayCovering,
   isLeaveShift,
   isNightCovering,
@@ -18,6 +19,8 @@ import {
   shiftHoursOf,
   solveScheduleGreedy,
   validate,
+  weekBucketsOfMonth,
+  weekOfDay,
   type Nurse,
   type Schedule,
   type ScheduleConstraints,
@@ -449,5 +452,110 @@ describe('buildSampleSchedule', () => {
     expect(s.nurses[0].unavailable.length).toBeGreaterThan(0);
     // Gülnihal son sırada
     expect(s.nurses[8].name).toBe('Gülnihal');
+  });
+
+  it('ships at least one oncall and one minDays nurse for demo', () => {
+    const s = buildSampleSchedule(2026, 5);
+    const styles = s.nurses.map((n) => n.workStyle ?? 'standard');
+    expect(styles).toContain('oncall');
+    expect(styles).toContain('minDays');
+    expect(styles.filter((w) => w === 'standard').length).toBeGreaterThan(0);
+  });
+});
+
+describe('weekBucketsOfMonth', () => {
+  it('groups days into weeks starting on Monday', () => {
+    // 1 Mayıs 2026 = Cuma. Hafta Pzt başlangıçlı.
+    const meta = createMonthMeta(2026, 5);
+    const buckets = weekBucketsOfMonth(meta);
+    // Hafta 1: 1-3 Mayıs (Cum-Cmt-Paz, parçalı)
+    expect(buckets[0]).toEqual([1, 2, 3]);
+    // Hafta 2: 4-10 Mayıs (Pzt-Paz tam)
+    expect(buckets[1]).toEqual([4, 5, 6, 7, 8, 9, 10]);
+    // Toplam ay = 31 gün
+    const total = buckets.reduce((sum, b) => sum + b.length, 0);
+    expect(total).toBe(31);
+  });
+
+  it('weekOfDay returns containing week', () => {
+    const meta = createMonthMeta(2026, 5);
+    expect(weekOfDay(meta, 5)).toEqual([4, 5, 6, 7, 8, 9, 10]);
+    expect(weekOfDay(meta, 1)).toEqual([1, 2, 3]);
+  });
+});
+
+describe('work styles', () => {
+  it('getWorkStyle defaults to standard when unset', () => {
+    const n: Nurse = { id: 'n1', name: 'X', unavailable: [] };
+    expect(getWorkStyle(n)).toBe('standard');
+  });
+
+  it('validate flags G8 / GC16 on an oncall nurse as WORKSTYLE_VIOLATION', () => {
+    const nurses = sixNurses();
+    nurses[0].workStyle = 'oncall';
+    const s = createEmptySchedule(2026, 5, nurses);
+    s.cells[cellKey('n1', 1)] = 'G8';
+    s.cells[cellKey('n1', 4)] = 'GC16';
+    const issues = validate(s).filter(
+      (i) => i.kind === 'WORKSTYLE_VIOLATION' && i.nurseId === 'n1',
+    );
+    expect(issues.length).toBe(2);
+    expect(issues.every((i) => i.severity === 'error')).toBe(true);
+  });
+
+  it('validate does NOT flag N24 on an oncall nurse', () => {
+    const nurses = sixNurses();
+    nurses[0].workStyle = 'oncall';
+    const s = createEmptySchedule(2026, 5, nurses);
+    s.cells[cellKey('n1', 1)] = 'N24';
+    const ws = validate(s).filter((i) => i.kind === 'WORKSTYLE_VIOLATION');
+    expect(ws.length).toBe(0);
+  });
+
+  it('greedy: oncall nurse only ever receives N24 (or non-working)', () => {
+    // 12 hemşire — solver oncall'a G8/GC16 atamak zorunda kalmamalı
+    const nurses: Nurse[] = Array.from({ length: 12 }, (_, i) => ({
+      id: `n${i + 1}`,
+      name: `H${i + 1}`,
+      unavailable: [],
+    }));
+    nurses[0].workStyle = 'oncall';
+    const s = createEmptySchedule(2026, 5, nurses);
+    const r = solveScheduleGreedy(s);
+    const counts = r.stats.countsByNurse['n1'];
+    expect(counts.G8).toBe(0);
+    expect(counts.GC16).toBe(0);
+    // Oncall hemşire en azından bir N24 yapmış olmalı (12 hemşirelik takımda
+    // greedy onu nöbete tercih eder).
+    expect(counts.N24).toBeGreaterThan(0);
+    // Tarz ihlali yok
+    const wsIssues = r.issues.filter((i) => i.kind === 'WORKSTYLE_VIOLATION');
+    expect(wsIssues.length).toBe(0);
+  });
+
+  it('greedy: minDays nurse keeps active days low (clustering)', () => {
+    // 12 hemşire — biri minDays
+    const nurses: Nurse[] = Array.from({ length: 12 }, (_, i) => ({
+      id: `n${i + 1}`,
+      name: `H${i + 1}`,
+      unavailable: [],
+    }));
+    nurses[0].workStyle = 'minDays';
+    const s = createEmptySchedule(2026, 5, nurses);
+    const r = solveScheduleGreedy(s);
+    const minDaysActiveCount =
+      r.stats.countsByNurse['n1'].G8 +
+      r.stats.countsByNurse['n1'].GC16 +
+      r.stats.countsByNurse['n1'].N24;
+    // Diğer nurse'lerin ortalama aktif gün sayısı
+    const others = r.schedule.nurses.slice(1);
+    const otherAvg =
+      others.reduce((sum, n) => {
+        const c = r.stats.countsByNurse[n.id];
+        return sum + c.G8 + c.GC16 + c.N24;
+      }, 0) / others.length;
+    // Min-Gün hemşire ortalamadan az ya da eşit aktif gün kullansın.
+    // (Saat eşitliği önemliyken bu yumuşak bir hedef; tolerans 1 gün.)
+    expect(minDaysActiveCount).toBeLessThanOrEqual(otherAvg + 1);
   });
 });
