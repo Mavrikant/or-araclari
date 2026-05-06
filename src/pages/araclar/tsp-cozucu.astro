@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Container from '../../components/Container.astro';
 import { withBase, SITE } from '../../data/site';
 import { TOOLS } from '../../data/tools';
+import { TURKISH_CITIES } from '../../lib/tsp-cities';
 
 const tool = TOOLS.find((t) => t.slug === 'tsp-cozucu')!;
 const guideHref = tool.guideSlug ? withBase(`/rehberler/${tool.guideSlug}`) : null;
@@ -34,181 +35,953 @@ const softwareJsonLd = {
     </p>
     <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">{tool.title}</h1>
     <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
-      Noktaların koordinatlarını gir, en kısa turu nearest-neighbor + 2-opt
-      sezgiseliyle bul. Görsel önizleme dahil.
+      Noktaları satır satır gir veya Türkiye şehirlerinden seç; nearest-neighbor + 2-opt
+      sezgiseliyle en kısa turu bul. Sonuç interaktif Plotly haritasında çizilir.
       {guideHref && (<a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>)}
     </p>
   </Container>
 
-  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,360px)_1fr]">
-    <form id="tsp-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40" novalidate>
-      <fieldset class="space-y-3">
-        <div class="flex items-center justify-between">
-          <label for="points" class="block font-display text-sm font-semibold text-slate-900 dark:text-white">Noktalar</label>
-          <span id="point-count" class="text-xs text-slate-500 dark:text-slate-400" aria-live="polite">0 nokta</span>
-        </div>
-        <textarea id="points" name="points" rows="9" required autocomplete="off" spellcheck="false"
-          class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm leading-relaxed text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-          placeholder="Her satır: etiket<TAB>x<TAB>y&#10;Türkçe ondalık (1,5) desteklenir.&#10;&#10;İstanbul	28,98	41,01&#10;Ankara	32,85	39,93&#10;İzmir	27,14	38,42"></textarea>
-        <div class="flex flex-wrap gap-2">
-          <button type="button" id="sample-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">7 büyükşehir</button>
-          <button type="button" id="clear-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">Temizle</button>
-        </div>
-      </fieldset>
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,380px)_1fr] print:block">
+    {/* ----------------------------------------------------------- FORM */}
+    <form id="tsp-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+      {/* Üst aksiyonlar */}
+      <div class="flex flex-wrap items-center gap-2">
+        <details class="relative">
+          <summary class="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+            Örnek doldur
+            <svg viewBox="0 0 12 12" class="size-3" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5l3 3 3-3" /></svg>
+          </summary>
+          <div class="absolute left-0 z-10 mt-1 w-48 overflow-hidden rounded-md border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
+            <button type="button" data-sample="big7" class="block w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">7 büyükşehir</button>
+            <button type="button" data-sample="cities15" class="block w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">15 il (Türkiye)</button>
+            <button type="button" data-sample="random" class="block w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">Rastgele 12 nokta</button>
+          </div>
+        </details>
+        <button type="button" id="reset-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+          Sıfırla
+        </button>
+      </div>
 
-      <fieldset>
-        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">Tur tipi</legend>
-        <div class="mt-3 space-y-2">
-          <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
-            <input type="radio" name="closed" value="true" checked class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
-            <span class="flex-1">
-              <span class="block text-sm font-medium text-slate-900 dark:text-white">Kapalı tur</span>
-              <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Başladığın yere geri dönersin (klasik TSP).</span>
-            </span>
-          </label>
-          <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
-            <input type="radio" name="closed" value="false" class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
-            <span class="flex-1">
-              <span class="block text-sm font-medium text-slate-900 dark:text-white">Açık tur</span>
-              <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Son noktada bitir; başa dönme.</span>
-            </span>
-          </label>
-        </div>
-      </fieldset>
+      <button type="submit" id="solve-btn" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">
+        <span id="solve-label">Turu hesapla</span>
+      </button>
 
-      <fieldset>
-        <label class="flex items-center gap-2">
-          <input type="checkbox" id="improve" checked class="size-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
-          <span class="text-sm font-medium text-slate-900 dark:text-white">2-opt iyileştirmeyi uygula</span>
+      {/* Mod tabı */}
+      <div role="tablist" aria-label="Giriş yöntemi" class="flex gap-1 rounded-lg border border-slate-200 bg-slate-100 p-1 dark:border-slate-800 dark:bg-slate-900/60">
+        <button type="button" role="tab" id="tab-form" aria-selected="true" aria-controls="panel-form" class="flex-1 rounded-md px-3 py-1.5 text-xs font-semibold">Görsel form</button>
+        <button type="button" role="tab" id="tab-text" aria-selected="false" aria-controls="panel-text" class="flex-1 rounded-md px-3 py-1.5 text-xs font-semibold">Metin editörü</button>
+      </div>
+
+      {/* Görsel form paneli */}
+      <div id="panel-form" role="tabpanel" aria-labelledby="tab-form" class="space-y-6">
+        <fieldset>
+          <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">Tur tipi</legend>
+          <div class="mt-3 space-y-2">
+            <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
+              <input type="radio" name="closed" value="true" checked class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
+              <span class="flex-1">
+                <span class="block text-sm font-medium text-slate-900 dark:text-white">Kapalı tur</span>
+                <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Başladığın yere geri dönersin (klasik TSP).</span>
+              </span>
+            </label>
+            <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
+              <input type="radio" name="closed" value="false" class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
+              <span class="flex-1">
+                <span class="block text-sm font-medium text-slate-900 dark:text-white">Açık tur</span>
+                <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Son noktada bitir; başa dönme.</span>
+              </span>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" id="improve" checked class="size-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+            <span class="text-sm font-medium text-slate-900 dark:text-white">2-opt iyileştirmeyi uygula</span>
+          </label>
+          <p class="ml-6 mt-1 text-xs text-slate-500 dark:text-slate-400">Nearest-neighbor sonucunu yerel arama ile iyileştirir.</p>
+        </fieldset>
+
+        {/* Şehir ekle (datalist) */}
+        <fieldset class="space-y-2">
+          <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">Türkiye şehri ekle</legend>
+          <div class="flex gap-2">
+            <input type="text" id="city-input" list="city-list" autocomplete="off" placeholder="Şehir ara… (örn. İstanbul)"
+              class="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+            <datalist id="city-list">
+              {TURKISH_CITIES.map((c) => <option value={c.label} />)}
+            </datalist>
+            <button type="button" id="city-add-btn" class="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+              Ekle
+            </button>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400">{TURKISH_CITIES.length} ilin koordinatı tanımlı. Listeden seçince otomatik eklenir.</p>
+        </fieldset>
+
+        {/* Noktalar matrix grid */}
+        <fieldset class="space-y-3">
+          <div class="flex items-center justify-between">
+            <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">Noktalar</legend>
+            <span id="point-count" class="text-xs text-slate-500 dark:text-slate-400" aria-live="polite">0 nokta</span>
+          </div>
+          <div id="points-table" class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800"></div>
+          <button type="button" id="point-add-btn" class="inline-flex items-center gap-1 rounded-md border border-dashed border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-brand-500 hover:text-brand-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-accent-500 dark:hover:text-accent-300">
+            + Boş nokta ekle
+          </button>
+          <p class="text-xs text-slate-500 dark:text-slate-400">İlk nokta turun başlangıcı kabul edilir. Boş etiket veya geçersiz koordinat satırları çözümde atlanır.</p>
+        </fieldset>
+      </div>
+
+      {/* Metin editörü paneli */}
+      <div id="panel-text" role="tabpanel" aria-labelledby="tab-text" hidden class="space-y-3">
+        <label for="lp-text" class="block font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Noktalar (metin)
         </label>
-        <p class="ml-6 mt-1 text-xs text-slate-500 dark:text-slate-400">Nearest-neighbor sonucunu yerel arama ile iyileştirir.</p>
-      </fieldset>
+        <textarea id="lp-text" rows="10" autocomplete="off" spellcheck="false"
+          class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 font-mono text-sm leading-relaxed text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+          placeholder={`Her satır: etiket<TAB>x<TAB>y\nTürkçe ondalık (1,5) desteklenir.\n\nİstanbul\t28,98\t41,01\nAnkara\t32,85\t39,93\nİzmir\t27,14\t38,42`}></textarea>
+        <button type="button" id="text-to-form-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Metni form'a aktar
+        </button>
+        <p class="text-xs text-slate-500 dark:text-slate-400">"Turu hesapla"ya basınca işlenir. Form'a geçince mevcut metin kaybolmaz.</p>
+      </div>
 
-      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">Turu hesapla</button>
+      {/* Sonuç durum kartı */}
+      <div id="status-box" hidden class="space-y-3">
+        <div id="status-card" class="rounded-lg border p-3 text-sm">
+          <div id="status-title" class="text-xs font-medium uppercase tracking-wide"></div>
+          <div id="status-distance" class="mt-1 font-display text-2xl font-bold"></div>
+          <div id="status-meta" class="mt-1 text-xs"></div>
+        </div>
+        <div id="improvement-badge" hidden class="rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-xs text-emerald-800 dark:border-emerald-800/60 dark:bg-emerald-950/30 dark:text-emerald-300"></div>
+        <button type="button" id="print-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Yazdır
+        </button>
+      </div>
 
+      {/* Format yardımı */}
+      <details class="rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-xs dark:border-slate-800 dark:bg-slate-900/40">
+        <summary class="cursor-pointer font-medium text-slate-700 dark:text-slate-300">Yardım</summary>
+        <div class="mt-2 space-y-2 text-slate-600 dark:text-slate-400">
+          <p><strong>Görsel form:</strong> "Boş nokta ekle"yle satır oluştur, etiket + X + Y gir. Türkiye şehri için "Şehir ekle" autocomplete'ı kullan.</p>
+          <p><strong>Metin editörü:</strong> Her satır <code>etiket TAB x TAB y</code> formatında. Türkçe ondalık virgülü (1,5) desteklenir.</p>
+          <p><strong>Koordinat sistemi:</strong> Türkiye şehirleri için boylam (X) / enlem (Y). Genel düzlem koordinatları da kabul edilir; Öklid mesafesi hesaplanır.</p>
+          <p><strong>Sınır:</strong> En fazla 200 nokta. 2-opt için ~100 noktaya kadar performans iyi.</p>
+        </div>
+      </details>
+
+      {/* Hata kutusu */}
       <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
     </form>
 
-    <section id="output" hidden aria-live="polite" class="space-y-6">
-      <header>
-        <h2 class="font-display text-xl font-semibold tracking-tight text-slate-900 dark:text-white">Tur</h2>
-        <p id="summary" class="mt-1 text-sm text-slate-600 dark:text-slate-400"></p>
-      </header>
-      <div id="visualization" class="overflow-hidden rounded-xl border border-slate-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-900/40"></div>
-      <div id="route-list"></div>
+    {/* -------------------------------------------------------- SONUÇ PANELİ */}
+    <section aria-live="polite" class="space-y-6">
+      {/* Harita paneli */}
+      <div id="chart-panel" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/40">
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">Tur haritası</h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Yıldız = başlangıç noktası · Çizgi = ziyaret sırası · Numaralar adımları gösterir.
+          <span class="ml-1 text-slate-400 dark:text-slate-500">(Yakınlaştırmak için kaydır, sürükleyerek kaydır, çift tıkla sıfırla.)</span>
+        </p>
+        <div id="chart-container" class="relative mt-3"></div>
+        <p id="chart-empty" class="rounded-md border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+          En az 2 nokta ekle ve "Turu hesapla"ya bas — harita burada çizilecek.
+        </p>
+      </div>
+
+      {/* Sonuç paneli */}
+      <div id="result-panel" hidden class="space-y-5">
+        <div>
+          <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">Tur sırası</h2>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Her satır bir adımı gösterir; mesafe sütunu sonraki noktaya olan uzaklıktır.</p>
+          <div class="mt-3 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:bg-slate-900/60 dark:text-slate-400">
+                <tr>
+                  <th class="px-3 py-2 text-left">#</th>
+                  <th class="px-3 py-2 text-left">Nokta</th>
+                  <th class="px-3 py-2 text-right">X</th>
+                  <th class="px-3 py-2 text-right">Y</th>
+                  <th class="px-3 py-2 text-right">Sonraki mesafe</th>
+                </tr>
+              </thead>
+              <tbody id="route-tbody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+              <tfoot id="route-tfoot" class="bg-slate-50 dark:bg-slate-900/60"></tfoot>
+            </table>
+          </div>
+        </div>
+
+        <details class="text-sm">
+          <summary class="cursor-pointer font-medium text-slate-700 dark:text-slate-300">Çözücü ayrıntıları (JSON)</summary>
+          <pre id="solver-detail" class="mt-2 overflow-x-auto rounded-lg bg-slate-50 p-3 font-mono text-xs text-slate-700 dark:bg-slate-900/60 dark:text-slate-300"></pre>
+        </details>
+      </div>
     </section>
   </Container>
+
+  {guideHref && (
+    <Container as="section" size="wide" class="py-12 sm:py-16">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900/40">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">Konuyu derinleştir</p>
+        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          Gezgin satıcı: nearest-neighbor, 2-opt ve daha fazlası
+        </h2>
+        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+          Klasik TSP algoritmaları, sezgisel yöntemler, gerçek dünya uygulamaları —
+          kapsamlı Türkçe rehber.
+        </p>
+        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">
+          Rehberi oku →
+        </a>
+      </div>
+    </Container>
+  )}
 </BaseLayout>
 
 <script>
-  import { solveTSP, parsePoints, TSPError } from '../../lib/tsp';
+  import { solveTSP, parsePoints, pointsToText, TSPError, type Point, type TSPResult } from '../../lib/tsp';
+  import { TURKISH_CITIES, findCity } from '../../lib/tsp-cities';
 
-  const SAMPLE = 'İstanbul\t28,98\t41,01\nAnkara\t32,85\t39,93\nİzmir\t27,14\t38,42\nBursa\t29,06\t40,18\nAntalya\t30,71\t36,90\nAdana\t35,32\t37,00\nGaziantep\t37,38\t37,07';
+  /* ============================================================ Constants */
 
-  const $ = (id: string): HTMLElement => {
+  const STORAGE_KEY = 'tsp-state-v1';
+  const SAMPLE_BIG7: Point[] = [
+    { label: 'İstanbul', x: 28.98, y: 41.01 },
+    { label: 'Ankara', x: 32.85, y: 39.93 },
+    { label: 'İzmir', x: 27.14, y: 38.42 },
+    { label: 'Bursa', x: 29.06, y: 40.18 },
+    { label: 'Antalya', x: 30.71, y: 36.90 },
+    { label: 'Adana', x: 35.32, y: 37.00 },
+    { label: 'Gaziantep', x: 37.38, y: 37.07 },
+  ];
+  const SAMPLE_CITIES15: Point[] = TURKISH_CITIES.slice(0, 15).map((c) => ({
+    label: c.label, x: c.x, y: c.y,
+  }));
+
+  function sampleRandom(n: number): Point[] {
+    const out: Point[] = [];
+    for (let i = 0; i < n; i++) {
+      out.push({
+        label: `P${i + 1}`,
+        x: Math.round(Math.random() * 100 * 10) / 10,
+        y: Math.round(Math.random() * 100 * 10) / 10,
+      });
+    }
+    return out;
+  }
+
+  /* ============================================================ DOM helpers */
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
     const el = document.getElementById(id);
     if (!el) throw new Error(`Missing #${id}`);
-    return el;
+    return el as T;
   };
-
-  const form = $('tsp-form') as HTMLFormElement;
-  const ptsInput = $('points') as HTMLTextAreaElement;
-  const ptCount = $('point-count');
-  const improveInput = $('improve') as HTMLInputElement;
-  const errorBox = $('error-box');
-  const output = $('output');
-  const summary = $('summary');
-  const viz = $('visualization');
-  const routeList = $('route-list');
-  const sampleBtn = $('sample-btn');
-  const clearBtn = $('clear-btn');
-
   function escapeHtml(s: string): string {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
-
-  function fmt(n: number): string { return n.toFixed(2); }
-
-  function updateCount(): void {
-    const n = ptsInput.value.split(/\r?\n/).filter((l) => l.trim()).length;
-    ptCount.textContent = `${n} nokta`;
+  function fmt(n: number): string {
+    if (!Number.isFinite(n)) return '—';
+    if (Number.isInteger(n)) return String(n);
+    if (Math.abs(n) < 1e-9) return '0';
+    return n.toFixed(2);
+  }
+  function fmtDistance(n: number): string {
+    if (!Number.isFinite(n)) return '—';
+    return n.toFixed(2);
+  }
+  function newId(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+    return `p-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
   }
 
-  function renderViz(points: ReturnType<typeof parsePoints>, order: number[], closed: boolean): void {
-    if (points.length === 0) { viz.innerHTML = ''; return; }
+  /* ============================================================ State */
 
-    const xs = points.map((p) => p.x);
-    const ys = points.map((p) => p.y);
-    const minX = Math.min(...xs), maxX = Math.max(...xs);
-    const minY = Math.min(...ys), maxY = Math.max(...ys);
-    const padding = 30;
-    const width = 600, height = 360;
-    const rangeX = Math.max(maxX - minX, 0.001);
-    const rangeY = Math.max(maxY - minY, 0.001);
-    const sx = (x: number) => padding + ((x - minX) / rangeX) * (width - 2 * padding);
-    // Flip y for screen (geographic y increases upward)
-    const sy = (y: number) => height - padding - ((y - minY) / rangeY) * (height - 2 * padding);
+  type Mode = 'structured' | 'text';
 
-    const pathPoints = order.map((i) => `${sx(points[i].x)},${sy(points[i].y)}`);
-    if (closed && pathPoints.length > 1) pathPoints.push(pathPoints[0]);
-
-    const lines = `<polyline points="${pathPoints.join(' ')}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" class="text-accent-500" />`;
-    const dots = points.map((p, i) => {
-      const cx = sx(p.x), cy = sy(p.y);
-      const isStart = i === order[0];
-      return `<circle cx="${cx}" cy="${cy}" r="${isStart ? 6 : 4}" class="${isStart ? 'fill-brand-700 dark:fill-accent-300' : 'fill-slate-700 dark:fill-slate-300'}" /><text x="${cx + 8}" y="${cy - 6}" class="fill-slate-700 dark:fill-slate-300 text-[10px] font-medium">${escapeHtml(p.label)}</text>`;
-    }).join('');
-
-    viz.innerHTML = `<svg viewBox="0 0 ${width} ${height}" class="block w-full h-auto" role="img" aria-label="Tur görselleştirmesi">${lines}${dots}</svg>`;
+  interface PointEntry {
+    id: string;
+    label: string;
+    x: number | null;
+    y: number | null;
   }
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    errorBox.hidden = true;
+  interface FormState {
+    mode: Mode;
+    closed: boolean;
+    improve: boolean;
+    points: PointEntry[];
+    text: string;
+  }
+
+  function pointsToEntries(pts: ReadonlyArray<Point>): PointEntry[] {
+    return pts.map((p) => ({ id: newId(), label: p.label, x: p.x, y: p.y }));
+  }
+  function entriesToPoints(entries: ReadonlyArray<PointEntry>): Point[] {
+    return entries
+      .filter((e) => e.label.trim() !== '' && e.x !== null && e.y !== null && Number.isFinite(e.x) && Number.isFinite(e.y))
+      .map((e) => ({ label: e.label.trim(), x: e.x as number, y: e.y as number }));
+  }
+  function emptyEntry(): PointEntry {
+    return { id: newId(), label: '', x: null, y: null };
+  }
+  function emptyState(): FormState {
+    return {
+      mode: 'structured',
+      closed: true,
+      improve: true,
+      points: [],
+      text: '',
+    };
+  }
+  function normalize(s: Partial<FormState> | undefined | null): FormState {
+    const def = emptyState();
+    if (!s || typeof s !== 'object') return def;
+    const points = Array.isArray(s.points)
+      ? s.points
+          .filter((p): p is Partial<PointEntry> => !!p && typeof p === 'object')
+          .map((p) => ({
+            id: typeof p.id === 'string' && p.id ? p.id : newId(),
+            label: typeof p.label === 'string' ? p.label : '',
+            x: typeof p.x === 'number' && Number.isFinite(p.x) ? p.x : null,
+            y: typeof p.y === 'number' && Number.isFinite(p.y) ? p.y : null,
+          }))
+      : def.points;
+    return {
+      mode: s.mode === 'text' ? 'text' : 'structured',
+      closed: s.closed !== false,
+      improve: s.improve !== false,
+      points,
+      text: typeof s.text === 'string' ? s.text : '',
+    };
+  }
+  function loadState(): FormState {
     try {
-      const points = parsePoints(ptsInput.value);
-      const closed = (form.elements.namedItem('closed') as RadioNodeList).value === 'true';
-      const r = solveTSP({ points, closed, improve: improveInput.checked });
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return normalize(JSON.parse(raw));
+    } catch { /* ignore */ }
+    return emptyState();
+  }
+  function saveState(): void {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch { /* ignore */ }
+  }
 
-      summary.textContent = [
-        `${points.length} nokta`,
-        `Toplam mesafe: ${fmt(r.totalDistance)}`,
-        closed ? 'kapalı tur' : 'açık tur',
-        r.improvedBy2Opt ? `2-opt ile ${r.swaps} iyileştirme` : null,
-      ].filter(Boolean).join(' · ');
+  /* ============================================================ DOM cache */
 
-      renderViz(points, r.order, closed);
+  const form = $<HTMLFormElement>('tsp-form');
+  const resetBtn = $<HTMLButtonElement>('reset-btn');
+  const solveBtn = $<HTMLButtonElement>('solve-btn');
+  const solveLabel = $('solve-label');
+  const printBtn = $<HTMLButtonElement>('print-btn');
 
-      const rows = r.order.map((idx, step) => {
-        const next = step < r.order.length - 1 ? r.order[step + 1] : (closed ? r.order[0] : null);
-        const leg = next !== null ? r.legDistances[step] : null;
-        return `<tr class="border-t border-slate-100 dark:border-slate-800"><td class="px-3 py-2 text-xs text-slate-500">${step + 1}</td><td class="px-3 py-2 text-sm text-slate-900 dark:text-slate-100">${escapeHtml(points[idx].label)}</td><td class="px-3 py-2 text-right font-mono text-xs text-slate-600 dark:text-slate-400">${leg !== null ? '+' + fmt(leg) : '—'}</td></tr>`;
-      }).join('');
+  const tabForm = $<HTMLButtonElement>('tab-form');
+  const tabText = $<HTMLButtonElement>('tab-text');
+  const panelForm = $('panel-form');
+  const panelText = $('panel-text');
+  const lpText = $<HTMLTextAreaElement>('lp-text');
+  const textToFormBtn = $<HTMLButtonElement>('text-to-form-btn');
 
-      routeList.innerHTML = `<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40"><table class="w-full"><thead><tr class="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"><th class="px-3 py-2">#</th><th class="px-3 py-2">Nokta</th><th class="px-3 py-2 text-right">Mesafe</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-      output.hidden = false;
-      output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const pointsTable = $('points-table');
+  const pointAddBtn = $<HTMLButtonElement>('point-add-btn');
+  const pointCount = $('point-count');
+
+  const cityInput = $<HTMLInputElement>('city-input');
+  const cityAddBtn = $<HTMLButtonElement>('city-add-btn');
+  const improveInput = $<HTMLInputElement>('improve');
+
+  const errorBox = $('error-box');
+  const statusBox = $('status-box');
+  const statusCard = $('status-card');
+  const statusTitle = $('status-title');
+  const statusDistance = $('status-distance');
+  const statusMeta = $('status-meta');
+  const improvementBadge = $('improvement-badge');
+
+  const chartContainer = $('chart-container');
+  const chartEmpty = $('chart-empty');
+  const resultPanel = $('result-panel');
+  const routeTbody = $('route-tbody');
+  const routeTfoot = $('route-tfoot');
+  const solverDetail = $('solver-detail') as HTMLPreElement;
+
+  /* ============================================================ State init */
+
+  const state: FormState = loadState();
+  /* If empty on first load, give the user a single empty row to start with. */
+  if (state.points.length === 0) state.points = [emptyEntry()];
+
+  /* ============================================================ Render */
+
+  function renderModeUI(): void {
+    const isForm = state.mode === 'structured';
+    panelForm.hidden = !isForm;
+    panelText.hidden = isForm;
+    const activeCls = 'flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white';
+    const inactiveCls = 'flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition text-slate-500 dark:text-slate-500';
+    tabForm.className = isForm ? activeCls : inactiveCls;
+    tabText.className = !isForm ? activeCls : inactiveCls;
+    tabForm.setAttribute('aria-selected', isForm ? 'true' : 'false');
+    tabText.setAttribute('aria-selected', !isForm ? 'true' : 'false');
+    if (!isForm) lpText.value = state.text;
+  }
+
+  function renderClosedRadio(): void {
+    const radios = form.querySelectorAll<HTMLInputElement>('input[name="closed"]');
+    radios.forEach((r) => { r.checked = (r.value === 'true') === state.closed; });
+    improveInput.checked = state.improve;
+  }
+
+  function renderPointsTable(): void {
+    const pts = state.points;
+    pointCount.textContent = `${pts.length} satır`;
+    if (pts.length === 0) {
+      pointsTable.innerHTML = '<div class="p-4 text-center text-xs italic text-slate-400 dark:text-slate-500">Henüz nokta yok.</div>';
+      return;
+    }
+    const rows = pts
+      .map((p, i) => {
+        const isStart = i === 0;
+        const removable = pts.length > 1;
+        const startBadge = isStart
+          ? '<span class="inline-flex items-center gap-1 rounded bg-brand-100 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700 dark:bg-accent-500/15 dark:text-accent-300">başlangıç</span>'
+          : `<span class="text-xs text-slate-400 dark:text-slate-500">#${i + 1}</span>`;
+        return `<tr>
+          <td class="border-t border-slate-200 px-2 py-1 text-center dark:border-slate-800">${startBadge}</td>
+          <td class="border-t border-slate-200 p-1 dark:border-slate-800">
+            <input type="text" data-pt-label="${escapeHtml(p.id)}" value="${escapeHtml(p.label)}" placeholder="Etiket"
+              class="w-full rounded border border-transparent bg-transparent px-2 py-1 text-sm hover:bg-slate-50 focus:border-brand-500 focus:bg-white focus:ring-1 focus:ring-brand-500/30 dark:hover:bg-slate-800 dark:focus:bg-slate-950" />
+          </td>
+          <td class="border-t border-slate-200 p-1 dark:border-slate-800">
+            <input type="number" step="any" inputmode="decimal" data-pt-x="${escapeHtml(p.id)}" value="${p.x === null ? '' : String(p.x)}" placeholder="X"
+              class="w-20 rounded border border-transparent bg-transparent px-2 py-1 text-right text-sm tabular-nums hover:bg-slate-50 focus:border-brand-500 focus:bg-white focus:ring-1 focus:ring-brand-500/30 dark:hover:bg-slate-800 dark:focus:bg-slate-950" />
+          </td>
+          <td class="border-t border-slate-200 p-1 dark:border-slate-800">
+            <input type="number" step="any" inputmode="decimal" data-pt-y="${escapeHtml(p.id)}" value="${p.y === null ? '' : String(p.y)}" placeholder="Y"
+              class="w-20 rounded border border-transparent bg-transparent px-2 py-1 text-right text-sm tabular-nums hover:bg-slate-50 focus:border-brand-500 focus:bg-white focus:ring-1 focus:ring-brand-500/30 dark:hover:bg-slate-800 dark:focus:bg-slate-950" />
+          </td>
+          <td class="border-t border-slate-200 px-1 py-1 text-center dark:border-slate-800">
+            <button type="button" data-remove-pt="${escapeHtml(p.id)}" ${removable ? '' : 'disabled'} aria-label="Nokta ${i + 1} kaldır"
+              class="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-red-950/40 dark:hover:text-red-400">
+              <svg viewBox="0 0 20 20" class="size-4" fill="currentColor"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+          </td>
+        </tr>`;
+      })
+      .join('');
+    pointsTable.innerHTML = `<table class="w-full text-sm">
+      <thead class="bg-slate-50 dark:bg-slate-900/60">
+        <tr>
+          <th class="w-14 px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">Sıra</th>
+          <th class="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">Etiket</th>
+          <th class="px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">X</th>
+          <th class="px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">Y</th>
+          <th class="w-8"></th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+
+  function renderTextPreview(): void {
+    /* Keep the text mode buffer in sync with structured edits. */
+    const valid = entriesToPoints(state.points);
+    state.text = pointsToText(valid);
+  }
+
+  function renderAll(): void {
+    renderModeUI();
+    renderClosedRadio();
+    renderPointsTable();
+    renderTextPreview();
+  }
+  function commit(): void {
+    saveState();
+    renderTextPreview();
+  }
+
+  /* ============================================================ Mutations */
+
+  function addPointEntry(entry: PointEntry = emptyEntry()): void {
+    if (state.points.length >= 200) {
+      showError('En fazla 200 nokta desteklenir.');
+      return;
+    }
+    state.points.push(entry);
+    renderPointsTable();
+    commit();
+  }
+  function removePoint(id: string): void {
+    if (state.points.length <= 1) return;
+    state.points = state.points.filter((p) => p.id !== id);
+    renderPointsTable();
+    commit();
+  }
+  function setPointField(id: string, field: 'label' | 'x' | 'y', value: string): void {
+    const p = state.points.find((p) => p.id === id);
+    if (!p) return;
+    if (field === 'label') {
+      p.label = value;
+    } else {
+      const trimmed = value.trim();
+      if (trimmed === '') { p[field] = null; }
+      else {
+        const n = Number(trimmed.replace(',', '.'));
+        if (!Number.isFinite(n)) return;
+        p[field] = n;
+      }
+    }
+    saveState();
+    renderTextPreview();
+  }
+  function setClosed(closed: boolean): void { state.closed = closed; saveState(); }
+  function setImprove(improve: boolean): void { state.improve = improve; saveState(); }
+
+  function setMode(mode: Mode): void {
+    if (state.mode === 'structured' && mode === 'text') {
+      state.text = pointsToText(entriesToPoints(state.points));
+      lpText.value = state.text;
+    }
+    state.mode = mode;
+    renderModeUI();
+    saveState();
+  }
+
+  function importTextToForm(): void {
+    const text = lpText.value;
+    if (!text.trim()) { showError('Aktarılacak metin boş.'); return; }
+    try {
+      const pts = parsePoints(text);
+      state.points = pointsToEntries(pts);
+      state.text = text;
+      state.mode = 'structured';
+      clearError();
+      renderAll();
+      saveState();
     } catch (err) {
       const msg = err instanceof TSPError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
-      errorBox.textContent = msg;
-      errorBox.hidden = false;
-      output.hidden = true;
+      showError(`Metin form'a aktarılamadı: ${msg}`);
+    }
+  }
+
+  function loadSample(kind: 'big7' | 'cities15' | 'random'): void {
+    const points: Point[] =
+      kind === 'big7' ? SAMPLE_BIG7 :
+      kind === 'cities15' ? SAMPLE_CITIES15 :
+      sampleRandom(12);
+    state.points = pointsToEntries(points);
+    state.mode = 'structured';
+    clearError();
+    renderAll();
+    saveState();
+  }
+
+  function addCity(label: string): void {
+    const city = findCity(label);
+    if (!city) {
+      showError(`"${label}" bilinen bir şehir değil. Listeden seç ya da koordinatları manuel gir.`);
+      return;
+    }
+    /* Avoid duplicate consecutive entries (case-insensitive). */
+    const lower = city.label.toLocaleLowerCase('tr');
+    const exists = state.points.some((p) => p.label.trim().toLocaleLowerCase('tr') === lower);
+    if (exists) {
+      showError(`${city.label} zaten listede.`);
+      return;
+    }
+    /* Drop trailing empty entry if user hasn't filled it. */
+    const last = state.points[state.points.length - 1];
+    if (last && last.label.trim() === '' && last.x === null && last.y === null) {
+      state.points.pop();
+    }
+    state.points.push({ id: newId(), label: city.label, x: city.x, y: city.y });
+    cityInput.value = '';
+    clearError();
+    renderPointsTable();
+    commit();
+  }
+
+  /* ============================================================ Errors / status */
+
+  function showError(msg: string): void {
+    errorBox.textContent = msg;
+    errorBox.hidden = false;
+  }
+  function clearError(): void { errorBox.hidden = true; errorBox.textContent = ''; }
+
+  function setStatus(result: TSPResult, points: Point[], nnDistance?: number): void {
+    statusCard.className = 'rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm dark:border-emerald-800/60 dark:bg-emerald-950/30';
+    statusTitle.className = 'text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300';
+    statusDistance.className = 'mt-1 font-display text-2xl font-bold text-emerald-900 dark:text-emerald-100';
+    statusMeta.className = 'mt-1 text-xs text-emerald-800 dark:text-emerald-300';
+
+    statusTitle.textContent = result.closed ? 'Kapalı tur bulundu' : 'Açık tur bulundu';
+    statusDistance.textContent = `Toplam: ${fmtDistance(result.totalDistance)}`;
+    statusMeta.textContent = `${points.length} nokta · ${result.legDistances.length} bacak`;
+    statusBox.hidden = false;
+
+    /* 2-opt improvement badge */
+    if (state.improve && nnDistance !== undefined && nnDistance > result.totalDistance + 1e-9) {
+      const pct = ((nnDistance - result.totalDistance) / nnDistance) * 100;
+      improvementBadge.innerHTML = `<strong>2-opt iyileştirmesi:</strong> Nearest-neighbor'ı %${pct.toFixed(1)} kısalttı (${result.swaps} swap, ${fmtDistance(nnDistance)} → ${fmtDistance(result.totalDistance)}).`;
+      improvementBadge.hidden = false;
+    } else if (state.improve && result.swaps === 0) {
+      improvementBadge.innerHTML = `<strong>2-opt iyileştirmesi:</strong> Nearest-neighbor sonucu zaten yerel optimum (swap yok).`;
+      improvementBadge.hidden = false;
+    } else {
+      improvementBadge.hidden = true;
+    }
+  }
+
+  function renderRouteTable(points: Point[], result: TSPResult): void {
+    const rows = result.order.map((idx, step) => {
+      const p = points[idx];
+      const leg = step < result.legDistances.length ? result.legDistances[step] : null;
+      const isStart = step === 0;
+      return `<tr class="${isStart ? 'bg-emerald-50/40 dark:bg-emerald-950/20' : ''}">
+        <td class="px-3 py-2 text-xs text-slate-500">${step + 1}${isStart ? ' ★' : ''}</td>
+        <td class="px-3 py-2 text-sm font-medium text-slate-900 dark:text-slate-100">${escapeHtml(p.label)}</td>
+        <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-600 dark:text-slate-400">${fmt(p.x)}</td>
+        <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-600 dark:text-slate-400">${fmt(p.y)}</td>
+        <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-600 dark:text-slate-400">${leg !== null ? '+ ' + fmtDistance(leg) : '—'}</td>
+      </tr>`;
+    });
+    /* Closed tour: append the return-to-start row */
+    if (result.closed && result.order.length > 1) {
+      const startP = points[result.order[0]];
+      const lastLeg = result.legDistances[result.legDistances.length - 1];
+      rows.push(`<tr class="bg-slate-50 dark:bg-slate-900/40">
+        <td class="px-3 py-2 text-xs text-slate-400">↩</td>
+        <td class="px-3 py-2 text-sm italic text-slate-500 dark:text-slate-400">${escapeHtml(startP.label)} (başlangıç)</td>
+        <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-500 dark:text-slate-500">${fmt(startP.x)}</td>
+        <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-500 dark:text-slate-500">${fmt(startP.y)}</td>
+        <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-500 dark:text-slate-500">+ ${fmtDistance(lastLeg)}</td>
+      </tr>`);
+    }
+    routeTbody.innerHTML = rows.join('');
+    routeTfoot.innerHTML = `<tr><td colspan="4" class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">Toplam mesafe</td><td class="px-3 py-2 text-right font-mono text-sm font-bold tabular-nums text-emerald-700 dark:text-emerald-400">${fmtDistance(result.totalDistance)}</td></tr>`;
+
+    solverDetail.textContent = JSON.stringify({
+      totalDistance: result.totalDistance,
+      closed: result.closed,
+      improvedBy2Opt: result.improvedBy2Opt,
+      swaps: result.swaps,
+      order: result.order,
+      legDistances: result.legDistances.map((d) => Number(d.toFixed(4))),
+    }, null, 2);
+    resultPanel.hidden = false;
+  }
+
+  /* ============================================================ Plotly chart */
+
+  type PlotlyApi = {
+    newPlot: (el: HTMLElement, data: unknown[], layout: unknown, config?: unknown) => Promise<unknown>;
+    react: (el: HTMLElement, data: unknown[], layout: unknown, config?: unknown) => Promise<unknown>;
+    purge: (el: HTMLElement) => void;
+  };
+  let plotlyPromise: Promise<PlotlyApi> | null = null;
+  function getPlotly(): Promise<PlotlyApi> {
+    if (!plotlyPromise) {
+      plotlyPromise = import('plotly.js-basic-dist-min').then((mod) => {
+        const m = mod as unknown as { default?: PlotlyApi } & PlotlyApi;
+        return (m.default ?? m) as PlotlyApi;
+      });
+    }
+    return plotlyPromise;
+  }
+  function isDarkMode(): boolean {
+    return document.documentElement.classList.contains('dark');
+  }
+  let lastChartArgs: { points: Point[]; result: TSPResult } | null = null;
+
+  async function renderChart(points: Point[], result: TSPResult): Promise<void> {
+    lastChartArgs = { points, result };
+    const Plotly = await getPlotly();
+
+    const dark = isDarkMode();
+    const fontColor = dark ? 'rgb(226, 232, 240)' : 'rgb(15, 23, 42)';
+    const subtleFont = dark ? 'rgb(148, 163, 184)' : 'rgb(71, 85, 105)';
+    const gridColor = dark ? 'rgba(148, 163, 184, 0.18)' : 'rgba(100, 116, 139, 0.20)';
+    const lineColor = dark ? 'rgb(45, 212, 191)' : 'rgb(20, 113, 230)';
+    const pointColor = dark ? 'rgb(125, 211, 252)' : 'rgb(20, 45, 84)';
+    const startColor = dark ? 'rgb(251, 191, 36)' : 'rgb(217, 119, 6)';
+
+    /* Tour line — order of indices, plus closing segment if closed tour. */
+    const orderedPts = result.order.map((i) => points[i]);
+    const tourX = orderedPts.map((p) => p.x);
+    const tourY = orderedPts.map((p) => p.y);
+    if (result.closed && orderedPts.length > 1) {
+      tourX.push(orderedPts[0].x);
+      tourY.push(orderedPts[0].y);
+    }
+
+    const stepLabels = result.order.map((_, step) => String(step + 1));
+
+    const traces: unknown[] = [
+      /* 1. Tour line */
+      {
+        type: 'scatter',
+        mode: 'lines',
+        x: tourX,
+        y: tourY,
+        line: { color: lineColor, width: 2.5 },
+        name: 'Rota',
+        hoverinfo: 'skip',
+      },
+      /* 2. All points (markers + step labels) */
+      {
+        type: 'scatter',
+        mode: 'markers+text',
+        x: orderedPts.map((p) => p.x),
+        y: orderedPts.map((p) => p.y),
+        text: stepLabels,
+        textposition: 'top right',
+        textfont: { size: 11, color: fontColor, family: '"Inter Variable", system-ui, sans-serif' },
+        marker: { color: pointColor, size: 11, line: { color: dark ? '#0f172a' : '#fff', width: 1.5 } },
+        name: 'Noktalar',
+        customdata: orderedPts.map((p, i) => `${i + 1}. ${p.label}`),
+        hovertemplate: '<b>%{customdata}</b><br>X = %{x}<br>Y = %{y}<extra></extra>',
+      },
+      /* 3. Start point — large highlighted star */
+      {
+        type: 'scatter',
+        mode: 'markers',
+        x: [orderedPts[0].x],
+        y: [orderedPts[0].y],
+        marker: {
+          symbol: 'star',
+          size: 22,
+          color: startColor,
+          line: { color: dark ? '#0f172a' : '#fff', width: 2 },
+        },
+        name: 'Başlangıç',
+        customdata: [orderedPts[0].label],
+        hovertemplate: '<b>Başlangıç: %{customdata}</b><br>X = %{x}<br>Y = %{y}<extra></extra>',
+      },
+    ];
+
+    const layout = {
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { family: '"Inter Variable", system-ui, sans-serif', size: 12, color: fontColor },
+      xaxis: {
+        title: { text: 'X (boylam)', font: { size: 13, color: fontColor } },
+        gridcolor: gridColor,
+        zerolinecolor: gridColor,
+        tickfont: { size: 11, color: subtleFont },
+        automargin: true,
+      },
+      yaxis: {
+        title: { text: 'Y (enlem)', font: { size: 13, color: fontColor } },
+        gridcolor: gridColor,
+        zerolinecolor: gridColor,
+        tickfont: { size: 11, color: subtleFont },
+        scaleanchor: 'x',
+        scaleratio: 1,
+        automargin: true,
+      },
+      showlegend: true,
+      legend: {
+        bgcolor: dark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.92)',
+        bordercolor: dark ? 'rgba(148, 163, 184, 0.25)' : 'rgba(100, 116, 139, 0.25)',
+        borderwidth: 1,
+        x: 1, y: 1, xanchor: 'right', yanchor: 'top',
+        font: { size: 11, color: fontColor },
+      },
+      margin: { t: 16, r: 16, b: 56, l: 64 },
+      hovermode: 'closest',
+      hoverlabel: {
+        bgcolor: dark ? 'rgb(30, 41, 59)' : 'rgb(15, 23, 42)',
+        bordercolor: dark ? 'rgb(71, 85, 105)' : 'rgb(15, 23, 42)',
+        font: { color: '#fff', size: 12, family: '"Inter Variable", system-ui, sans-serif' },
+      },
+      dragmode: 'pan',
+    };
+
+    const config = {
+      responsive: true,
+      displaylogo: false,
+      displayModeBar: 'hover',
+      scrollZoom: true,
+      doubleClick: 'reset',
+      modeBarButtonsToRemove: ['lasso2d', 'select2d', 'toggleSpikelines', 'autoScale2d'],
+      toImageButtonOptions: { format: 'png', filename: 'tsp-tur', scale: 2 },
+      locale: 'tr',
+    };
+
+    chartEmpty.hidden = true;
+    if (!chartContainer.querySelector('#chart-plot')) {
+      chartContainer.innerHTML = '<div id="chart-plot" class="w-full" style="height:480px"></div>';
+    }
+    const plotEl = document.getElementById('chart-plot') as HTMLDivElement | null;
+    if (!plotEl) return;
+    if (plotEl.dataset.plotlyInit === '1') {
+      await Plotly.react(plotEl, traces, layout, config);
+    } else {
+      await Plotly.newPlot(plotEl, traces, layout, config);
+      plotEl.dataset.plotlyInit = '1';
+    }
+  }
+
+  function purgeChart(): void {
+    const plotEl = document.getElementById('chart-plot');
+    if (plotEl) {
+      void getPlotly().then((P) => P.purge(plotEl));
+      plotEl.removeAttribute('data-plotly-init');
+    }
+    chartContainer.innerHTML = '';
+    chartEmpty.hidden = false;
+    lastChartArgs = null;
+  }
+
+  /* Theme observer — re-render chart on dark/light toggle. */
+  if (typeof MutationObserver !== 'undefined') {
+    new MutationObserver(() => {
+      if (lastChartArgs) void renderChart(lastChartArgs.points, lastChartArgs.result);
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  /* ============================================================ Solve flow */
+
+  async function solve(): Promise<void> {
+    clearError();
+    let points: Point[];
+    if (state.mode === 'structured') {
+      points = entriesToPoints(state.points);
+      if (points.length < 2) {
+        showError('En az 2 nokta gerekli (etiket + X + Y dolu olmalı).');
+        return;
+      }
+    } else {
+      const text = lpText.value.trim();
+      if (!text) { showError('Metin boş.'); return; }
+      try {
+        points = parsePoints(text);
+      } catch (err) {
+        const msg = err instanceof TSPError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
+        showError(msg);
+        return;
+      }
+      state.text = text;
+    }
+
+    saveState();
+
+    solveBtn.disabled = true;
+    solveLabel.textContent = 'Hesaplanıyor…';
+
+    try {
+      let nnDistance: number | undefined;
+      if (state.improve) {
+        const nnOnly = solveTSP({ points, closed: state.closed, improve: false });
+        nnDistance = nnOnly.totalDistance;
+      }
+      const result = solveTSP({ points, closed: state.closed, improve: state.improve });
+      setStatus(result, points, nnDistance);
+      renderRouteTable(points, result);
+      await renderChart(points, result);
+    } catch (err) {
+      const msg = err instanceof TSPError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
+      showError(msg);
+    } finally {
+      solveBtn.disabled = false;
+      solveLabel.textContent = 'Turu hesapla';
+    }
+  }
+
+  /* ============================================================ Event handlers */
+
+  /* Sample dropdown */
+  form.querySelectorAll<HTMLButtonElement>('[data-sample]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const kind = btn.dataset.sample as 'big7' | 'cities15' | 'random';
+      loadSample(kind);
+      /* Close the dropdown */
+      const det = btn.closest('details');
+      if (det) det.removeAttribute('open');
+    });
+  });
+
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('Tüm noktalar silinecek. Devam edilsin mi?')) return;
+    state.points = [emptyEntry()];
+    state.text = '';
+    state.mode = 'structured';
+    state.closed = true;
+    state.improve = true;
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+    clearError();
+    statusBox.hidden = true;
+    resultPanel.hidden = true;
+    purgeChart();
+    renderAll();
+  });
+
+  form.addEventListener('submit', (e) => { e.preventDefault(); solve(); });
+  printBtn.addEventListener('click', () => window.print());
+
+  /* Mode tabs */
+  tabForm.addEventListener('click', () => setMode('structured'));
+  tabText.addEventListener('click', () => setMode('text'));
+  textToFormBtn.addEventListener('click', importTextToForm);
+  lpText.addEventListener('input', () => { state.text = lpText.value; saveState(); });
+
+  /* Closed/improve radio + checkbox */
+  form.addEventListener('change', (e) => {
+    const t = e.target as HTMLElement;
+    if (t.matches('input[name="closed"]')) {
+      setClosed((t as HTMLInputElement).value === 'true');
+    } else if (t.matches('#improve')) {
+      setImprove((t as HTMLInputElement).checked);
     }
   });
 
-  ptsInput.addEventListener('input', updateCount);
+  /* Point row inputs (event delegation) */
+  pointsTable.addEventListener('input', (e) => {
+    const t = e.target as HTMLElement;
+    const lblId = t.getAttribute?.('data-pt-label');
+    const xId = t.getAttribute?.('data-pt-x');
+    const yId = t.getAttribute?.('data-pt-y');
+    if (lblId) { setPointField(lblId, 'label', (t as HTMLInputElement).value); return; }
+    if (xId) { setPointField(xId, 'x', (t as HTMLInputElement).value); return; }
+    if (yId) { setPointField(yId, 'y', (t as HTMLInputElement).value); return; }
+  });
+  pointsTable.addEventListener('click', (e) => {
+    const t = (e.target as HTMLElement).closest<HTMLElement>('[data-remove-pt]');
+    if (!t) return;
+    removePoint(t.dataset.removePt!);
+  });
+  pointAddBtn.addEventListener('click', () => addPointEntry());
 
-  sampleBtn.addEventListener('click', () => {
-    ptsInput.value = SAMPLE;
-    updateCount();
+  /* City datalist */
+  cityAddBtn.addEventListener('click', () => addCity(cityInput.value));
+  cityInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addCity(cityInput.value);
+    }
   });
 
-  clearBtn.addEventListener('click', () => {
-    form.reset();
-    updateCount();
-    output.hidden = true;
-    errorBox.hidden = true;
-  });
-
-  updateCount();
+  /* Initial render */
+  renderAll();
 </script>
+
+<style>
+  @media print {
+    @page { margin: 1.5cm; }
+    body { background: white !important; }
+  }
+  /* Compact number inputs in cells */
+  #points-table input[type='number']::-webkit-outer-spin-button,
+  #points-table input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  #points-table input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+</style>

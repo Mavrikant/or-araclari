@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { solveTSP, parsePoints, TSPError, type Point } from './tsp';
+import { solveTSP, parsePoints, pointsToText, TSPError, type Point } from './tsp';
 
 const pts = (defs: Array<[string, number, number]>): Point[] =>
   defs.map(([label, x, y]) => ({ label, x, y }));
@@ -142,5 +142,37 @@ describe('solveTSP — validation', () => {
         start: 10,
       }),
     ).toThrow(/başlangıç/i);
+  });
+});
+
+describe('pointsToText', () => {
+  it('renders integer coordinates without decimals', () => {
+    expect(pointsToText(pts([['A', 0, 0], ['B', 3, 4]]))).toBe('A\t0\t0\nB\t3\t4');
+  });
+
+  it('renders fractional coordinates with a dot separator', () => {
+    expect(pointsToText(pts([['İstanbul', 28.98, 41.01]]))).toBe('İstanbul\t28.98\t41.01');
+  });
+
+  it('handles negative coordinates', () => {
+    expect(pointsToText(pts([['P', -3.5, -1]]))).toBe('P\t-3.5\t-1');
+  });
+
+  it('round-trips through parsePoints', () => {
+    const original = pts([
+      ['İstanbul', 28.98, 41.01],
+      ['Ankara', 32.85, 39.93],
+      ['İzmir', 27.14, 38.42],
+    ]);
+    const text = pointsToText(original);
+    const parsed = parsePoints(text);
+    expect(parsed).toEqual(original);
+  });
+
+  it('round-trip preserves Turkish-comma input via parser', () => {
+    /* Output uses `.` but parser accepts `,` from user-typed text too. */
+    const fromComma = parsePoints('A\t1,5\t2,75');
+    const text = pointsToText(fromComma);
+    expect(parsePoints(text)).toEqual(fromComma);
   });
 });
