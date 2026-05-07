@@ -49,8 +49,10 @@ const websiteJsonLd = {
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#061224" />
 
-    <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
-    <link rel="alternate icon" href={`${base}favicon.ico`} />
+    <!-- Favicon with cache-busting query to force reload during development -->
+    <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg?v=2`} />
+    <link rel="shortcut icon" href={`${base}favicon.svg?v=2`} />
+    <link rel="alternate icon" href={`${base}favicon.ico?v=2`} />
     <link rel="canonical" href={canonicalUrl} />
 
     <title>{fullTitle}</title>
