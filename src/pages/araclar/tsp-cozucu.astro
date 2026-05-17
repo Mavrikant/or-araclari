@@ -341,7 +341,7 @@ const softwareJsonLd = {
     if (!s || typeof s !== 'object') return def;
     const points = Array.isArray(s.points)
       ? s.points
-          .filter((p): p is Partial<PointEntry> => !!p && typeof p === 'object')
+          .filter((p): p is PointEntry => !!p && typeof p === 'object')
           .map((p) => ({
             id: typeof p.id === 'string' && p.id ? p.id : newId(),
             label: typeof p.label === 'string' ? p.label : '',

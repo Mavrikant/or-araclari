@@ -365,7 +365,7 @@ const softwareJsonLd = {
                 .map((c) => ({
                   id: typeof c.id === 'string' && c.id ? c.id : newId(),
                   coefficients: c.coefficients && typeof c.coefficients === 'object' ? c.coefficients : {},
-                  relation: c.relation === '>=' || c.relation === '=' ? c.relation : '<=',
+                  relation: (c.relation === '>=' ? '>=' : c.relation === '=' ? '=' : '<=') as '<=' | '>=' | '=',
                   rhs: typeof c.rhs === 'number' && Number.isFinite(c.rhs) ? c.rhs : 0,
                 }))
             : def.structured.constraints,
