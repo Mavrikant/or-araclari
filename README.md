@@ -84,7 +84,8 @@ veri içerdiği için).
 | 2 | İlk araç: Lig Fikstürü Oluşturucu | ✅ |
 | 3 | Blog/rehber sistemi + 5 başlangıç yazısı | ✅ |
 | 4 | GA4 + AdSense altyapısı | ✅ |
-| 5 | TSP, Atama, Knapsack, Ders Programı (LP solver hâlâ yapım aşamasında) | ✅ |
+| 5 | LP Çözücü, TSP, Atama, Knapsack, Ders Programı | ✅ |
+| 6 | EOQ, M/M/1 Kuyruk, Hemşire Vardiya Planlayıcı, PERT/CPM | ✅ |
 
 ## Lisans
 
