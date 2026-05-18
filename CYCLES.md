@@ -58,3 +58,23 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 **İşaret:** yok (sırf 🟢 yeşil eylem — ölü kod temizliği)
 
 **Sıradaki:** Q-DEPENDABOT-14 (devalue 5.8.0 → 5.8.1 patch — XS) ya da Q-AUDIT (6 zafiyet incelemesi — S). Sıradaki döngüde Q-DEPENDABOT-14 tercih edilebilir; patch sürüm yükseltmesi düşük riskli ve denetimi azaltır. Q-CONTENT-CONFIG (`astro:schema` `z` deprecate uyarısı) hâlâ 13 hint üretiyor — kalan büyük hint kaynağı bu.
+
+---
+
+## DÖNGÜ #4 — 2026-05-18
+
+**Yapılan:** `devalue` 5.8.0 → 5.8.1 transitive patch yükseltmesi — Dependabot Alert #2 ("Svelte devalue: DoS via sparse array deserialization", high) kapatıldı. Q-DEPENDABOT-14 ve Q-AUDIT'in high kısmı tek hamlede çözüldü.
+
+**Detay:**
+- `devalue` Astro üzerinden transitive bağımlılık (`astro@6.2.2 → devalue`); `package.json` doğrudan referans tutmuyor.
+- Dependabot PR #14 main'in çok gerisinde kaldığı için (`mergeStateStatus: UNKNOWN`, Astro 6 + tip düzeltmeleri + denetim dosyaları sonrası 10+ dosyada eski hâli geri taşıyacaktı) yerine `npm update devalue` ile temiz patch uygulandı.
+- PR #14 "superseded by #18" yorumuyla kapatıldı.
+- `npm audit`: 6 → 5 zafiyet (1 high gitti; kalan 5 moderate `yaml-language-server` → `volar-service-yaml` → `@astrojs/language-server` → `@astrojs/check` zincirinde, fix `--force` ile breaking-change istiyor — ayrı backlog).
+
+**Kalite kapıları:** check ✓ (0 hata, 14 hint — değişmedi) · test ✓ (234/234, 12 dosya) · build ✓ (30 sayfa, 4.47s) · Lighthouse — yalnızca transitive lock dosyası değişti, üretilen `dist/` etkilenmedi
+
+**Yayın:** PR #18 açıldı, CI yeşil (Code Review Doctor pass), merge edildi, `Deploy to GitHub Pages` workflow başarıyla tamamlandı (run 26044158252). Dependabot PR #14 superseded olarak kapatıldı.
+
+**İşaret:** 🟡 SARI — Dependabot PR'ı yerine ajan elle `npm update devalue` ile transitive bağımlılık güncellemesi yaptı + Dependabot PR #14 ajan tarafından kapatıldı. Gerekçe DECISIONS.md'ye ADR-0002 olarak yazılacak.
+
+**Sıradaki:** Q-CONTENT-CONFIG (`astro:schema` `z` deprecate uyarısı, 13 hint kaynağı — S, refactor). Astro 6 önerisine geçiş hem hint sayısını ciddi düşürür hem gelecek breaking-change riskini azaltır.

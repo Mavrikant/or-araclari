@@ -16,8 +16,7 @@ Durum: open · in-progress · blocked · done
 | id | başlık | tür | değer | efor | durum |
 |---|---|---|---|---|---|
 | Q-CI-CHECK | CI workflow'una `npm run check` + `npm run test` adımları ekle (şu an sadece `astro build` çalışıyor) — 🔴 KIRMIZI: workflow değişikliği insan onayı ister | infra | H | S | blocked |
-| Q-AUDIT | `npm audit` 6 zafiyet (5 moderate + 1 high) bildiriyor — incele, transitive ise ayrı PR'a böl | chore | M | S | open |
-| Q-DEPENDABOT-14 | Dependabot PR #14 (`devalue` 5.8.0 → 5.8.1, patch) merge edilebilir mi değerlendir | chore | L | XS | open |
+| Q-AUDIT-YAML | `npm audit` kalan 5 moderate zafiyet `yaml-language-server → volar-service-yaml → @astrojs/language-server → @astrojs/check` zincirinde; fix `--force` (breaking) ister — Astro/check uyumluluğunu doğrulayarak yükselt | chore | M | M | open |
 | Q-OG-IMAGE | OG/Twitter görselleri var mı? Yoksa her araç için statik OG kart üret | content | M | M | open |
 | Q-CONTENT-CONFIG | `src/content.config.ts` `astro:schema`'dan `z` ile uyarı: `'z' is deprecated` (13 uyarı) — yeni Astro 6 önerisine geç | refactor | L | S | open |
 
@@ -42,3 +41,4 @@ Durum: open · in-progress · blocked · done
 | Q-TYPECHECK | `npm run check` 4 TypeScript hatasını gider | #1 |
 | Q-README-LP | README "Faz 5" LP notu güncellendi, Faz 6 satırı eklendi | #2 |
 | Q-UNUSED | 3 kullanılmayan değişken/tip (`Schedule`, `ys`, `slackPanel`) temizlendi | #3 |
+| Q-DEPENDABOT-14 | `devalue` 5.8.0 → 5.8.1 (Dependabot #14 superseded by PR #18) — high alert kapatıldı | #4 |
