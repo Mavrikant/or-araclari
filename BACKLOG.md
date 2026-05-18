@@ -20,7 +20,6 @@ Durum: open · in-progress · blocked · done
 | Q-DEPENDABOT-14 | Dependabot PR #14 (`devalue` 5.8.0 → 5.8.1, patch) merge edilebilir mi değerlendir | chore | L | XS | open |
 | Q-OG-IMAGE | OG/Twitter görselleri var mı? Yoksa her araç için statik OG kart üret | content | M | M | open |
 | Q-CONTENT-CONFIG | `src/content.config.ts` `astro:schema`'dan `z` ile uyarı: `'z' is deprecated` (13 uyarı) — yeni Astro 6 önerisine geç | refactor | L | S | open |
-| Q-UNUSED | 3 kullanılmayan değişken/tip (`Schedule`, `ys`, `slackPanel`) — temizle | refactor | L | XS | open |
 
 ## Yeni Araç Fikirleri (sıra dışı, fırsat olursa)
 
@@ -42,3 +41,4 @@ Durum: open · in-progress · blocked · done
 |---|---|---|
 | Q-TYPECHECK | `npm run check` 4 TypeScript hatasını gider | #1 |
 | Q-README-LP | README "Faz 5" LP notu güncellendi, Faz 6 satırı eklendi | #2 |
+| Q-UNUSED | 3 kullanılmayan değişken/tip (`Schedule`, `ys`, `slackPanel`) temizlendi | #3 |
