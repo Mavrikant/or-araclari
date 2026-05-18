@@ -78,3 +78,22 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 **İşaret:** 🟡 SARI — Dependabot PR'ı yerine ajan elle `npm update devalue` ile transitive bağımlılık güncellemesi yaptı + Dependabot PR #14 ajan tarafından kapatıldı. Gerekçe DECISIONS.md'ye ADR-0002 olarak yazılacak.
 
 **Sıradaki:** Q-CONTENT-CONFIG (`astro:schema` `z` deprecate uyarısı, 13 hint kaynağı — S, refactor). Astro 6 önerisine geçiş hem hint sayısını ciddi düşürür hem gelecek breaking-change riskini azaltır.
+
+---
+
+## DÖNGÜ #5 — 2026-05-18
+
+**Yapılan:** `src/content.config.ts` içindeki `import { z } from 'astro:schema'` deprecate import'u `astro/zod`'a taşındı. `astro:schema` virtual module Astro 7'de kaldırılacak; resmi geçiş bu.
+
+**Detay:**
+- `src/content.config.ts:2` tek satır değişikliği — davranış değişmedi.
+- `astro/client.d.ts` `astro:schema` modülünü `@deprecated` JSDoc ile işaretlemiş ve `astro/zod` yönlendirmesi belge halinde.
+- İçerik koleksiyon şeması (`rehberler`) ve `getCollection`/`render` çağrıları etkilenmedi; 30 sayfanın hepsi build sırasında temiz derlendi.
+
+**Kalite kapıları:** check ✓ (0 hata, **0 hint** — 14'ten −14) · test ✓ (234/234) · build ✓ (30 sayfa, 4.17s) · Lighthouse — yalnızca import yolu değişti, üretilen `dist/` davranışı aynı
+
+**Yayın:** PR #19 açıldı, CI yeşil (Code Review Doctor pass), merge edildi, `Deploy to GitHub Pages` workflow başarıyla tamamlandı (run 26044398068).
+
+**İşaret:** yok (sırf 🟢 yeşil eylem — resmi migration)
+
+**Sıradaki:** Q-OG-IMAGE (her araç için statik OG kart, M efor — içerik/SEO). Alternatif: backlog'daki yeni araç fikirlerinden F-EBQ (Üretim Lot Boyu — S efor, mevcut EOQ deseninin uzantısı, hızlı kazanç). Q-AUDIT-YAML (M efor, breaking-change riski) ya da Q-CI-CHECK (🔴 kırmızı, insan onayı) ileride değerlendirilir.
