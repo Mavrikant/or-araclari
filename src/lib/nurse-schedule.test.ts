@@ -24,7 +24,6 @@ import {
   weekBucketsOfMonth,
   weekOfDay,
   type Nurse,
-  type Schedule,
   type ScheduleConstraints,
 } from './nurse-schedule';
 

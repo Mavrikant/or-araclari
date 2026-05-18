@@ -238,7 +238,6 @@ const softwareJsonLd = {
     const PB = 36;
 
     const xs = points.map((p) => p.q);
-    const ys = points.map((p) => p.total);
     const xMax = Math.max(...xs);
     const yMax = Math.max(...points.map((p) => Math.max(p.ordering, p.holding, p.total)));
 
