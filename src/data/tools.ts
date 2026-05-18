@@ -99,6 +99,16 @@ export const TOOLS: readonly Tool[] = [
     guideSlug: 'eoq-stok-yonetimi',
   },
   {
+    slug: 'epq-uretim-lot-boyu',
+    title: 'Üretim Lot Boyu (EPQ) Hesaplayıcı',
+    shortTitle: 'EPQ / Üretim Lot Boyu',
+    description:
+      'Yıllık talep, kurulum maliyeti, taşıma maliyeti ve üretim hızını gir; tedarik anlık değil de sonlu hızla geldiğinde optimum üretim parti büyüklüğünü hesapla. Toplam maliyet eğrisi anlık çizilir.',
+    category: 'envanter',
+    status: 'ready',
+    guideSlug: 'epq-uretim-lot-boyu',
+  },
+  {
     slug: 'mm1-kuyruk-analizci',
     title: 'M/M/1 Kuyruk Analizci',
     shortTitle: 'M/M/1 Kuyruk',

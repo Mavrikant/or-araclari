@@ -1,0 +1,314 @@
+---
+title: "Üretim Lot Boyu (EPQ): EOQ'nun Fabrika İçi Kuzeni"
+description: "EPQ (Economic Production Quantity) nedir, EOQ'dan farkı nedir, üretim hızı sonlu olduğunda optimum parti büyüklüğü nasıl bulunur? Fabrika içi üretim planlaması üzerine kapsamlı Türkçe rehber."
+pubDate: 2026-05-18
+relatedTool: "epq-uretim-lot-boyu"
+keywords:
+  - "EPQ"
+  - "Economic Production Quantity"
+  - "üretim lot boyu"
+  - "EBQ"
+  - "Economic Batch Quantity"
+  - "parti büyüklüğü"
+  - "üretim planlama"
+  - "envanter teorisi"
+readingMinutes: 10
+faq:
+  - question: "EPQ ile EOQ arasındaki temel fark nedir?"
+    answer: "EOQ tedariğin anlık olduğunu varsayar: sipariş verirsin, tüm miktar bir anda stoğa girer. EPQ ise tedariğin sabit bir üretim hızı p ile geldiğini varsayar; üretim devam ederken talep de eş zamanlı tüketim yapar, dolayısıyla tepe stok asla Q kadar olmaz. Üretim oranı sonsuza giderken EPQ formülü matematiksel olarak EOQ'ya indirgenir."
+  - question: "EPQ formülündeki (1 − d/p) çarpanı ne anlama gelir?"
+    answer: "Üretim fazı boyunca her birim üretildiğinde anında bir miktar d/p kadarı tüketilir. Net olarak stoğa yansıyan birim oranı (1 − d/p). Bu çarpan tepe stoğu, ortalama stoğu ve dolayısıyla taşıma maliyetini küçültür. Sonuç olarak optimum parti büyüklüğü EOQ'dan daha büyük çıkar — aynı oranda üretim çevriminden daha fazla yararlanılır."
+  - question: "EPQ ne zaman EOQ yerine kullanılmalı?"
+    answer: "İçeride üretilen ve tüketilen ürünlerde EPQ uygundur: fabrika içi ara mamul, yarı mamul, kendi ürettiğin ambalajı gibi. Tedarikçiden tek seferde teslim alınan ürünler için EOQ yeterli. Ölçek olarak üretim hızı talebin 2-10 katı arasındaysa EPQ ile EOQ arasında belirgin fark çıkar; üretim talebin 100 katından hızlıysa EPQ pratik olarak EOQ ile aynı sonucu verir."
+  - question: "Üretim hızı talepten küçükse ne olur?"
+    answer: "p ≤ d ise sistem fiziksel olarak talebi karşılayamaz: ne kadar üretirsen üret, stok birikmez, tam tersine açık kalır. EPQ modeli bu durumda anlamsız hâle gelir. Aracımız bu kombinasyonu reddederek hata gösterir; gerçek dünyada kapasite artırımı (ek vardiya, yeni hat) ya da talebin azaltılması düşünülmelidir."
+  - question: "EPQ formülünde kurulum (setup) maliyeti tam olarak ne içerir?"
+    answer: "Kurulum maliyeti S, bir üretim partisi başlatmak için ödenen sabit maliyetlerin toplamıdır: makine değişimi (changeover), kalıp/aparat değişimi, hat temizliği, ilk parça onayı, operatör hazırlık süresi. Üretim miktarından bağımsızdır; sadece kaç parti çalıştırıldığına bağlıdır. SMED gibi yalın üretim teknikleri tam olarak S'i düşürmeyi hedefler — S düşünce optimum parti boyu küçülür, esneklik artar."
+---
+
+Bir mobilya üreticisi düşün. Aynı modeli sürekli müşteri talebine göre
+üretiyor; talep yıllık 1000 koltuk. Ama fabrikası saatte tek koltuk
+üretebiliyor; vardiya başına 8, yılda yaklaşık 4000 birim kapasitesi var.
+Sipariş gelince anında teslim eden bir tedarikçi gibi değil; üretim
+**zaman alıyor** ve bu süre içinde müşteri de eş zamanlı koltuk
+talep ediyor. Bu durumda klasik EOQ'nun "tüm Q birim aynı anda stoğa
+girer" varsayımı tutmuyor. **EPQ (Economic Production Quantity)** tam
+olarak bu boşluğu kapatır.
+
+## EPQ nedir?
+
+Economic Production Quantity (Üretim Lot Boyu), tedarik anlık olmayıp
+sabit bir üretim hızıyla geldiğinde toplam yıllık maliyeti minimize
+eden üretim partisi büyüklüğüdür. Literatürde **EBQ (Economic Batch
+Quantity)** olarak da geçer; ikisi aynı modeldir.
+
+Klasik EPQ varsayımları EOQ'nun bir genişletilmesidir:
+
+1. Talep sabit ve deterministiktir, yıllık $D$ birim.
+2. Üretim **sabit bir hız** $p$ ile yapılır, yıllık $p$ birim.
+   Tedariğin anlık olduğu klasik EOQ'da ise $p \to \infty$.
+3. $p > D$ olmalıdır; aksi hâlde talep karşılanamaz.
+4. Eksik stok yok, birim fiyat sabittir.
+
+Bir üretim çevrimi iki fazdan oluşur:
+
+- **Üretim fazı** ($t_p$ uzunluğunda): Hem üretim ($p$) hem tüketim
+  ($d$) eş zamanlı oluyor. Net stok birikim hızı $p − d > 0$. Faz
+  sonunda stok tepe noktasına ulaşır.
+- **Tüketim fazı** ($t_c$ uzunluğunda): Üretim durmuş, sadece tüketim
+  ($d$) sürüyor. Stok lineer şekilde azalır ve faz sonunda sıfırlanır.
+
+## Formül
+
+Yıllık toplam maliyet iki bileşenden oluşur:
+
+- **Kurulum maliyeti** (setup cost): Her üretim partisi için ödenen
+  sabit maliyet — makine değişimi, kalıp ayarı, hat temizliği. Yıllık
+  toplam = $D \cdot S / Q$.
+- **Taşıma maliyeti** (holding cost): Stokta tutulan her birimin yıl
+  boyunca yarattığı maliyet — depo, sermaye, sigorta, eskime. Yıllık
+  toplam = ortalama stok × $H$ = $\tfrac{Q \cdot (1 − d/p) \cdot H}{2}$.
+
+Toplam yıllık maliyet:
+
+$$
+TC(Q) = \frac{D \cdot S}{Q} + \frac{Q \cdot (1 - d/p) \cdot H}{2}
+$$
+
+$Q$'ya göre türevi alıp sıfıra eşitleyip çözünce:
+
+$$
+Q^* = \sqrt{\frac{2 \cdot D \cdot S}{H \cdot (1 - d/p)}}
+$$
+
+Bu formül **EPQ'nun kapalı-form çözümü**dür. $(1 − d/p)$ çarpanı
+paydada olduğu için, EPQ'nun optimum parti boyu **EOQ'dan büyüktür**.
+Üretim hızı sonsuza yaklaşırken çarpan 1'e yaklaşır ve EPQ matematiksel
+olarak EOQ'ya indirgenir; $p \to \infty$ limitinde aynı formül.
+
+EOQ ile aynı zarif özellik EPQ'da da geçerli: optimum noktada
+**kurulum maliyeti taşıma maliyetine eşittir**. Türevin sıfır olmasının
+doğrudan sonucudur.
+
+## Tepe stok ve ortalama stok
+
+EPQ'nun pedagojik anahtarı şudur: tüm Q birim aynı anda stoğa
+girmediği için tepe stok asla $Q$ kadar olmaz. Üretim fazında
+$p − d$ hızla artar, $Q/p$ kadar gün sürer:
+
+$$
+I_{\max} = (p - d) \cdot \frac{Q}{p} = Q \cdot \left(1 - \frac{d}{p}\right)
+$$
+
+Ortalama stok lineer üçgenin yarısıdır:
+
+$$
+\bar{I} = \frac{I_{\max}}{2} = \frac{Q \cdot (1 - d/p)}{2}
+$$
+
+Bu küçülmüş ortalama stok, taşıma maliyetini EOQ'ya göre düşürür ve
+formülün $(1 − d/p)$ çarpanını verir.
+
+## EOQ ile sayısal karşılaştırma
+
+Aynı parametrelerle iki modelin sonuçlarını yan yana görmek farkı
+somutlaştırır. $D = 1000, S = 10, H = 2$ alalım.
+
+| Üretim hızı $p$ | EOQ $Q^*$ | EPQ $Q^*$ | Tepe stok | Toplam maliyet |
+|---|---|---|---|---|
+| $\infty$ (anlık) | 100.00 | 100.00 | 100.00 | 200.00 |
+| 10 000 | — | 105.41 | 94.87 | 189.74 |
+| 4 000 | — | 115.47 | 86.60 | 173.20 |
+| 2 000 | — | 141.42 | 70.71 | 141.42 |
+| 1 200 | — | 244.95 | 40.82 | 81.65 |
+
+Görüldüğü gibi üretim hızı talep oranına yaklaştıkça optimum parti
+boyu büyüyor (çevrimi daha az sıklıkta kurmaya değer) ama tepe stok
+küçülüyor (üretim ile tüketim çok yakın hızlarda). Toplam yıllık
+maliyet de düşüyor: sürekli akan üretim bandında envanter sıkıntısı
+daha az.
+
+## EPQ'nun uygulama alanları
+
+EPQ özellikle **fabrika içi üretim kontrolünde** vazgeçilmezdir.
+
+**Otomotiv:** Pres atölyesinin gövde panellerini ürettiği partilerin
+büyüklüğü EPQ ile planlanır. Kalıp değişimi 30-90 dakika sürdüğü için
+S yüksek; H ise nispeten düşük (yarı mamul deposu görece ucuz).
+Sonuçta partiler büyük, çevrimler seyrek olur.
+
+**Beyaz eşya:** Buzdolabı kapı kapasiteleri, çamaşır makinesi
+tamburları gibi yarı mamuller hattan farklı bir hızla üretilip aynı
+hatta ana montaja beslenir. EPQ ile her yarı mamulün optimum parti
+boyu bulunur.
+
+**Gıda üretimi:** Pizza hamurları, ekmek üretiminde fırın bir partilik
+üretim yapar (örneğin 200 hamur), sonra duraklar. Müşteri talebi
+sabit, üretim kesikli. Klasik EPQ uygulaması.
+
+**İlaç üretimi:** GMP kuralları nedeniyle kalıp ve formül değişimleri
+uzun temizlik süreleri gerektirir; kurulum maliyeti çok yüksektir.
+EPQ ile partiler büyük tutulur, çevrim seyrek olur.
+
+**3D baskı ve dijital üretim:** Üretim hızı sınırlı; EPQ ile her
+modelin optimum baskı parti büyüklüğü hesaplanır.
+
+## Yalın üretim ile ilişki
+
+EPQ klasik bir model olsa da modern yalın üretim felsefesiyle ilginç
+bir gerilim içinde duruyor.
+
+**Toyota Production System** ve onun türevi yalın yaklaşımlar
+**küçük parti üretim** ister: tek parça akışına yakın, kanban ile
+çekiş, JIT (just-in-time) teslimat. Bu hedef EPQ'nun büyük parti
+optimumuyla doğrudan çatışır gibi görünür.
+
+Gerçekte ise yalın felsefe **S'i düşürerek** EPQ'yu küçük parti
+yönüne kaydırır. **SMED (Single-Minute Exchange of Die)**
+metodolojisi makine değişim sürelerini saatlerden dakikalara
+indirir. S düştükçe EPQ formülü gereği $Q^*$ küçülür; küçük parti
+ekonomik hâle gelir. Yani yalın üretim EPQ'yu reddetmez — formülün
+girdisini değiştirerek optimum noktayı kaydırır.
+
+Türkçe pratik: bir Toyota fabrikasında pres kalıbı değişimi 3
+dakikaya indirilmişse, EPQ ile optimum partiniz 50 birim çıkabilir;
+aynı pres geleneksel 2 saatlik değişimle yönetildiğinde optimum
+parti 2000 birime çıkar. İki sonuç da EPQ'ya uygundur; fark yalnızca
+girdi parametresinde.
+
+## EPQ varyantları
+
+EPQ'nun varsayımlarını gevşeten birçok varyant vardır.
+
+### EPQ with backorders
+
+Eksik stok izinli olduğunda formül değişir; backorder maliyeti $b$
+eklenir. Optimum partide $Q$ büyüklüğüyle birlikte maksimum
+backorder miktarı $B$ de optimize edilir. Pratikte siparişlerin
+ertelenebildiği endüstriyel ortamlarda kullanılır.
+
+### EPQ with quantity discounts
+
+Hammadde tedarikçisi miktar indirimi sunuyorsa EOQ-D mantığı EPQ'ya
+da uygulanır; her indirim seviyesinde EPQ ayrı hesaplanır.
+
+### Multi-product EPQ (ELSP)
+
+**Economic Lot Scheduling Problem**: aynı makinede üretilen birden
+fazla ürünün ortak çevrim planlaması. Her ürünün kendi $D$, $S$, $H$,
+$p$ değeri var; tek bir kapasite paylaşıyorlar. NP-zor bir problem;
+heuristikler (common cycle, basic period) ile çözülür.
+
+### Stochastic EPQ
+
+Talep belirsizse EOQ'da güvenlik stoğu eklendiği gibi EPQ'da da
+benzer genişletmeler vardır. Lead time olmadığı için klasik
+"reorder point" kavramı yerine üretim tetikleme eşiği gelir.
+
+### EPQ with imperfect quality
+
+Üretim hatalı parça çıkarıyorsa (örneğin %p hata oranı) etkin
+üretim hızı azalır; formül buna göre güncellenir. Modern üretimde
+6 sigma uygulamalarının yan ürünüdür.
+
+## Sayısal bir örnek üzerinden gidelim
+
+Bir küçük metal işleme atölyesi düşün:
+
+- Yıllık talep $D = 5000$ aluminyum profil
+- Üretim kapasitesi $p = 20\,000$ profil/yıl (talebin 4 katı)
+- Kurulum maliyeti $S = 200$ ₺/parti (kalıp ayarı, ilk parça onayı)
+- Taşıma maliyeti $H = 8$ ₺/profil/yıl
+
+EPQ formülünü uygula:
+
+$$
+Q^* = \sqrt{\frac{2 \cdot 5000 \cdot 200}{8 \cdot (1 - 5000/20000)}}
+    = \sqrt{\frac{2\,000\,000}{6}} \approx 577 \text{ birim}
+$$
+
+Karşılaştırma için **aynı parametrelerle EOQ** olsaydı:
+
+$$
+Q^*_{\text{EOQ}} = \sqrt{\frac{2 \cdot 5000 \cdot 200}{8}}
+                 = \sqrt{250\,000} = 500 \text{ birim}
+$$
+
+EPQ optimum partisi EOQ'dan **%15 büyük**. Sayısal sonuçlar:
+
+- Tepe stok $I_{\max} = 577 \cdot 0.75 \approx 433$ birim
+- Üretim fazı uzunluğu: $577 / 20\,000 \cdot 365 \approx 10.5$ gün
+- Çevrim uzunluğu: $577 / 5000 \cdot 365 \approx 42.1$ gün
+- Tüketim fazı: $42.1 - 10.5 \approx 31.6$ gün
+- Yıllık kurulum maliyeti: $5000 \cdot 200 / 577 \approx 1733$ ₺
+- Yıllık taşıma maliyeti: $433 \cdot 8 / 2 \approx 1733$ ₺ (eşit, EPQ imzası)
+- Toplam yıllık maliyet: $\approx 3466$ ₺
+
+Pratik karar: 10-11 günlük üretim koşusuyla yaklaşık 577 birim üret,
+sonra yaklaşık 32 gün makineyi başka işe (ya da bakıma) ayır, sonra
+yeniden başla.
+
+Bu hesabı bu sitenin
+[EPQ Hesaplayıcı](/or-araclari/araclar/epq-uretim-lot-boyu) aracında
+girip toplam maliyet eğrisini ve stok profilini de görsel olarak
+inceleyebilirsin.
+
+## Yaygın hatalar ve kaçınma yolları
+
+EPQ uygulamasında sık karşılaşılan tipik hatalar var.
+
+**Birinci hata — yanlış model seçimi.** Tedariğin tek seferde geldiği
+durumda EPQ yerine EOQ kullanılmalı; aksi takdirde gereksiz karmaşa.
+Tersine fabrika içi üretimde EOQ kullanırsanız tepe stoğu olduğundan
+büyük varsayarsınız ve gerçekten daha küçük partiler kurarsınız;
+kurulum maliyeti şişer.
+
+**İkinci hata — kapasite ile üretim hızını karıştırmak.** $p$ teorik
+maksimum değil, sürekli sürdürülebilir gerçek üretim hızıdır. OEE
+(Overall Equipment Effectiveness) %70 ise nominal hızı 0.7 ile çarpıp
+$p$ olarak kullan. Aksi takdirde gerçekleşmeyen kapasiteye göre
+plan yaparsın.
+
+**Üçüncü hata — kurulum maliyetini eksik tahmin etmek.** S'e dahil
+edilmesi gerekenler: makine duruşunun fırsat maliyeti, ilk birim
+kontrolleri, hat üzerinde kaybedilen ham madde, operatör hazırlık.
+Çoğu işletme yalnızca işçilik saatini sayar; gerçek S 2-5 kat
+yüksektir.
+
+**Dördüncü hata — $(1 − d/p)$ çarpanını unutmak.** EOQ formülünü
+EPQ durumuna uyarlamak isteyen mühendisler bazen $(1 − d/p)$
+çarpanını paydaya eklemeyi unutur. Sonuçta optimum parti olduğundan
+küçük çıkar, kurulum maliyeti şişer. Aracımız bu hataya düşmez
+çünkü formülü doğrudan EPQ'ya göre yazılmıştır.
+
+**Beşinci hata — küçük talep / büyük üretim hızı durumunda EPQ
+ısrarı.** $p \gg D$ ise (üretim talebin 100 katı gibi) EPQ ve EOQ
+pratik olarak aynı sonucu verir; ek karmaşıklığa girmeye değmez.
+Bu durumda doğrudan EOQ ile hesapla.
+
+## Sonuç
+
+EPQ, EOQ'nun doğal kuzenidir: tedariğin anlık olmadığı, sabit hızla
+geldiği durumların kapalı-form çözümüdür. Üretim hızı $(1 − d/p)$
+çarpanı ile formüle girer; bu çarpan optimum parti boyunu büyütür,
+tepe stoğu küçültür ve toplam maliyeti düşürür.
+
+Pratik fabrika ortamlarında EPQ, üretim parti planlamasının
+matematiksel temelidir. Modern yalın üretim felsefesi EPQ'yu
+reddetmek yerine kurulum maliyetini düşürerek optimum noktayı küçük
+parti yönüne kaydırır. Her iki yaklaşım da EPQ'nun temel mantığına
+sadık kalır.
+
+Bu sitenin
+[EPQ Hesaplayıcı](/or-araclari/araclar/epq-uretim-lot-boyu) aracı
+klasik modelin tam karşılığını sunar; toplam maliyet eğrisi ve bir
+çevrimdeki stok profili formülün arkasındaki sezgiyi pekiştirir.
+Klasik EOQ ile karşılaştırmak için
+[EOQ rehberini](/or-araclari/rehberler/eoq-stok-yonetimi) ve
+[EOQ Hesaplayıcı](/or-araclari/araclar/eoq-hesaplayici) aracını da
+incelemek faydalı olur.
+
+İleri seviye akademik referans için Tersine ve Silver/Pyke/Peterson
+gibi envanter teorisi standartlarına bakılabilir; endüstriyel pratik
+için APICS sertifikasyon eğitimleri (CPIM, CSCP) kapsamlı bir yol
+sunar.
