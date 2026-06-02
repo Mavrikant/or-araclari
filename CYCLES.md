@@ -139,3 +139,35 @@ açıkça işaretleniyor. Passthrough olmadan secret build'e ulaşmadığından 
 prod'da çalışmaz — bu yüzden kapsama dahil edildi.
 
 **Sıradaki:** Q-OG-IMAGE (statik OG kart) ya da F-EBQ (EPQ/EBQ aracı).
+
+---
+
+## DÖNGÜ #7 — 2026-06-02
+
+**Yapılan:** Kullanıcı geri bildirimi sonrası Plausible artık secret kullanmıyor.
+Canlı testte (#6 merge sonrası) Plausible scripti çıkmadı: `PUBLIC_PLAUSIBLE_DOMAIN`
+secret'ı set edilmemişti, dolayısıyla feature prod'da ölü kalmıştı. `data-domain`
+herkese açık bir domain (gizli değil), bu yüzden secret yanlış modeldi.
+
+**Detay:**
+- `src/data/site.ts`: `PLAUSIBLE_DOMAIN` artık `import.meta.env.PROD ? 'karaman.dev'
+  : ''`'e default'lar — secret gerekmez, üretimde her zaman açık; `astro dev`'de
+  kapalı (yerel trafik sayılmasın). `PUBLIC_PLAUSIBLE_DOMAIN` hâlâ override.
+- `.github/workflows/deploy.yml`: #6'da eklenen iki Plausible secret passthrough
+  geri alındı → workflow Plausible için hiç değişmiyor (🟡 işaret kalkıyor).
+- `README.md`: env tablosu + not güncellendi (secret gerekmez, prod'da açık).
+- `DECISIONS.md`: ADR-0003'e "2026-06-02 güncelleme" eklendi.
+
+**Doğrulama:** Plain `npm run build` (hiç env yok) → `<script defer
+data-domain="karaman.dev" ...>` index ve alt sayfalarda. `astro dev` → script
+YOK (PROD=false). gizlilik aktif Plausible'ı, cerezler çerezsiz bölümü gösteriyor.
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint) · test ✓ (234/234) · build ✓ (30
+sayfa) · dev ✓ (Plausible kapalı).
+
+**Yayın:** Branch `claude/dreamy-keller-lNCQV`'a push, yeni draft PR.
+
+**İşaret:** yok — workflow değişikliği geri alındığı için #6'daki 🟡 işaret bu
+döngüde nötralize oldu (sırf 🟢 kod + içerik + doc).
+
+**Sıradaki:** Q-OG-IMAGE ya da F-EBQ.

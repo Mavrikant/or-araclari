@@ -45,15 +45,21 @@ export const CLARITY_ID = import.meta.env.PUBLIC_CLARITY_ID ?? '';
 export const GSC_VERIFICATION = import.meta.env.PUBLIC_GSC_VERIFICATION ?? '';
 
 /**
- * Plausible Analytics site alanı (örn. "karaman.dev"). Plausible siteleri
- * `data-domain` ile tanımlanır — ayrı bir sayısal/dizgi "site ID" yoktur.
- * Boş bırakılırsa Plausible hiç yüklenmez. Set via PUBLIC_PLAUSIBLE_DOMAIN.
+ * Plausible Analytics site alanı. Plausible siteleri `data-domain` ile
+ * tanımlanır — ayrı bir sayısal/dizgi "site ID" yoktur ve domain herkese
+ * açık bilgi olduğu için (sayfa kaynağında görünür) **secret gerektirmez**.
+ *
+ * Bu yüzden değer koda gömülüdür: üretim build'inde varsayılan olarak
+ * `karaman.dev` ile **her zaman açıktır**. `astro dev`'de (PROD değilken)
+ * varsayılan kapalıdır ki yerel geliştirme trafiği sayılmasın; istenirse
+ * PUBLIC_PLAUSIBLE_DOMAIN ile override edilebilir, `""` set edilirse kapanır.
  *
  * Plausible çerezsizdir ve kişisel veri / kalıcı tanımlayıcı saklamaz; bu
  * yüzden GA4 ve Clarity'nin aksine onay kapısı olmadan eager yüklenir ve
  * çerez tercih bandını TETİKLEMEZ (KVKK/GDPR uyumlu, onaysız ölçüm).
  */
-export const PLAUSIBLE_DOMAIN = import.meta.env.PUBLIC_PLAUSIBLE_DOMAIN ?? '';
+export const PLAUSIBLE_DOMAIN =
+  import.meta.env.PUBLIC_PLAUSIBLE_DOMAIN ?? (import.meta.env.PROD ? 'karaman.dev' : '');
 
 /**
  * Plausible script kaynağı. Varsayılan Plausible Cloud scriptidir; kendi
