@@ -42,3 +42,4 @@ Durum: open · in-progress · blocked · done
 | Q-UNUSED | 3 kullanılmayan değişken/tip (`Schedule`, `ys`, `slackPanel`) temizlendi | #3 |
 | Q-DEPENDABOT-14 | `devalue` 5.8.0 → 5.8.1 (Dependabot #14 superseded by PR #18) — high alert kapatıldı | #4 |
 | Q-CONTENT-CONFIG | `astro:schema` → `astro/zod` (deprecate uyarısı düzeltildi, 14 hint → 0) | #5 |
+| Q-PLAUSIBLE | Plausible Analytics desteği (çerezsiz, onaysız eager — `PUBLIC_PLAUSIBLE_DOMAIN`/`_SRC`); ADR-0003 | #6 |

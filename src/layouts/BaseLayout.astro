@@ -1,6 +1,15 @@
 ---
 import '../styles/global.css';
-import { SITE, base, GA_ID, ADSENSE_CLIENT_ID, CLARITY_ID, GSC_VERIFICATION } from '../data/site';
+import {
+  SITE,
+  base,
+  GA_ID,
+  ADSENSE_CLIENT_ID,
+  CLARITY_ID,
+  GSC_VERIFICATION,
+  PLAUSIBLE_DOMAIN,
+  PLAUSIBLE_SRC,
+} from '../data/site';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import CookieBanner from '../components/CookieBanner.astro';
@@ -119,6 +128,12 @@ const websiteJsonLd = {
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
         />
       )
+    }
+
+    {
+      /* Plausible: cookieless & privacy-first — loads eagerly without a
+         consent gate and does not trigger the cookie banner below. */
+      PLAUSIBLE_DOMAIN && <script is:inline defer data-domain={PLAUSIBLE_DOMAIN} src={PLAUSIBLE_SRC} />
     }
 
     <slot name="head" />

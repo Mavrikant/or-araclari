@@ -97,3 +97,45 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 **İşaret:** yok (sırf 🟢 yeşil eylem — resmi migration)
 
 **Sıradaki:** Q-OG-IMAGE (her araç için statik OG kart, M efor — içerik/SEO). Alternatif: backlog'daki yeni araç fikirlerinden F-EBQ (Üretim Lot Boyu — S efor, mevcut EOQ deseninin uzantısı, hızlı kazanç). Q-AUDIT-YAML (M efor, breaking-change riski) ya da Q-CI-CHECK (🔴 kırmızı, insan onayı) ileride değerlendirilir.
+
+---
+
+## DÖNGÜ #6 — 2026-06-02
+
+**Yapılan:** Kullanıcı talebi — Plausible Analytics desteği eklendi. Mevcut
+env-gated analitik desenine paralel, ama Plausible çerezsiz olduğu için
+**onaysız eager** yüklenir ve çerez tercih bandını tetiklemez.
+
+**Detay:**
+- `src/data/site.ts`: `PLAUSIBLE_DOMAIN` (`PUBLIC_PLAUSIBLE_DOMAIN`) ve opsiyonel
+  `PLAUSIBLE_SRC` (`PUBLIC_PLAUSIBLE_SRC`, varsayılan `plausible.io/js/script.js`)
+  export'ları. Plausible'da ayrı "ID" yok — site `data-domain` ile tanımlanır.
+- `src/layouts/BaseLayout.astro`: `PLAUSIBLE_DOMAIN` set ise `<script defer
+  data-domain src>` eager render edilir; çerez bandı koşulu (`GA_ID ||
+  ADSENSE_CLIENT_ID || CLARITY_ID`) Plausible'ı **içermez** (bilinçli).
+- `src/pages/gizlilik.astro` + `src/pages/cerezler.astro`: "consent-gated" ile
+  "çerezsiz" hizmetler ayrıldı; Plausible üçüncü-taraf listesine ve çerez
+  politikasına "hiçbir çerez yerleştirmez" notuyla eklendi. Yasal sayfa tarihi
+  "2 Haziran 2026" oldu.
+- `README.md`: env tablosuna iki satır + bandı tetiklemediğine dair açıklama.
+- `.github/workflows/deploy.yml`: iki secret passthrough.
+- `DECISIONS.md`: ADR-0003 (domain-as-ID + onaysız eager yükleme gerekçesi).
+
+**Doğrulama:** `PUBLIC_PLAUSIBLE_DOMAIN=karaman.dev` ile build → script `<head>`'de
+ve alt sayfalarda; band yok. Plausible + `PUBLIC_GA_ID` birlikte → her iki
+script + band var. `PUBLIC_PLAUSIBLE_SRC` override → custom src render ediliyor.
+Env yokken → script yok. Yasal sayfaların koşullu içeriği her iki durumda doğru.
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint) · test ✓ (234/234) · build ✓ (30
+sayfa) · Lighthouse — Plausible scripti `defer` + hafif (~1KB), tek dış istek;
+ölçülebilir regresyon beklenmez.
+
+**Yayın:** Branch `claude/dreamy-keller-lNCQV`'a push, draft PR açılacak.
+
+**İşaret:** 🟡 SARI — `deploy.yml` workflow dosyası değişti (iki secret
+passthrough). Backlog'daki Q-CI-CHECK notuna göre workflow değişiklikleri insan
+onayı ister; bu yüzden PR draft açılıyor ve workflow değişikliği PR gövdesinde
+açıkça işaretleniyor. Passthrough olmadan secret build'e ulaşmadığından feature
+prod'da çalışmaz — bu yüzden kapsama dahil edildi.
+
+**Sıradaki:** Q-OG-IMAGE (statik OG kart) ya da F-EBQ (EPQ/EBQ aracı).

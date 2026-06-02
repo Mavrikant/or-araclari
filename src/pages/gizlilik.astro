@@ -1,13 +1,17 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Container from '../components/Container.astro';
-import { SITE, withBase, GA_ID, ADSENSE_CLIENT_ID, CLARITY_ID } from '../data/site';
+import { SITE, withBase, GA_ID, ADSENSE_CLIENT_ID, CLARITY_ID, PLAUSIBLE_DOMAIN } from '../data/site';
 
-const lastUpdated = '6 Mayıs 2026';
+const lastUpdated = '2 Haziran 2026';
 const analyticsActive = Boolean(GA_ID);
 const adsActive = Boolean(ADSENSE_CLIENT_ID);
 const clarityActive = Boolean(CLARITY_ID);
-const anyActive = analyticsActive || adsActive || clarityActive;
+const plausibleActive = Boolean(PLAUSIBLE_DOMAIN);
+// Çerez bandı yalnızca çerez yazan hizmetler için gösterilir.
+const consentGated = analyticsActive || adsActive || clarityActive;
+// Plausible çerezsiz olduğu için banda dahil değil ama yine de üçüncü taraf.
+const anyActive = consentGated || plausibleActive;
 ---
 
 <BaseLayout
@@ -109,12 +113,20 @@ const anyActive = analyticsActive || adsActive || clarityActive;
           Bağlamsal reklamlar gösterilmesi için. Kişiselleştirilmiş reklamlar
           için Google'ın kendi çerezleri kullanılabilir.
         </li>
+        <li>
+          <strong>Plausible Analytics{!plausibleActive && ' (şu an aktif değil)'}:</strong>
+          Çerezsiz, hafif ve gizlilik-öncelikli trafik ölçümü (sayfa
+          görüntülemeleri, yönlendiren kaynaklar). Çerez veya kalıcı
+          tanımlayıcı kullanmaz, parmak izi çıkarmaz, kişisel veri toplamaz ve
+          veriyi üçüncü taraflarla paylaşmaz; toplanan tüm metrikler agregedir.
+          Bu nedenle onay gerektirmez ve çerez tercih bandını tetiklemez.
+        </li>
       </ul>
 
-      {anyActive && (
+      {consentGated && (
         <>
           <p>
-            Bu hizmetlerin <strong>her ikisi de varsayılan olarak kapalıdır</strong>.
+            Çerez yazan bu hizmetler <strong>varsayılan olarak kapalıdır</strong>.
             İlk ziyaretinde sayfanın altında bir çerez tercih bandı görürsün;
             "Sadece zorunlu" seçeneğini seçersen analitik ve reklam çerezleri
             etkinleşmez. "Tümünü kabul et" seçeneğiyle her ikisini de

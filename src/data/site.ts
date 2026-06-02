@@ -45,6 +45,26 @@ export const CLARITY_ID = import.meta.env.PUBLIC_CLARITY_ID ?? '';
 export const GSC_VERIFICATION = import.meta.env.PUBLIC_GSC_VERIFICATION ?? '';
 
 /**
+ * Plausible Analytics site alanı (örn. "karaman.dev"). Plausible siteleri
+ * `data-domain` ile tanımlanır — ayrı bir sayısal/dizgi "site ID" yoktur.
+ * Boş bırakılırsa Plausible hiç yüklenmez. Set via PUBLIC_PLAUSIBLE_DOMAIN.
+ *
+ * Plausible çerezsizdir ve kişisel veri / kalıcı tanımlayıcı saklamaz; bu
+ * yüzden GA4 ve Clarity'nin aksine onay kapısı olmadan eager yüklenir ve
+ * çerez tercih bandını TETİKLEMEZ (KVKK/GDPR uyumlu, onaysız ölçüm).
+ */
+export const PLAUSIBLE_DOMAIN = import.meta.env.PUBLIC_PLAUSIBLE_DOMAIN ?? '';
+
+/**
+ * Plausible script kaynağı. Varsayılan Plausible Cloud scriptidir; kendi
+ * sunucunda barındırma ya da script uzantıları (örn.
+ * "https://plausible.io/js/script.outbound-links.js") için override edilir.
+ * Yalnızca PLAUSIBLE_DOMAIN set iken kullanılır.
+ */
+export const PLAUSIBLE_SRC =
+  import.meta.env.PUBLIC_PLAUSIBLE_SRC ?? 'https://plausible.io/js/script.js';
+
+/**
  * Returns BASE_URL guaranteed to end with `/` so concatenations like
  * `${base}rehberler` always render as `/or-araclari/rehberler` with a single
  * separator, regardless of how Astro normalises BASE_URL across versions.
