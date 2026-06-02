@@ -95,7 +95,19 @@ Seçenek 3.
 Çerez bandı yalnızca çerez yazan üçlü (`GA_ID`/`CLARITY_ID`/`ADSENSE_CLIENT_ID`)
 için görünür; Plausible bandı tetiklemez. `gizlilik.astro` ve `cerezler.astro`
 artık "consent-gated" ile "çerezsiz" hizmetleri ayırır (`consentGated` vs
-`plausibleActive`). `deploy.yml`'a iki secret passthrough eklendi
-(`PUBLIC_PLAUSIBLE_DOMAIN`, `PUBLIC_PLAUSIBLE_SRC`) — workflow değişikliği
-olduğu için PR'da ayrıca işaretlendi (bkz. Q-CI-CHECK governance notu). Yalnızca
-domain set edilirse band hiç görünmez.
+`plausibleActive`).
+
+### Güncelleme — 2026-06-02 (Döngü #7): secret yerine koda gömülü domain
+Kullanıcı geri bildirimi: "Plausible için secret kullanma." Gerekçe doğru —
+`data-domain` değeri herkese açık (sayfa kaynağında görünür) bir domaindir,
+gizli bir bilgi değildir; secret'la korunması yanlış bir güvenlik modeli ve
+gereksiz deploy friction'ı yaratıyordu (secret set edilmeden feature prod'da
+ölü kaldı). Karar revize edildi:
+- `PLAUSIBLE_DOMAIN` artık üretim build'inde `karaman.dev`'e **default**'lar
+  (`import.meta.env.PROD ? 'karaman.dev' : ''`) — secret gerekmez, prod'da her
+  zaman açık. `astro dev`'de kapalı (yerel trafik sayılmaz). `PUBLIC_*` env hâlâ
+  override olarak okunur (fork/disable için), ama artık zorunlu değil.
+- `deploy.yml`'daki iki secret passthrough **geri alındı** → workflow dosyası
+  Plausible için hiç değişmiyor, dolayısıyla Q-CI-CHECK governance işareti de
+  bu iş için geçersiz (🟡 → yok).
+Çekirdek karar (çerezsiz, onaysız eager yükleme) değişmedi.
