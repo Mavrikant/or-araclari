@@ -46,6 +46,8 @@ bloğu üzerinden `withastro/action@v6`'nın ortamına geçirilir.
 | `PUBLIC_ADSENSE_CLIENT_ID` | Hayır | AdSense publisher ID (örn. `ca-pub-1234567890123456`). Boşken `<AdSlot>` bileşenleri hiçbir şey render etmez ve AdSense kütüphanesi yüklenmez. |
 | `PUBLIC_CLARITY_ID` | Hayır | Microsoft Clarity proje ID'si (örn. 10 karakterli `abcd1234ef`). Heatmap ve oturum kaydı için. Boşken Clarity hiç yüklenmez. Set ise yalnızca kullanıcı çerez bandında "Tümünü kabul et" seçtikten sonra (veya daha önceki onayı tarayıcı hafızasındayken) yüklenir. |
 | `PUBLIC_GSC_VERIFICATION` | Hayır | Google Search Console doğrulama tokenı — `google-site-verification` meta etiketinin `content` değeri. Boşken meta etiketi hiç render edilmez. |
+| `PUBLIC_PLAUSIBLE_DOMAIN` | Hayır | Plausible Analytics site alanı (örn. `karaman.dev`). Plausible siteleri domain ile tanımlanır; ayrı bir "site ID" yoktur. Boş bırakılırsa Plausible hiç yüklenmez. Çerezsiz olduğu için onay gerektirmez: çerez bandını **tetiklemez** ve onaydan bağımsız eager yüklenir. |
+| `PUBLIC_PLAUSIBLE_SRC` | Hayır | Plausible script kaynağı. Varsayılan `https://plausible.io/js/script.js`. Kendi sunucunda barındırma veya script uzantıları (örn. `script.outbound-links.js`) için override edilir. Yalnızca `PUBLIC_PLAUSIBLE_DOMAIN` set iken kullanılır. |
 
 Üç ölçüm değişkeninin (`GA_ID`, `CLARITY_ID`, `ADSENSE_CLIENT_ID`) biri set
 edildiği anda BaseLayout otomatik olarak çerez tercih bandını göstermeye
@@ -53,6 +55,11 @@ başlar. Consent verilmeden GA4 ve AdSense storage'ları "denied" durumunda
 kalır (Google Consent Mode v2 advanced); Clarity ise consent öncesi DOM'a
 hiç enjekte edilmez (conservative pattern — session recording davranışsal
 veri içerdiği için).
+
+`PUBLIC_PLAUSIBLE_DOMAIN` bu üçlüden ayrıdır: Plausible çerezsiz ve
+kişisel-veri-toplamayan bir ölçüm olduğu için çerez bandını **tetiklemez**,
+consent durumundan bağımsız doğrudan yüklenir. Yani yalnızca Plausible set
+edilirse band hiç görünmez (KVKK/GDPR uyumlu onaysız ölçüm).
 
 ## AdSense yayını için ek adımlar
 

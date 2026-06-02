@@ -55,3 +55,47 @@ Seçenek 3: PR #14 kapatıldı, PR #18 açıldı.
 
 ### Sonuç
 PR #14 superseded olarak kapatıldı. PR #18 1 dosya / 4 satır değişiklikle merge edildi. Yeni Dependabot PR'ları için kural: ajan, main'in çok ileride olduğu Dependabot PR'larını otomatik olarak yerine "manuel `npm update <pkg>`" patch'iyle değiştirebilir; orijinal PR'ı kapatırken "superseded by #<n>" yorumu bırakır.
+
+---
+
+## ADR-0003 — Plausible Analytics: domain-tabanlı yapılandırma + onaysız (çerezsiz) eager yükleme
+
+**Tarih:** 2026-06-02 · **Döngü:** #6 · **Durum:** kabul
+
+### Bağlam
+Kullanıcı talebi: "add plausible support". İki tasarım sorusu vardı: (1) Plausible
+sitesi nasıl tanımlanır — GA4 (`G-…`) veya Clarity (10 haneli) gibi ayrı bir
+"ID" mi gerekir? (2) Plausible, GA4/Clarity gibi çerez tercih bandının arkasına
+mı alınmalı yoksa eager mı yüklenmeli? (Talepte verilen `BMAxUwrIK8Icg2HpLysj2`
+21 karakterlik bir nanoid — görev/istek izleme kimliği; Plausible bir
+yapılandırma değeri değil, bu yüzden koda gömülmedi.)
+
+### Seçenekler
+1. Plausible'ı bir "ID" env değişkeniyle yapılandır, GA/Clarity gibi banda al.
+2. Domain ile yapılandır (`PUBLIC_PLAUSIBLE_DOMAIN`), banda al (consent-gated).
+3. Domain ile yapılandır, çerezsiz olduğu için onaysız eager yükle, bandı
+   tetikleme. Script kaynağı (`PUBLIC_PLAUSIBLE_SRC`) override edilebilir
+   (self-host + script uzantıları).
+
+### Karar
+Seçenek 3.
+
+### Gerekçe
+- Plausible siteleri **`data-domain`** ile tanımlanır; ayrı bir sayısal/dizgi
+  site ID kavramı yoktur (hem Cloud hem self-host). "ID" alanı yanıltıcı olurdu.
+- Plausible **çerezsizdir**, kalıcı tanımlayıcı/parmak izi tutmaz, kişisel veri
+  toplamaz → KVKK/GDPR uyumlu **onaysız** ölçüm (Plausible'ın resmi tavsiyesi:
+  "cookie banner gerekmez"). Banda almak gereksiz friction ve projenin
+  gizlilik-öncelikli felsefesiyle tutarsız olurdu.
+- `PUBLIC_PLAUSIBLE_SRC` opsiyonu, varsayılanı (`plausible.io/js/script.js`)
+  bozmadan self-hosting ve script uzantılarını (örn. `outbound-links`) açar —
+  Plausible kullanımının yaygın iki ihtiyacı.
+
+### Sonuç
+Çerez bandı yalnızca çerez yazan üçlü (`GA_ID`/`CLARITY_ID`/`ADSENSE_CLIENT_ID`)
+için görünür; Plausible bandı tetiklemez. `gizlilik.astro` ve `cerezler.astro`
+artık "consent-gated" ile "çerezsiz" hizmetleri ayırır (`consentGated` vs
+`plausibleActive`). `deploy.yml`'a iki secret passthrough eklendi
+(`PUBLIC_PLAUSIBLE_DOMAIN`, `PUBLIC_PLAUSIBLE_SRC`) — workflow değişikliği
+olduğu için PR'da ayrıca işaretlendi (bkz. Q-CI-CHECK governance notu). Yalnızca
+domain set edilirse band hiç görünmez.
