@@ -29,7 +29,6 @@ Durum: open · in-progress · blocked · done
 | F-DECISION | Karar Ağacı / Beklenen Değer Çözücü (EMV, EVPI) | feature | M | M | open |
 | F-GAME | İki Kişilik Sıfır Toplamlı Oyun (saddle point + karışık strateji LP) | feature | M | M | open |
 | F-MM_C | M/M/c, M/M/1/K, M/M/c/K kuyrukları | feature | M | M | open |
-| F-EBQ | Üretim Lot Boyu (EPQ/EBQ) + ROP/Güvenlik Stoğu hesabı | feature | M | S | open |
 
 ---
 
@@ -43,3 +42,4 @@ Durum: open · in-progress · blocked · done
 | Q-DEPENDABOT-14 | `devalue` 5.8.0 → 5.8.1 (Dependabot #14 superseded by PR #18) — high alert kapatıldı | #4 |
 | Q-CONTENT-CONFIG | `astro:schema` → `astro/zod` (deprecate uyarısı düzeltildi, 14 hint → 0) | #5 |
 | Q-PLAUSIBLE | Plausible Analytics desteği (çerezsiz, onaysız eager); ADR-0003. #7'de secret kaldırıldı, prod'da koda gömülü `karaman.dev` ile her zaman açık | #6, #7 |
+| F-EBQ | Üretim Lot Boyu (EPQ/EBQ) hesaplayıcısı + uzun-form Türkçe rehber (PR #20, +14 vitest) | #8 |
