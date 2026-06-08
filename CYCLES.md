@@ -171,3 +171,24 @@ sayfa) · dev ✓ (Plausible kapalı).
 döngüde nötralize oldu (sırf 🟢 kod + içerik + doc).
 
 **Sıradaki:** Q-OG-IMAGE ya da F-EBQ.
+
+---
+
+## DÖNGÜ #8 — 2026-06-09
+
+**Yapılan:** F-EBQ — Üretim Lot Boyu (EPQ/EBQ) hesaplayıcısı + uzun-form Türkçe rehber yayınlandı. `cycle/epq-tool` dalında 2026-05-18'de açılan PR #20, Plausible döngüleri (#6, #7) main'i ileri taşıdığı için bekletilmişti; bu döngüde tekrar doğrulanıp merge edildi.
+
+**Detay:**
+- `src/lib/epq.ts` (+158) · `src/lib/epq.test.ts` (+129, 14 vitest) — saf algoritma: EPQ formülü (1 − D/P faktörü), toplam yıllık maliyet, maksimum stok, üretim ve döngü süresi; EOQ ile sınır davranışı (P→∞) test ediliyor.
+- `src/pages/araclar/epq-uretim-lot-boyu.astro` (+422) — mobil-öncelikli form (D, P, S, H, opsiyonel C, B), canlı sonuç paneli, hassasiyet analizi tablosu.
+- `src/content/rehberler/epq-uretim-lot-boyu.mdx` (+314) — formül türetimi, EOQ ile karşılaştırma, sayısal örnek, parametre tahmin rehberi.
+- `src/data/tools.ts` (+10) — EPQ kaydı (`üretim-stok` kategorisi, mevcut EOQ deseninin uzantısı).
+- Eski branch'in main'e olan mesafesi (2 ay, 2 ara döngü) merge öncesi yeniden doğrulanarak çakışmasız fast-forward sağlandı.
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint) · test ✓ (248/248, **+14 yeni EPQ testi**, 13 dosya) · build ✓ (32 sayfa, 3.94s — EPQ aracı + rehberi dahil) · Lighthouse — yeni sayfa mevcut EOQ aracıyla aynı şablon ve hidrasyon stratejisini kullanıyor (≥95 beklenir).
+
+**Yayın:** PR #20 squash-merge edildi (commit `3f41a8a`). `Deploy to GitHub Pages` workflow başarıyla tamamlandı (run 27166401111). Lokal `cycle/epq-tool` branch'i silindi.
+
+**İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber).
+
+**Sıradaki:** Q-OG-IMAGE (statik OG kart üretimi — M efor, içerik/SEO) ya da F-TRANSPORT (Ulaştırma Problemi çözücü — L efor, klasik OR aracı, mevcut araçların yapısını yeniden kullanır).
