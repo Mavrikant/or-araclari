@@ -1,0 +1,422 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import { withBase, SITE } from '../../data/site';
+import { TOOLS } from '../../data/tools';
+
+const tool = TOOLS.find((t) => t.slug === 'epq-uretim-lot-boyu')!;
+const guideHref = tool.guideSlug ? withBase(`/rehberler/${tool.guideSlug}`) : null;
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: tool.title,
+  applicationCategory: 'WebApplication',
+  operatingSystem: 'Any',
+  description: tool.description,
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'TRY' },
+  inLanguage: SITE.locale,
+  isAccessibleForFree: true,
+};
+---
+
+<BaseLayout title={tool.title} description={tool.description}>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+  </Fragment>
+
+  <Container as="section" size="wide" class="pt-12 sm:pt-16">
+    <p class="text-sm font-medium text-brand-600 dark:text-accent-400">
+      <a href={withBase('/araclar')} class="hover:underline">Araçlar</a>
+      <span class="text-slate-400 dark:text-slate-600"> / </span>
+      <span>Envanter & Tedarik</span>
+    </p>
+    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">
+      {tool.title}
+    </h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
+      Tedarik anlık değil de sabit bir üretim hızında geliyorsa klasik EOQ
+      yerine EPQ (Economic Production Quantity) modeli kullanılır. Yıllık
+      talep, kurulum maliyeti, taşıma maliyeti ve üretim hızını gir; optimum
+      parti büyüklüğü, tepe stok ve üretim/tüketim faz uzunlukları anlık
+      hesaplansın.
+      {guideHref && (
+        <a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>
+      )}
+    </p>
+  </Container>
+
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,340px)_1fr] print:block">
+    <form id="epq-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="sample-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Örnek doldur
+        </button>
+        <button type="button" id="reset-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+          Sıfırla
+        </button>
+      </div>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Girdiler
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Yıllık talep (D, birim/yıl)
+          </span>
+          <input type="number" id="demand-input" min="0.01" step="any" inputmode="decimal" required
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Üretim hızı (p, birim/yıl) <span class="text-slate-400">— D'den büyük</span>
+          </span>
+          <input type="number" id="prod-input" min="0.01" step="any" inputmode="decimal" required
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Kurulum maliyeti (S, ₺/parti)
+          </span>
+          <input type="number" id="setup-input" min="0.01" step="any" inputmode="decimal" required
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Taşıma maliyeti (H, ₺/birim/yıl)
+          </span>
+          <input type="number" id="hold-input" min="0.01" step="any" inputmode="decimal" required
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Yıllık çalışma günü <span class="text-slate-400">(opsiyonel, default 365)</span>
+          </span>
+          <input type="number" id="days-input" min="1" max="366" step="1" placeholder="365"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+      </fieldset>
+
+      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">
+        Hesapla
+      </button>
+
+      <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
+    </form>
+
+    <section id="output" hidden aria-live="polite" class="space-y-6">
+      <div class="rounded-2xl border border-emerald-300 bg-emerald-50 p-5 dark:border-emerald-800/60 dark:bg-emerald-950/30">
+        <p class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+          Optimum üretim parti büyüklüğü
+        </p>
+        <p id="qstar" class="mt-1 font-display text-4xl font-bold text-emerald-900 dark:text-emerald-100"></p>
+        <p id="qstar-formula" class="mt-1 font-mono text-xs text-emerald-800 dark:text-emerald-300"></p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Kurulum maliyeti / yıl</div>
+          <div id="m-setup" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Taşıma maliyeti / yıl</div>
+          <div id="m-hold" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Toplam maliyet / yıl</div>
+          <div id="m-total" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Parti sıklığı</div>
+          <div id="m-freq" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Tepe stok (Imax)</div>
+          <div id="m-imax" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Ortalama stok</div>
+          <div id="m-iavg" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Üretim fazı</div>
+          <div id="m-tp" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Tüketim fazı</div>
+          <div id="m-tc" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Toplam maliyet eğrisi
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Setup (mavi) + Holding (turuncu) → Total (yeşil). Üretim hızı sonlu
+          olduğu için U eğrisi EOQ'ya göre biraz daha sağda oturur.
+        </p>
+        <div id="chart" class="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40"></div>
+      </div>
+
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Stok profili — bir çevrim
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Üretim fazında (p − d) hızla artar, tepe Imax'a ulaşır; üretim
+          biter, d hızla tüketim devam eder, stok sıfırlanır.
+        </p>
+        <div id="profile" class="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40"></div>
+      </div>
+    </section>
+  </Container>
+
+  {guideHref && (
+    <Container as="section" size="wide" class="py-12 sm:py-16">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900/40">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">
+          Konuyu derinleştir
+        </p>
+        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          EPQ, EOQ ve üretim parti büyüklüğü
+        </h2>
+        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+          EPQ formülünün arkasındaki matematik, EOQ ile farkı, üretim hızının
+          stoğa yansıması ve fabrika içi üretim kontrolünde pratik uygulamalar
+          üzerine kapsamlı Türkçe rehber.
+        </p>
+        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">
+          Rehberi oku →
+        </a>
+      </div>
+    </Container>
+  )}
+</BaseLayout>
+
+<script>
+  import { computeEpq, epqCostCurve, EpqError } from '../../lib/epq';
+
+  const STORAGE_KEY = 'epq-state-v1';
+  const SAMPLE = { D: 1000, p: 4000, S: 50, H: 4, days: '' };
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el as T;
+  };
+
+  function fmt(n: number, decimals = 2): string {
+    if (Math.abs(n) >= 1000) return n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return n.toFixed(decimals).replace(/\.?0+$/, '');
+  }
+
+  const form = $<HTMLFormElement>('epq-form');
+  const dInput = $<HTMLInputElement>('demand-input');
+  const pInput = $<HTMLInputElement>('prod-input');
+  const sInput = $<HTMLInputElement>('setup-input');
+  const hInput = $<HTMLInputElement>('hold-input');
+  const daysInput = $<HTMLInputElement>('days-input');
+  const sampleBtn = $('sample-btn');
+  const resetBtn = $('reset-btn');
+  const errorBox = $('error-box');
+  const output = $('output');
+  const qstar = $('qstar');
+  const qstarFormula = $('qstar-formula');
+  const mSetup = $('m-setup');
+  const mHold = $('m-hold');
+  const mTotal = $('m-total');
+  const mFreq = $('m-freq');
+  const mImax = $('m-imax');
+  const mIavg = $('m-iavg');
+  const mTp = $('m-tp');
+  const mTc = $('m-tc');
+  const chart = $('chart');
+  const profile = $('profile');
+
+  function loadState(): void {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      if (typeof s.D === 'number') dInput.value = String(s.D);
+      if (typeof s.p === 'number') pInput.value = String(s.p);
+      if (typeof s.S === 'number') sInput.value = String(s.S);
+      if (typeof s.H === 'number') hInput.value = String(s.H);
+      if (typeof s.days === 'number') daysInput.value = String(s.days);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function saveState(): void {
+    try {
+      const s = {
+        D: Number(dInput.value) || 0,
+        p: Number(pInput.value) || 0,
+        S: Number(sInput.value) || 0,
+        H: Number(hInput.value) || 0,
+        days: Number(daysInput.value) || '',
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  loadState();
+
+  function renderChart(D: number, S: number, H: number, p: number, qStar: number): void {
+    const points = epqCostCurve({ demand: D, setupCost: S, holdingCost: H, productionRate: p }, 80);
+    const W = 720;
+    const Hh = 320;
+    const PL = 56;
+    const PR = 16;
+    const PT = 16;
+    const PB = 36;
+
+    const xs = points.map((pt) => pt.q);
+    const xMax = Math.max(...xs);
+    const yMax = Math.max(...points.map((pt) => Math.max(pt.setup, pt.holding, pt.total)));
+
+    const sx = (q: number) => PL + (q / xMax) * (W - PL - PR);
+    const sy = (v: number) => Hh - PB - (v / yMax) * (Hh - PT - PB);
+
+    const path = (key: 'setup' | 'holding' | 'total'): string =>
+      points.map((pt, i) => `${i === 0 ? 'M' : 'L'}${sx(pt.q).toFixed(1)},${sy(pt[key]).toFixed(1)}`).join(' ');
+
+    const xAxis = `<line x1="${PL}" y1="${Hh - PB}" x2="${W - PR}" y2="${Hh - PB}" class="stroke-slate-300 dark:stroke-slate-700" stroke-width="1" />`;
+    const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${Hh - PB}" class="stroke-slate-300 dark:stroke-slate-700" stroke-width="1" />`;
+
+    const qStarMarker = `<line x1="${sx(qStar)}" y1="${PT}" x2="${sx(qStar)}" y2="${Hh - PB}" class="stroke-emerald-500" stroke-width="1" stroke-dasharray="3 3" />
+      <text x="${sx(qStar) + 4}" y="${PT + 12}" class="fill-emerald-700 text-[10px] font-semibold dark:fill-emerald-300">Q*</text>`;
+
+    const xTicks = [0, qStar, xMax].map((q) => `<text x="${sx(q)}" y="${Hh - PB + 14}" text-anchor="middle" class="fill-slate-500 text-[10px] dark:fill-slate-400">${fmt(q, 0)}</text>`).join('');
+    const yTicks = [0, yMax / 2, yMax].map((v) => `<text x="${PL - 4}" y="${sy(v) + 3}" text-anchor="end" class="fill-slate-500 text-[10px] dark:fill-slate-400">${fmt(v, 0)}</text>`).join('');
+
+    chart.innerHTML = `<svg viewBox="0 0 ${W} ${Hh}" class="block w-full h-auto" role="img" aria-label="Toplam maliyet eğrisi">
+      ${xAxis}${yAxis}${xTicks}${yTicks}
+      <path d="${path('setup')}" fill="none" class="stroke-blue-500" stroke-width="1.5" />
+      <path d="${path('holding')}" fill="none" class="stroke-orange-500" stroke-width="1.5" />
+      <path d="${path('total')}" fill="none" class="stroke-emerald-600 dark:stroke-emerald-400" stroke-width="2" />
+      ${qStarMarker}
+      <text x="${W - PR - 4}" y="${PT + 14}" text-anchor="end" class="fill-blue-600 text-[10px] dark:fill-blue-400">— kurulum maliyeti</text>
+      <text x="${W - PR - 4}" y="${PT + 28}" text-anchor="end" class="fill-orange-600 text-[10px] dark:fill-orange-400">— taşıma maliyeti</text>
+      <text x="${W - PR - 4}" y="${PT + 42}" text-anchor="end" class="fill-emerald-700 text-[10px] font-semibold dark:fill-emerald-400">— toplam</text>
+      <text x="${(W - PL - PR) / 2 + PL}" y="${Hh - 4}" text-anchor="middle" class="fill-slate-500 text-[10px] dark:fill-slate-400">Üretim parti büyüklüğü (Q)</text>
+      <text x="14" y="${(Hh - PT - PB) / 2 + PT}" transform="rotate(-90 14 ${(Hh - PT - PB) / 2 + PT})" text-anchor="middle" class="fill-slate-500 text-[10px] dark:fill-slate-400">Yıllık maliyet (₺)</text>
+    </svg>`;
+  }
+
+  function renderProfile(cycleDays: number, productionDays: number, imax: number): void {
+    const W = 720;
+    const Hh = 220;
+    const PL = 48;
+    const PR = 16;
+    const PT = 16;
+    const PB = 36;
+
+    const sx = (t: number) => PL + (t / cycleDays) * (W - PL - PR);
+    const sy = (v: number) => Hh - PB - (v / imax) * (Hh - PT - PB);
+
+    const xAxis = `<line x1="${PL}" y1="${Hh - PB}" x2="${W - PR}" y2="${Hh - PB}" class="stroke-slate-300 dark:stroke-slate-700" stroke-width="1" />`;
+    const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${Hh - PB}" class="stroke-slate-300 dark:stroke-slate-700" stroke-width="1" />`;
+
+    const tp = productionDays;
+    const tc = cycleDays;
+
+    const ramp = `M${sx(0).toFixed(1)},${sy(0).toFixed(1)} L${sx(tp).toFixed(1)},${sy(imax).toFixed(1)} L${sx(tc).toFixed(1)},${sy(0).toFixed(1)}`;
+    const fillPath = `${ramp} L${sx(0).toFixed(1)},${sy(0).toFixed(1)} Z`;
+
+    const tpMarker = `<line x1="${sx(tp)}" y1="${PT}" x2="${sx(tp)}" y2="${Hh - PB}" class="stroke-slate-400 dark:stroke-slate-600" stroke-width="1" stroke-dasharray="3 3" />
+      <text x="${sx(tp) + 4}" y="${PT + 12}" class="fill-slate-600 text-[10px] dark:fill-slate-400">tp</text>`;
+
+    const xTicks = [0, tp, tc].map((t) => `<text x="${sx(t)}" y="${Hh - PB + 14}" text-anchor="middle" class="fill-slate-500 text-[10px] dark:fill-slate-400">${fmt(t, 1)}</text>`).join('');
+    const yTicks = [0, imax / 2, imax].map((v) => `<text x="${PL - 4}" y="${sy(v) + 3}" text-anchor="end" class="fill-slate-500 text-[10px] dark:fill-slate-400">${fmt(v, 0)}</text>`).join('');
+
+    profile.innerHTML = `<svg viewBox="0 0 ${W} ${Hh}" class="block w-full h-auto" role="img" aria-label="Bir çevrimde stok profili">
+      ${xAxis}${yAxis}${xTicks}${yTicks}
+      <path d="${fillPath}" class="fill-emerald-100 dark:fill-emerald-950/40" />
+      <path d="${ramp}" fill="none" class="stroke-emerald-600 dark:stroke-emerald-400" stroke-width="2" />
+      ${tpMarker}
+      <text x="${(W - PL - PR) / 2 + PL}" y="${Hh - 4}" text-anchor="middle" class="fill-slate-500 text-[10px] dark:fill-slate-400">Gün</text>
+      <text x="14" y="${(Hh - PT - PB) / 2 + PT}" transform="rotate(-90 14 ${(Hh - PT - PB) / 2 + PT})" text-anchor="middle" class="fill-slate-500 text-[10px] dark:fill-slate-400">Stok seviyesi</text>
+    </svg>`;
+  }
+
+  function showError(msg: string): void {
+    errorBox.textContent = msg;
+    errorBox.hidden = false;
+    output.hidden = true;
+  }
+  function clearError(): void {
+    errorBox.hidden = true;
+    errorBox.textContent = '';
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clearError();
+    saveState();
+    try {
+      const D = Number(dInput.value);
+      const p = Number(pInput.value);
+      const S = Number(sInput.value);
+      const H = Number(hInput.value);
+      const days = daysInput.value ? Number(daysInput.value) : undefined;
+      const r = computeEpq({
+        demand: D,
+        setupCost: S,
+        holdingCost: H,
+        productionRate: p,
+        daysPerYear: days,
+      });
+
+      const factor = 1 - D / p;
+      qstar.textContent = `${fmt(r.optimalQty, 2)} birim`;
+      qstarFormula.textContent = `√(2 · ${fmt(D, 0)} · ${fmt(S, 2)} / (${fmt(H, 2)} · ${fmt(factor, 3)})) = ${fmt(r.optimalQty, 4)}`;
+      mSetup.textContent = `₺${fmt(r.annualSetupCost, 2)}`;
+      mHold.textContent = `₺${fmt(r.annualHoldingCost, 2)}`;
+      mTotal.textContent = `₺${fmt(r.totalAnnualCost, 2)}`;
+      mFreq.textContent = `${fmt(r.runsPerYear, 2)}/yıl · ~${fmt(r.cycleDays, 1)} gün`;
+      mImax.textContent = `${fmt(r.maxInventory, 2)} birim`;
+      mIavg.textContent = `${fmt(r.averageInventory, 2)} birim`;
+      mTp.textContent = `${fmt(r.productionDays, 2)} gün`;
+      mTc.textContent = `${fmt(r.consumptionDays, 2)} gün`;
+
+      renderChart(D, S, H, p, r.optimalQty);
+      renderProfile(r.cycleDays, r.productionDays, r.maxInventory);
+      output.hidden = false;
+      output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      const msg = err instanceof EpqError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
+      showError(msg);
+    }
+  });
+
+  [dInput, pInput, sInput, hInput, daysInput].forEach((el) => el.addEventListener('input', saveState));
+
+  sampleBtn.addEventListener('click', () => {
+    dInput.value = String(SAMPLE.D);
+    pInput.value = String(SAMPLE.p);
+    sInput.value = String(SAMPLE.S);
+    hInput.value = String(SAMPLE.H);
+    daysInput.value = SAMPLE.days;
+    saveState();
+    clearError();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('Form sıfırlanacak. Devam edilsin mi?')) return;
+    form.reset();
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    clearError();
+    output.hidden = true;
+  });
+</script>
