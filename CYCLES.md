@@ -209,7 +209,7 @@ döngüde nötralize oldu (sırf 🟢 kod + içerik + doc).
 
 **Kalite kapıları:** check ✓ (0 hata, 0 hint) · test ✓ (248/248, 13 dosya) · build ✓ (32 sayfa, 3.83s) · Lighthouse — sadece `<head>` meta etiketleri eklendi; bir kez fetch edilen statik PNG share-bot tarafından kullanılır, sayfa render path'ini etkilemez (regresyon beklenmez).
 
-**Yayın:** PR açılacak, CI yeşilse merge.
+**Yayın:** PR #24 squash-merge edildi. `Deploy to GitHub Pages` workflow başarıyla tamamlandı (run 27190947999). Lokal `cycle/og-default-image` branch'i silindi.
 
 **İşaret:** yok (sırf 🟢 yeşil — yeni statik asset + meta etiketleri).
 
