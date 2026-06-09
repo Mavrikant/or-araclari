@@ -35,7 +35,12 @@ const weekdays = [
 ];
 ---
 
-<BaseLayout title={tool.title} description={tool.description}>
+<BaseLayout
+  title={tool.title}
+  description={tool.description}
+  image={withBase(`/og/${tool.slug}.png`)}
+  imageAlt={`${tool.title} — OR Araçları`}
+>
   <Fragment slot="head">
     <script
       is:inline
