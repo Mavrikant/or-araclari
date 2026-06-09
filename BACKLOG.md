@@ -17,7 +17,7 @@ Durum: open · in-progress · blocked · done
 |---|---|---|---|---|---|
 | Q-CI-CHECK | CI workflow'una `npm run check` + `npm run test` adımları ekle (şu an sadece `astro build` çalışıyor) — 🔴 KIRMIZI: workflow değişikliği insan onayı ister | infra | H | S | blocked |
 | Q-AUDIT-YAML | `npm audit` kalan 5 moderate zafiyet `yaml-language-server → volar-service-yaml → @astrojs/language-server → @astrojs/check` zincirinde; fix `--force` (breaking) ister — Astro/check uyumluluğunu doğrulayarak yükselt | chore | M | M | open |
-| Q-OG-IMAGE | OG/Twitter görselleri var mı? Yoksa her araç için statik OG kart üret | content | M | M | open |
+| Q-OG-PERTOOL | Her araç sayfası için kendi başlığını taşıyan OG kartı üret (site-default kartın üzerine) — `image` prop'u BaseLayout'a #9'da eklendi; şimdi script'i `tools.ts`'den iterate ederek per-tool PNG'lere genişlet | content | M | M | open |
 
 ## Yeni Araç Fikirleri (sıra dışı, fırsat olursa)
 
@@ -43,3 +43,4 @@ Durum: open · in-progress · blocked · done
 | Q-CONTENT-CONFIG | `astro:schema` → `astro/zod` (deprecate uyarısı düzeltildi, 14 hint → 0) | #5 |
 | Q-PLAUSIBLE | Plausible Analytics desteği (çerezsiz, onaysız eager); ADR-0003. #7'de secret kaldırıldı, prod'da koda gömülü `karaman.dev` ile her zaman açık | #6, #7 |
 | F-EBQ | Üretim Lot Boyu (EPQ/EBQ) hesaplayıcısı + uzun-form Türkçe rehber (PR #20, +14 vitest) | #8 |
+| Q-OG-IMAGE | Site-default OG/Twitter görseli (1200×630 PNG) + BaseLayout'ta `image` prop'u; her sayfa `og:image`, `twitter:image` ve `summary_large_image` ile share preview alıyor | #9 |

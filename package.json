@@ -14,6 +14,7 @@
     "check": "astro check",
     "test": "vitest run",
     "test:watch": "vitest",
+    "og": "node scripts/generate-og.mjs",
     "astro": "astro"
   },
   "dependencies": {

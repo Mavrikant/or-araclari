@@ -192,3 +192,25 @@ döngüde nötralize oldu (sırf 🟢 kod + içerik + doc).
 **İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber).
 
 **Sıradaki:** Q-OG-IMAGE (statik OG kart üretimi — M efor, içerik/SEO) ya da F-TRANSPORT (Ulaştırma Problemi çözücü — L efor, klasik OR aracı, mevcut araçların yapısını yeniden kullanır).
+
+---
+
+## DÖNGÜ #9 — 2026-06-09
+
+**Yapılan:** Q-OG-IMAGE — site-default Open Graph / Twitter görseli (1200×630) eklendi ve `BaseLayout`'a `image` / `imageAlt` prop'larıyla wire edildi. 32 sayfanın hepsi artık paylaşım önizlemesi (`summary_large_image`) üretiyor.
+
+**Detay:**
+- `scripts/generate-og.mjs` (+78) — sharp ile SVG'den 1200×630 PNG render eden tek seferlik build script. Sharp Astro üzerinden transitive olarak mevcut; yeni runtime bağımlılığı yok. Marka renkleri `global.css` brand-950 / brand-800 / accent-500'den birebir alındı.
+- `public/og-default.png` (87 KB) — generate edildi; SVG kaynağı script içinde (regen için `npm run og`).
+- `src/layouts/BaseLayout.astro`: `Props` arayüzüne `image?: string | URL` ve `imageAlt?: string` eklendi. `og:image` + `og:image:width|height|alt` ve `twitter:image` + `twitter:image:alt` meta etiketleri her sayfada render ediliyor. `twitter:card` `summary` → `summary_large_image` (1200×630 büyük kart). Sayfaya özel görsel verilmezse site-default kullanılır.
+- `package.json`: `npm run og` script'i.
+
+**Doğrulama:** `dist/index.html` ve `dist/araclar/epq-uretim-lot-boyu/index.html` build çıktılarında tüm OG/Twitter meta etiketleri kontrol edildi; mutlak URL (`https://karaman.dev/or-araclari/og-default.png`) doğru. `dist/og-default.png` kopyalandı. Görsel inspeksiyon: başlık "OR Araçları", tagline, footer URL ve dekoratif graf süslemesi düzgün render oldu.
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint) · test ✓ (248/248, 13 dosya) · build ✓ (32 sayfa, 3.83s) · Lighthouse — sadece `<head>` meta etiketleri eklendi; bir kez fetch edilen statik PNG share-bot tarafından kullanılır, sayfa render path'ini etkilemez (regresyon beklenmez).
+
+**Yayın:** PR açılacak, CI yeşilse merge.
+
+**İşaret:** yok (sırf 🟢 yeşil — yeni statik asset + meta etiketleri).
+
+**Sıradaki:** Q-OG-PERTOOL (her araç için kendi başlığını taşıyan OG kartı — script'i iterate ederek per-tool PNG üretmek; BaseLayout altyapısı zaten hazır) ya da F-TRANSPORT (Ulaştırma Problemi çözücü).
