@@ -24,7 +24,7 @@ Durum: open · in-progress · blocked · done
 |---|---|---|---|---|---|
 | F-MINCOST | Min-Cost Flow / Maks-Akış Çözücü (Ford-Fulkerson, Edmonds-Karp) | feature | M | L | open |
 | F-GAME | İki Kişilik Sıfır Toplamlı Oyun (saddle point + karışık strateji LP) | feature | M | M | open |
-| F-MM_C | M/M/c, M/M/1/K, M/M/c/K kuyrukları | feature | M | M | open |
+| F-MM_C | ~~M/M/c~~ (#15'te yayınlandı) — kalan: M/M/1/K ve M/M/c/K sonlu kapasiteli kuyruklar | feature | M | M | open |
 
 ---
 
@@ -44,3 +44,4 @@ Durum: open · in-progress · blocked · done
 | F-MARKOV | Markov Zinciri Sabit Dağılım hesaplayıcısı (n×n geçiş matrisinde Gauss eliminasyonu ile π·P = π çözümü, ortalama dönüş süreleri, yörünge grafiği) + 12 dakikalık Türkçe rehber + 24 yeni vitest | #11 |
 | F-TRANSPORT | Ulaştırma Problemi Çözücü (m × n birim maliyet + arz/talep, Kuzeybatı Köşesi + MODI, min/max, otomatik dengeleme) + uzun-form Türkçe rehber + 13 yeni vitest | #12 |
 | F-DECISION | Karar Analizi aracı — Maximax / Maximin (Wald) / Laplace / Hurwicz (α∈[0,1]) / Savage Regret + risk altında EMV / EOL / EVwPI / EVPI; min/max yön; pure JS; +21 vitest (PR #30) | #13 |
+| F-MM_C (M/M/c kısmı) | M/M/c Çoklu Sunucu Kuyruk Analizci — Erlang-C C(c,a), P₀, L/Lq/W/Wq, durum olasılıkları (n ≤ c ve n > c bölgeleri ayrı renkte), sunucu sayısı duyarlılığı tablosu; c=1'de M/M/1'e indirgenir; +14 vitest (PR #36). Kalan M/M/1/K ve M/M/c/K satırı yukarıda open. | #15 |
