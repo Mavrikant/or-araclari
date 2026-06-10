@@ -1,0 +1,250 @@
+---
+title: "M/M/c Çoklu Sunucu Kuyrukları ve Erlang-C: Kaç Sunucu Yeter?"
+description: "M/M/c kuyruk modeli, Erlang-C formülü, P₀ ve bekleme olasılığı, Lq ve Wq hesabı, M/M/1 ile karşılaştırma, çağrı merkezi ve kasa sayısı boyutlandırma örnekleriyle kapsamlı Türkçe rehber."
+pubDate: 2026-06-10
+relatedTool: "mmc-kuyruk-analizci"
+keywords:
+  - "M/M/c"
+  - "Erlang-C"
+  - "çoklu sunucu kuyruk"
+  - "kuyruk teorisi"
+  - "kendall notasyonu"
+  - "little yasası"
+  - "çağrı merkezi boyutlandırma"
+  - "agner krarup erlang"
+readingMinutes: 12
+faq:
+  - question: "M/M/c'nin M/M/1'den farkı tam olarak nedir?"
+    answer: "M/M/1 tek sunucu, M/M/c c paralel özdeş sunucu varsayar. Her sunucu aynı hızda (μ) hizmet verir, müşteri ilk boşalan sunucuya gider ve tek bir paylaşılan kuyruktan beslenirler. Kararlılık koşulu da değişir: M/M/1'de μ > λ yeterken M/M/c'de c·μ > λ olmalı, yani toplam servis kapasitesi geliş hızını aşmalı. c=1 özel durumunda M/M/c formülleri birebir M/M/1'e indirgenir."
+  - question: "Erlang-C formülü nedir ve neyi söyler?"
+    answer: "Erlang-C, C(c, a) = P(bekleme > 0) — yani gelen bir müşterinin tüm sunucuları dolu bulup beklemek zorunda kalma olasılığı. Formül: C(c, a) = [a^c / (c! (1−ρ))] · P₀, burada a = λ/μ sunulan yük (Erlang cinsinden), ρ = a/c. Çağrı merkezlerinde 'servis seviyesi' (örn. çağrıların %80'i 20 saniyede yanıt) hesaplamasının temel taşıdır. Erlang-B (kayıp sistem) ile karıştırılmamalı: Erlang-C bekleyen müşteriyi varsayar."
+  - question: "Çağrı merkezimde kaç temsilci olmalı, formül ne diyor?"
+    answer: "Pratik yaklaşım: hedef servis seviyesini belirle (ör. P(bekleme) ≤ %20), sonra c'yi adım adım büyüt. λ saatte 60 çağrı, ortalama çağrı süresi 5 dakika (μ = 12 çağrı/saat-temsilci) ise a = 5 Erlang. c=6'da ρ = 0.83, P(bekleme) ≈ 0.57. c=7'de ρ = 0.71, P(bekleme) ≈ 0.30. c=8'de ρ = 0.625, P(bekleme) ≈ 0.15. Hedef %20 ise c=8 minimum yanıt. Bu hesap aracın 'Sunucu sayısı duyarlılığı' tablosunda canlı görülür."
+  - question: "Tüm sunucuların aynı μ ile çalıştığı varsayımı gerçekçi mi?"
+    answer: "M/M/c'nin en sınırlayıcı varsayımı bu. Pratikte yeni başlayan ve deneyimli temsilciler farklı hızda çalışır, kasaların bazıları nakit dışı işlemleri kabul etmez vb. Yine de model genelde 'iyi yaklaşım' sağlar — özellikle planlama amaçlı boyutlamada. Heterojen sunucular için M/M/c yerine simülasyon veya farklı sınıflara ayrılmış öncelikli modeller (M/M/c with priority classes) tercih edilir. Hızlı kontrolde M/M/c hâlâ baseline."
+  - question: "Bekleme olasılığı, P₀ ve Lq arasındaki ilişki nedir?"
+    answer: "P₀ sistemin tamamen boş olma olasılığıdır (hiç müşteri yok). Erlang-C = P(tüm sunucular dolu) = a^c·P₀ / (c!·(1−ρ)). Bu, sıraya katılma olasılığıdır. Sonra Lq = Erlang-C · ρ/(1−ρ) ile ortalama kuyruk uzunluğunu verir. Yani Erlang-C 'sıraya girme şansı', Lq ise 'sıraya girildiğinde ortalama kaç kişi var' sorusunu birleştirip uzun dönem ortalama bekleyen müşteri sayısını verir."
+  - question: "Yoğunluk (ρ) M/M/1'de %85, M/M/c'de %85 — fark var mı?"
+    answer: "Var. Çoklu-sunucuda aynı ρ daha kısa kuyruk üretir; bu 'pooling' kazancıdır. Örnek: M/M/1 ρ=0.85'te Lq ≈ 4.8 müşteri. Aynı a = 0.85 yükü c=2 sunucuya bölünürse (λ aynı, c·μ = 2·μ, ρ hâlâ 0.85), Lq ≈ 4.4. c=3 için Lq ≈ 4.05. Sunucu sayısı arttıkça aynı ρ'de daha az kuyruk olur. Bu yüzden 3 ayrı tek-sıralı kasa yerine 1 ortak sıra + 3 kasa (banka modeli) daha kısa beklemeye yol açar."
+---
+
+[M/M/1 modelimiz](/or-araclari/araclar/mm1-kuyruk-analizci) tek sunucuyla
+işleyen bekleme hatlarının analitik çözümünü verir. Gerçek hayatta ise
+çoğu sistem birden fazla paralel sunucuyla çalışır: bankanın 4 gişesi,
+çağrı merkezindeki 50 temsilci, hastanenin 6 muayene odası, kargonun 8
+kuryesi. Bu sistemleri analiz etmek için bir adım yukarı çıkarız:
+**M/M/c**.
+
+## Kendall notasyonu, hatırlatma
+
+Kendall notasyonu **A/S/c** biçimindedir:
+
+- **A** — varış sürecinin dağılımı (M = Markovian / Poisson)
+- **S** — hizmet süresinin dağılımı (M = Markovian / üstel)
+- **c** — paralel özdeş sunucu sayısı
+
+M/M/c, varışların Poisson, hizmet sürelerinin üstel ve c adet özdeş
+sunucunun ortak bir FIFO kuyruğunu paylaştığı modeldir. M/M/1, bu modelin
+c = 1 özel durumudur.
+
+Üç ek varsayım önemli:
+
+1. **Sınırsız bekleme alanı** — kuyruğa girmek isteyene her zaman yer
+   var. Sınırlı kapasite için M/M/c/K modeline geçilir.
+2. **Sınırsız müşteri kaynağı** — gelmeyi beklemek üzere sonsuz büyük
+   bir potansiyel havuz var. Az sayıda makineli atölyede M/M/c/K/K'ye
+   geçilir.
+3. **Sabırlı müşteri (no abandonment)** — sıraya giren müşteri kuyruktan
+   çıkmaz. Çağrı merkezinde "vazgeçen müşteri" varsa M/M/c+M (Erlang-A)
+   modeline geçilir.
+
+## Temel parametreler
+
+| Sembol | Anlamı | Birim |
+|---|---|---|
+| **λ** | Geliş hızı | müşteri / birim zaman |
+| **μ** | Tek sunucunun hizmet hızı | müşteri / birim zaman |
+| **c** | Sunucu sayısı | adet |
+| **a = λ/μ** | Sunulan yük (offered load) | Erlang |
+| **ρ = a/c = λ/(c·μ)** | Sunucu başına yoğunluk | oran (0–1) |
+
+**Kararlılık şartı: ρ < 1**, yani **c·μ > λ**. Aksi takdirde toplam
+servis kapasitesi geliş hızını karşılamaz ve kuyruk sınırsız büyür.
+
+**Önemli ayrım:** *a* (yük, Erlang) ile *ρ* (yoğunluk, oran) farklı
+şeylerdir. *a* "ortalama kaç sunucunun meşgul olduğunu" (boyutsuz çalışan
+sayısı), *ρ* "her sunucunun zamanın yüzde kaçında meşgul olduğunu"
+söyler. *a* > 1 normaldir (örn. 3.5 Erlang ≈ 3.5 sunucu sürekli meşgul);
+*ρ* > 1 ise kararsız sistemdir.
+
+## Kararlı durum formülleri
+
+### P₀ — sistemin tamamen boş olma olasılığı
+
+$$
+P_0 = 1 \;\Big/\; \left( \sum_{k=0}^{c-1} \frac{a^k}{k!} + \frac{a^c}{c! \cdot (1 - \rho)} \right)
+$$
+
+İlk toplam, n = 0…c−1 için "yalnızca bazı sunucular dolu, kuyruk boş"
+durumlarının olasılık ağırlığı. Son terim ise "tüm sunucular dolu, kuyruk
+geometrik dağılıma giriyor" durumunu modeller.
+
+### Erlang-C: bekleme olasılığı
+
+Gelen yeni bir müşterinin tüm sunucuları dolu bulup beklemek zorunda
+kalma olasılığı:
+
+$$
+C(c, a) = P(\text{bekleme}>0) = \frac{a^c}{c!\,(1-\rho)} \cdot P_0
+$$
+
+Çağrı merkezi planlamasında **servis seviyesi anlaşmalarının (SLA)**
+hesaplandığı formül budur.
+
+### Kuyruk ve sistem metrikleri
+
+$$
+L_q = C(c, a) \cdot \frac{\rho}{1-\rho}
+$$
+
+$$
+L = L_q + a
+$$
+
+[Little Yasası](/or-araclari/araclar/mm1-kuyruk-analizci) M/M/c'de de
+çalışır:
+
+$$
+W_q = \frac{L_q}{\lambda}, \qquad W = \frac{L}{\lambda} = W_q + \frac{1}{\mu}
+$$
+
+### Durum olasılıkları
+
+Sistemde tam olarak n müşteri olma olasılığı iki bölgeye ayrılır. n ≤ c
+ise kuyruk boştur ve sadece sunuculardan bazıları doludur:
+
+$$
+P(n) = \frac{a^n}{n!} \cdot P_0
+$$
+
+n > c olduğunda tüm c sunucu doludur ve kuyrukta n − c müşteri vardır:
+
+$$
+P(n) = \frac{a^n}{c! \cdot c^{n-c}} \cdot P_0
+$$
+
+## M/M/c, M/M/1'e nasıl indirgenir?
+
+c = 1 koyduğumuzda:
+
+- ρ = a/1 = a, dolayısıyla a = ρ.
+- P₀ = 1 / [1 + a/(1−ρ)] = 1 − ρ ✓
+- C(1, a) = a/(1 − ρ) · (1 − ρ) = a = ρ ✓
+- L_q = ρ · ρ/(1−ρ) = ρ²/(1−ρ) ✓
+- L = ρ²/(1−ρ) + ρ = ρ/(1−ρ) ✓
+
+Bu bir tesadüf değil; M/M/c, M/M/1'in dürüst genelleştirmesidir.
+
+## Sayısal örnek 1 — Banka şubesi
+
+Bir bankada saatte 10 müşteri geliyor (λ = 10), her gişe saatte 6
+müşteriye bakabiliyor (μ = 6). c = 2 gişeyle çalışıldığında ne olur?
+
+- a = 10/6 ≈ 1.667 Erlang
+- ρ = 1.667/2 ≈ 0.833 (%83.3 — yoğun)
+- Σ (n = 0…1) aⁿ/n! = 1 + 1.667 = 2.667
+- a^c/c! = 2.778/2 = 1.389; bunu (1−ρ) = 0.167 ile bölünce 8.333
+- **P₀ = 1 / (2.667 + 8.333) = 1/11 ≈ 0.0909**
+- **C(2, 1.667) = 8.333 · 0.0909 ≈ 0.758** — yeni gelen müşterinin %76 ihtimal sıraya gireceği
+- **L_q = 0.758 · 0.833/0.167 ≈ 3.79** müşteri
+- L = 3.79 + 1.667 ≈ 5.46
+- W_q = 3.79/10 = 0.379 saat ≈ 22.7 dakika
+- W = 5.46/10 = 0.546 saat ≈ 32.7 dakika
+
+3. gişe açılırsa (c = 3): ρ ≈ 0.556, C ≈ 0.295, L_q ≈ 0.368 müşteri,
+W_q ≈ 2.2 dakika. **Bir gişe daha açmak ortalama beklemeyi 22.7
+dakikadan 2.2 dakikaya düşürür** — çoklu-sunucu kuyrukların marjinal
+kazancı yüksekken doygundur.
+
+## Sayısal örnek 2 — Çağrı merkezi boyutlandırma
+
+Saatte 60 çağrı geliyor (λ = 60/saat), ortalama çağrı süresi 5 dakika
+(μ = 12/saat-temsilci). a = 5 Erlang, yani ortalama 5 temsilci sürekli
+meşgul.
+
+Kararlılık için c ≥ 6 gerekli (c·μ > λ). Hedef "servis seviyesi:
+çağrıların %80'i 0 saniye beklemeden yanıtlansın" — yani **P(bekleme) ≤
+20%**.
+
+| c | ρ | P(bekleme) ≈ Erlang-C | L_q | W_q (dk) |
+|---|---|---|---|---|
+| 6 | 0.833 | 0.572 | 2.86 | 2.86 |
+| 7 | 0.714 | 0.339 | 0.846 | 0.846 |
+| 8 | 0.625 | 0.187 | 0.311 | 0.311 |
+| 9 | 0.556 | 0.099 | 0.124 | 0.124 |
+| 10 | 0.500 | 0.050 | 0.050 | 0.050 |
+
+**c = 8 minimum cevaptır** (%18.7 ≤ %20). Ekstra bir temsilci eklemenin
+maliyeti vs. müşteri deneyimine etkisi bu tabloyla doğrudan tartılabilir.
+
+## Pooling kazancı: neden 1 ortak sıra > N ayrı sıra
+
+Bir bankada 3 ayrı gişe ve 3 ayrı sıra olsa, her sıra bağımsız bir M/M/1
+gibi çalışırdı. Toplam λ aynı kalırken her gişe λ/3 görür:
+
+- 3 ayrı M/M/1, her biri ρ = (λ/3)/μ ile, toplam L_q = 3 · (ρ²/(1−ρ))
+- 1 ortak M/M/3, ρ = λ/(3μ) ile (aynı ρ), L_q düşer
+
+Sayısal: λ = 10, μ = 6, c = 3 → 3 ayrı M/M/1'de her biri ρ = 0.556,
+L_q (her bir gişe) = 0.694 müşteri, toplam = **2.08**. M/M/3'te aynı ρ
+ile L_q = **0.368**. Aynı kaynakla **5.6× daha az kuyruk**. Banka,
+havalimanı güvenlik, marketteki "kasaya en kısa sıra" modeli bu kazanca
+dayanır.
+
+## M/M/c'nin sınırları ve genellemeleri
+
+| Senaryo | Model |
+|---|---|
+| Sınırlı bekleme alanı (K müşteriden fazlası reddedilir) | M/M/c/K |
+| Bekleyen müşteri vazgeçer | M/M/c+M (Erlang-A) |
+| Çağrı kabul edilmez, kayıp olur (telefon hatları) | M/M/c/c (Erlang-B) |
+| Heterojen sunucu hızları | Simülasyon ya da öncelikli sınıflar |
+| Genel servis dağılımı (ör. sabit süre) | M/G/c (kapalı form yok, yaklaşım) |
+| Sezonluk / değişken yoğunluk | M(t)/M/c(t), zaman-bağımlı, simülasyon |
+
+M/M/c "iyi yaklaşım"dır — temel boyutlandırma kararları için 30 saniyede
+cevap verir, çok hassas planlama için simülasyon ya da daha karmaşık
+model gerekir.
+
+## Sık karıştırılanlar
+
+- **a vs ρ.** a (Erlang) sunulan yük; ρ = a/c sunucu başına yoğunluk.
+  a > 1 normal, ρ < 1 zorunlu.
+- **Erlang-B vs Erlang-C.** Erlang-B kayıp sistem (kuyruk yok, dolu
+  sunucu = kayıp çağrı). Erlang-C bekleme sistemi (dolu sunucu =
+  müşteri kuyruğa girer). Telefon santrali Erlang-B, çağrı merkezi
+  Erlang-C.
+- **W mı W_q mı?** W toplam sistemde geçirilen süre (bekleme + servis).
+  W_q yalnızca kuyrukta beklenen süre. SLA hesabında W_q kullanılır.
+- **L\_q düşük ama P(bekleme) yüksek olabilir.** ρ'ye bağlı: c büyük ve
+  ρ orta seviyede ise birçok müşteri kısa süre bekler — ortalama L_q
+  küçük çıkar ama "bekleme şansı" hâlâ ciddi olabilir.
+
+## Aracı nasıl kullanırım?
+
+[M/M/c Çoklu Sunucu Kuyruk Analizci](/or-araclari/araclar/mmc-kuyruk-analizci)
+aracında λ, μ ve c değerlerini gir; tek hamlede:
+
+1. Sunucu başına yoğunluk ρ, sunulan yük a ve P(bekleme) renk kodlu
+   kartta görünür.
+2. L, L_q, W, W_q standart panelinde okunur.
+3. Durum olasılıkları grafiği n ≤ c (servis ediliyor) ve n > c (kuyrukta
+   bekliyor) bölgesini ayrı renklerle gösterir.
+4. **Sunucu sayısı duyarlılığı** tablosu, c'nin etrafında ±2 değeri
+   inceleyerek "bir sunucu daha eklesem ne kazanırım?" sorusunu somut
+   sayılarla cevaplar.
+
+İlgili araçlar: tek-sunucu durumu için
+[M/M/1 Kuyruk Analizci](/or-araclari/araclar/mm1-kuyruk-analizci),
+zamanla durum geçişlerini modellemek için
+[Markov Zinciri Sabit Dağılım](/or-araclari/araclar/markov-zinciri).

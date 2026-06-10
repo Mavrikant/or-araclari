@@ -119,6 +119,16 @@ export const TOOLS: readonly Tool[] = [
     guideSlug: 'mm1-kuyruk-teorisi',
   },
   {
+    slug: 'mmc-kuyruk-analizci',
+    title: 'M/M/c Çoklu Sunucu Kuyruk Analizci',
+    shortTitle: 'M/M/c Kuyruk',
+    description:
+      'Geliş hızı (λ), sunucu başına hizmet hızı (μ) ve sunucu sayısı (c) ver; Erlang-C formülüyle bekleme olasılığı, ortalama kuyruk uzunluğu ve durum dağılımı anlık olarak hesaplansın. Sunucu sayısı duyarlılık tablosuyla "bir sunucu daha eklesem ne olur?" sorusu görsel.',
+    category: 'olasilik',
+    status: 'ready',
+    guideSlug: 'mmc-kuyruk-erlang-c',
+  },
+  {
     slug: 'hemsire-vardiya-planlayici',
     title: 'Hemşire Vardiya Planlayıcı',
     shortTitle: 'Vardiya Planlayıcı',
