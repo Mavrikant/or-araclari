@@ -342,3 +342,29 @@ döngüde nötralize oldu (sırf 🟢 kod + içerik + doc).
 **İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber, mevcut deseni birebir takip).
 
 **Sıradaki:** F-MMCK (M/M/1/K ve M/M/c/K sonlu kapasiteli kuyruklar — bu döngüde M/M/c temeli atıldı, kapasite sınırı eklemek doğal genişleme), F-MINCOST (Min-Cost Flow / Maks-Akış — L efor), F-GAME (Sıfır toplamlı oyun — M efor, mevcut LP altyapısını kullanır) ya da Q-AUDIT-YAML (M efor, breaking-change riski).
+
+---
+
+## DÖNGÜ #16 — 2026-06-10
+
+**Yapılan:** F-MMCK — Sonlu Kapasiteli Kuyruk Analizci (M/M/1/K, M/M/c/K) + Erlang-B rehberi yayınlandı. Döngü #15'te (PR #36) M/M/c sınırsız buffer modeli yayınlanmıştı; bu döngü onu sınırlı kapasiteli iki kardeş modelle tamamladı.
+
+**Detay:**
+- `src/lib/queue-finite.ts` (+172) — saf algoritma: birth/death zinciri özyinelemesi (`q_0 = 1`, `q_n = q_{n-1}·a/min(n,c)`), bloklama olasılığı `P_K`, efektif geliş hızı `λ_eff = λ(1−P_K)`, Lq/L/Wq/W (Little Yasası λ_eff ile). Faktoriyel taşma yaşanmadan büyük c ve K değerlerini destekler. **Erlang-B** kapalı formu (`erlangB()`) M/M/c/c kayıp sistemi için ayrı bir yardımcı; özyineli formül `B(n) = a·B(n-1)/(n + a·B(n-1))` ile sayısal kararlı.
+- `src/lib/queue-finite.test.ts` (+140, **13 vitest**) — M/M/1/K λ=μ uniform, λ=2/μ=3/K=4 hand-verified P₀=81/211 ve P_K=16/211, overloaded λ > μ kararlı kalış, K=1 → M/M/1/1 = Erlang-B; M/M/c/K için K=c → Erlang-B(2, 1.5) ≈ 0.310345 + closed-form `erlangB()` çapraz doğrulama, K=1+c tek bekleme slot'u Little Yasası tutarlılığı, K=80 ile M/M/c'ye yakınsama (bloklama < 1e-6), validasyon (K<c, sıfır oran).
+- `src/pages/araclar/sonlu-kapasite-kuyruk.astro` (+433) — mobil-öncelikli form (M/M/1/K ↔ M/M/c/K radyo, λ, μ, c koşullu, K), kehribar P_K paneli (öne çıkarılmış), λ_eff/ρ/L/Lq/Wq panelleri, durum olasılıkları SVG çubuk grafiği (son çubuk = P_K = kehribar), iki örnek preset, ρ ≥ 1 olsa sistem kararlıdır notu.
+- `src/content/rehberler/sonlu-kapasite-kuyruk.mdx` (+200) — 10 dk Türkçe rehber: doğum-ölüm zinciri çözümü, M/M/1/K kapalı form (ρ ≠ 1 ve ρ = 1 hâlleri), M/M/c/K iki bölge formülasyonu, Erlang-B özyineli sayısal hesabı, M/M/c/c (loss) vs M/M/c/∞ (Erlang-C) ayrımı, çağrı merkezi tasarımı (Erlang-A'ya gönderme), K → ∞ M/M/c yakınsaması; 6 başlık FAQ JSON-LD.
+- `src/data/tools.ts` (+10) — yeni araç kaydı (`olasilik` kategorisi).
+- `public/og/sonlu-kapasite-kuyruk.png` — `npm run og` ile per-tool OG kartı (81.2 KB).
+
+**MDX tuzağı (#15 ile aynı sınıf):** Rehber prose'unda `{n+1}` ve `{0, 1, …, K}` ifadeleri MDX tarafından JSX expression olarak yorumlandı (`ReferenceError: n is not defined` + `Unexpected character '…'`). İki düzeltme: (1) `P_{n+1}` ve `μ_{n+1}` inline-code (`...`) içine alındı; (2) `{0, 1, …, K}` inline-code (`...`) içine alındı. Döngü #15'in çıkardığı kural (`MDX prose'unda `{...}` kullanma`) ikinci kez tetiklendi.
+
+**Astro check tuzağı:** `SAMPLE_MM1K` ve `SAMPLE_MMCK` literal objelerinde `as const` kullanılınca TypeScript ikisini farklı tipler olarak çıkarsayıp `applySample` çağrısında varyans hatası verdi. Ortak `interface Sample` tanımlanıp iki örnek ona göre typed edilerek çözüldü.
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint, **80 dosya**) · test ✓ (**333/333**, +13 yeni queue-finite testi, 18 dosya) · build ✓ (**42 sayfa**, 4.36s — araç sayfası + rehber dahil) · Lighthouse — yeni sayfa mevcut M/M/c aracıyla aynı şablon, hidrasyon stratejisi (inline `<script>`, plotly yok, SVG/Tailwind sadece) ve mobil-öncelikli yerleşim kullanıyor (≥95 beklenir).
+
+**Yayın:** PR #38 squash-merge edildi (commit `ec8732e`). `Deploy to GitHub Pages` workflow başarıyla tamamlandı (run 27296223126, 8s deploy job). Canlı: <https://karaman.dev/or-araclari/araclar/sonlu-kapasite-kuyruk>.
+
+**İşaret:** 🟡 SARI — paralel ajan oturumu. Bu döngünün ilk denemesi 13:00 dolaylarında `cycle/mmck-queue` dalında başlatıldı; aynı anda başka bir otonom oturum F-DECISION ve sonra F-MM_C'yi sürdü ve `git checkout` + working-tree temizlikleri sırasında ilk denemenin yeni dosyaları silindi (bkz. INCIDENTS). Snapshot `/tmp/cycle-13-mmck/`'de saklandı; ikinci denemede M/M/c bölümü PR #36 olarak yayınlanmış olduğu için kapsam yeniden çerçevelendi (sadece sonlu-K) ve `cycle/sonlu-kapasite-kuyruk` dalında temiz çalıştırıldı. Eş zamanlı çalışmayı seri hâle getiren bir kilit/koordinasyon yokken iki oturum aynı repo'da çakışıyor — gelecek döngüde aşılması gereken bir mimari kısıt.
+
+**Sıradaki:** F-MINCOST (Min-Cost Flow / Maks-Akış — L efor, ulaştırma probleminin genelleştirilmesi), F-GAME (İki kişilik sıfır toplamlı oyun — M efor, mevcut LP altyapısını kullanır) ya da Q-AUDIT-YAML (M efor, breaking-change riski). Paralel-ajan koordinasyonu da insan kararı bekleyen 🔴 backlog item'ı.
