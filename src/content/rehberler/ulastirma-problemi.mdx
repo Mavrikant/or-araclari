@@ -1,0 +1,266 @@
+---
+title: "Ulaştırma Problemi: Kuzeybatı Köşesi, MODI ve Optimal Sevkiyat Planları"
+description: "Ulaştırma problemi nedir, neden LP'nin özel hâlidir, Kuzeybatı Köşesi + MODI nasıl çalışır? Dengesizlik, dejenerasyon ve gerçek dünya örnekleriyle Türkçe rehber."
+pubDate: 2026-06-10
+relatedTool: "ulastirma-problemi-cozucu"
+keywords:
+  - "ulaştırma problemi"
+  - "transportation problem"
+  - "kuzeybatı köşesi"
+  - "MODI yöntemi"
+  - "u-v yöntemi"
+  - "stepping stone"
+  - "lineer programlama"
+  - "tedarik zinciri"
+readingMinutes: 14
+faq:
+  - question: "Ulaştırma problemi tam olarak nedir?"
+    answer: "Ulaştırma problemi, sınırlı sayıda kaynaktan (örn. fabrika, depo, üretim merkezi) sınırlı sayıda hedefe (örn. perakende mağaza, bayi, müşteri) belirli miktarda malın en az toplam taşıma maliyetiyle nasıl gönderileceğini soran klasik bir yöneylem araştırması problemidir. Her kaynak i'nin bir arz kapasitesi a_i, her hedef j'nin bir talebi b_j ve her (i,j) güzergâhının birim taşıma maliyeti c_ij vardır. Karar değişkeni x_ij ≥ 0, i kaynağından j hedefine taşınan miktardır. Hedef ∑ c_ij·x_ij'yi minimize etmektir, kısıtlar her satırın arzı, her sütunun ise talebi karşılamasıdır."
+  - question: "Bu problem neden lineer programlamanın özel bir hâlidir?"
+    answer: "Ulaştırma problemi, kısıtları sadece kaynak ve hedef toplamlarından oluştuğu için bir LP problemidir ve simpleks ile çözülebilir. Ancak yapısı çok özeldir: kısıt matrisi tamamen 0/1'lerden oluşur ve toplam unimodülerdir (totally unimodular). Bu sayede ∑a_i = ∑b_j olduğunda LP'nin en az bir BFS'i (basic feasible solution) ve tüm uç noktaları tamsayılıdır — yani arz/talep tamsayıysa optimum sevkiyat planı da tamsayıdır. Bu güzel özellik, Kuzeybatı Köşesi + MODI gibi simpleksin özel hâli olan uyarlanmış algoritmaların doğmasına yol açar."
+  - question: "Kuzeybatı Köşesi (KKK) yöntemi nedir, neden ilk adım olarak seçilir?"
+    answer: "Kuzeybatı Köşesi kuralı, matrisin sol-üst hücresinden (kuzeybatı) başlayarak her adımda min(kalan arz, kalan talep) kadar yükleme yapan ve ya satırı ya sütunu doyuran bir sezgisel yöntemdir. Sonuç m+n−1 hücreden oluşan bir taban (basis) ve geçerli ama genelde uzakta-optimal olan bir başlangıç çözümüdür. Daha akıllı sezgisel yöntemler vardır (Vogel'ın yaklaşımı, En Küçük Maliyet kuralı) ama KKK'nin sadeliği — maliyetlere hiç bakmaz, yalnızca arz/talep miktarlarını dikkate alır — onu öğretim ve kod açısından en temiz seçenek yapar. Optimumu MODI iterasyonu zaten getiriyor; başlangıç ne kadar kötüyse iterasyon sayısı o kadar artar, çözüm değişmez."
+  - question: "MODI (u-v) yöntemi nasıl çalışır?"
+    answer: "MODI (Modified Distribution) yöntemi, mevcut taban için ikili (dual) değişkenler u_i ve v_j hesaplayıp tüm bağıl maliyetleri (c_ij − u_i − v_j) bulan iteratif bir yöntemdir. Bir hücrenin bağıl maliyeti negatifse, o hücreyi tabana sokmak hedefi düşürür. Negatif olan hücreyi giriş hücresi olarak seçer, mevcut tabanı kullanarak bir 'stepping-stone' döngüsü inşa eder ve döngü boyunca θ kadar miktar transferi yaparak yeni bir taban oluşturur. Tüm bağıl maliyetler ≥ 0 olduğunda optimumdadır. MODI özünde simpleksin ulaştırma yapısına uyarlanmış hâlidir — pivotlama doğrudan tablo üzerinde yapılır, B⁻¹ açıkça tutulmaz."
+  - question: "Arz ve talep eşit değilse ne olur?"
+    answer: "Standart formülasyon ∑a = ∑b (dengelilik) varsayar. Eşitsizlik olduğunda kukla (dummy) satır veya sütun eklenir. Toplam arz > toplam talepse, taşınmayacak miktarı emen bir kukla hedef j_d eklenir; tüm c_{i,j_d} = 0'dır. Toplam talep > toplam arzsa, karşılanmayan talebi soğuran bir kukla kaynak i_d eklenir; tüm c_{i_d,j} = 0. Çözüm sonrasında kukla kolon/satırdaki miktarlar 'kullanılmayan arz' ya da 'karşılanmayan talep' olarak raporlanır. Bu sitenin Ulaştırma Çözücüsü dengelemeyi otomatik yapar ve raporu sevkiyat listesinin altında gösterir."
+  - question: "Dejenere ulaştırma problemi nedir, sorun yaratır mı?"
+    answer: "Bir taban çözüm dejeneredir eğer m+n−1'den daha az pozitif hücre içeriyorsa. Bu durumda MODI'de ikili değişkenler eksik kalır ve algoritma kilitlenebilir. KKK sırasında iki kanal aynı anda doyduğunda otomatik olarak bir ε-temel hücre (sıfır miktarlı ama tabanın parçası) eklenir; pivotlamada giren hücre seçildiğinde benzer dejenerasyonlar oluşabilir. Pratikte küçük (n ≤ 10) örneklerde sorun olmaz; bu sitenin uygulaması ε-hücre stratejisini standart şekilde uygular."
+---
+
+İstanbul'daki üç fabrikan var. Üretim kapasiteleri sırasıyla 70, 90, 115
+ton. Dört bölgesel depona — Ankara, İzmir, Bursa, Adana — sırasıyla 50,
+60, 70, 95 ton göndermen gerekiyor. Her fabrika-depo çifti için birim
+taşıma maliyetin var (tır kirası, yakıt, mesafe). **Hangi fabrikadan
+hangi depoya kaç ton göndermelisin ki toplam taşıma maliyeti en düşük
+olsun?**
+
+Bu, **ulaştırma problemi (transportation problem)** denen klasik bir
+yöneylem araştırması formülasyonudur. F. L. Hitchcock 1941'de matematiksel
+modelini önerdi, T. C. Koopmans 1949'da bağımsız olarak aynı problemi
+keşfetti — ekonomide bu çalışma 1975 Nobel ödülünü getirdi. Bugün
+ulaştırma problemi tedarik zinciri yönetiminin temel taşıdır:
+e-ticaret depo planlaması, perakende dağıtımı, üretim-talep eşleştirmesi,
+hatta ham petrol rafineri tahsisi gibi pek çok sorun aynı çatıdadır.
+
+## Matematiksel formülasyon
+
+Bir ulaştırma problemini üç giriş tanımlar:
+
+- **m** kaynak, her birinin arz kapasitesi `a_i` (i = 1..m)
+- **n** hedef, her birinin talebi `b_j` (j = 1..n)
+- **m × n** birim maliyet matrisi `c_{ij}` — bir birimi i'den j'ye
+  göndermenin maliyeti
+
+Karar değişkenleri `x_{ij} ≥ 0`: i kaynağından j hedefine taşınan
+miktar. Model:
+
+```
+minimize     ∑_{i,j} c_{ij} · x_{ij}
+subject to   ∑_j x_{ij} = a_i      her i için (kaynak dengesi)
+             ∑_i x_{ij} = b_j      her j için (hedef dengesi)
+             x_{ij} ≥ 0            her i, j için
+```
+
+Dengeli problemde (∑a_i = ∑b_j) bu LP'nin daima en az bir çözümü
+vardır. Dengesizlik durumunda kukla satır/sütun eklenir (bkz. aşağı).
+
+### Neden basit bir LP değil?
+
+Teknik olarak bu *tam olarak* bir LP — istersen GLPK ile çözebilirsin.
+Ama yapısı çok özel: kısıt matrisi yalnızca 0 ve 1'lerden oluşur,
+**toplam unimodülerdir (totally unimodular)** — yani her kare alt
+matrisin determinantı −1, 0 veya +1'dir. Bu sayede:
+
+1. Tüm uç noktalar (vertex'ler) tamsayıdır eğer `a_i` ve `b_j`
+   tamsayıysa — yani problemi sürekli olarak çözsen bile sonuç
+   tamsayı çıkar (gerçek hayatta "yarım kamyon" yok).
+2. Genel simpleks yerine **özelleşmiş simpleks** (taşıma simpleksi,
+   bilinen adıyla MODI) çok daha az hesapla aynı sonucu verir.
+3. Pivot işlemi doğrudan tablo üzerinde, ikili (dual) değişkenler
+   yardımıyla yapılır — büyük B⁻¹ matrisi tutmaya gerek yok.
+
+Buna **transportation simplex** denir ve elle çözüm öğretmek için
+hâlâ standart yöntem budur.
+
+## Çözüm stratejisi: KKK + MODI
+
+İki aşama var:
+
+**Aşama 1 — Başlangıç çözümü.** m+n−1 hücreyle dolu, geçerli ama
+optimum olmayan bir taban (basic feasible solution) üret. Yöntemler:
+
+- **Kuzeybatı Köşesi (North-West Corner) kuralı** — en sade.
+- **En Küçük Maliyet (Least Cost) kuralı** — daha akıllı.
+- **Vogel'in Yaklaşımı (Vogel's Approximation Method)** — genelde
+  optimuma çok yakın bir başlangıç verir.
+
+**Aşama 2 — Optimallik testi ve iyileştirme.** MODI (u-v) yöntemi ile
+her taban dışı hücrenin bağıl maliyetini hesapla; negatif varsa
+stepping-stone döngüsüyle pivot yap. Tüm bağıl maliyetler ≥ 0
+olduğunda dur — optimumdasın.
+
+Bu sitenin çözücüsü **Kuzeybatı Köşesi + MODI** kombinasyonunu
+kullanır. Vogel'in başlangıcı genelde daha az iterasyon gerektirir
+ama Kuzeybatı Köşesi öğretici açıdan netliği için daha uygundur.
+
+### Kuzeybatı Köşesi kuralı — adım adım
+
+Matrisin sol-üst (kuzeybatı) köşesinden başla. Şu döngüyü uygula:
+
+1. Aktif hücre (i, j)'de `x_{ij} = min(kalan a_i, kalan b_j)` ata.
+2. `a_i` ve `b_j`'den bu miktarı düş.
+3. `a_i = 0` ise satırı kapat, `j`'yi sabit tutarak `i = i+1`'e geç.
+4. `b_j = 0` ise sütunu kapat, `i`'yi sabit tutarak `j = j+1`'e geç.
+5. Aynı anda ikisi de bittiyse (dejenere step), boşluğu ε-hücre ile
+   doldur ve sonraki köşeye geç.
+
+Maliyetlere bakmaz — sadece miktarları kovalar. Beş satır beş sütunluk
+örneklerde elle 30 saniyede biter.
+
+### MODI iterasyonu — adım adım
+
+Eldeki taban için iki ikili değişken dizisi tanımla:
+
+- `u_i` (i = 1..m) — satır potansiyelleri
+- `v_j` (j = 1..n) — sütun potansiyelleri
+
+`u_1 = 0` kabul et (bir tanesini ankrarlamak şart, geri kalanlar buna
+göre çözülür). Her taban hücresi (i, j) için:
+
+```
+u_i + v_j = c_{ij}
+```
+
+Bu m+n−1 denklem, m+n bilinmeyenli sistemde u_1 = 0 sabitlemesiyle
+benzersiz çözülür. Sonra her **taban dışı** hücre (i, j) için **bağıl
+maliyet** hesapla:
+
+```
+Δ_{ij} = c_{ij} − (u_i + v_j)
+```
+
+Eğer her `Δ_{ij} ≥ 0` ise — durdu, optimumdasın.
+
+En az bir tane `Δ_{ij} < 0` ise:
+
+1. En negatif `Δ_{ij}`'yi seç (en büyük iyileşme potansiyeli) — bu hücre
+   tabana giriyor.
+2. Mevcut taban hücreleri + giriş hücresi ile bir **kapalı döngü**
+   (stepping-stone cycle) bul. Döngü dik açılı segmentlerle ilerler:
+   satır, sütun, satır, sütun…
+3. Giriş hücresine `+θ`, sıradakine `−θ`, sonrakine `+θ` … işaretle
+   (alternating).
+4. `θ`'yı, `−` işaretli hücrelerdeki minimum mevcut miktara eşitle —
+   o hücre tabandan çıkıyor.
+5. Tüm döngü hücrelerine `±θ`'yı uygula, yeni tabanı oluştur.
+
+Tekrarla. Sonlu sayıda iterasyonda biter (taban sayısı sonlu, hedef
+her adımda azalır).
+
+## Dengesizlik: kukla satır/sütun
+
+Gerçek hayatta `∑a_i ≠ ∑b_j` çok sık olur:
+
+- **Toplam arz > toplam talep** → arzın bir kısmı kullanılmayacak. Bir
+  **kukla hedef** j_d ekle, talebi `∑a − ∑b` yap, tüm `c_{i,j_d} = 0`
+  bırak. Çözümde kukla sütundaki miktarlar "kullanılmayan arz"dır.
+- **Toplam talep > toplam arz** → talebin bir kısmı karşılanmayacak.
+  Bir **kukla kaynak** i_d ekle, arzı `∑b − ∑a` yap, tüm `c_{i_d,j} = 0`
+  bırak. Çözümde kukla satırdaki miktarlar "karşılanmayan talep"tir.
+
+Bu sitenin çözücüsü dengelemeyi otomatik yapar; kukla hücrelerdeki
+miktarlar sevkiyat listesinin altında **"dengelenmemiş miktar"** olarak
+raporlanır.
+
+## Maximization — kâr/gelir maksimizasyonu
+
+Aynı çatı kâr/gelir maksimizasyonu için de çalışır. Maliyet matrisi yerine
+**birim kâr matrisi** ver, çözücüde "Maximize" seç. Klasik trick: bir M
+sabiti (`M ≥ max c_{ij}`) seçip `c'_{ij} = M − c_{ij}` ile maliyet
+problemine dönüştür, çöz, ardından gerçek hedef değerini orijinal kâr
+matrisinden hesapla. Site bunu içeride yapar; sen sadece pozitif
+birim-kâr değerleri girersin.
+
+## Dejenerasyon — ne zaman dert eder
+
+Bir taban dejeneredir eğer m+n−1'den az pozitif hücre içeriyorsa.
+Bu durum:
+
+- **Başlangıçta:** KKK sırasında bir satır ve sütun aynı anda doyduğunda.
+  Çözüm: bir ε-hücre (miktar = 0 ama tabanda) ekleyerek taban boyutunu
+  m+n−1'de tut.
+- **İterasyon sırasında:** Pivot ederken birden fazla `−` hücresi
+  aynı minimum θ'ya sahip olduğunda. Çözüm: birini tabandan çıkar,
+  diğer(ler)inde ε bırak.
+
+Çoğu öğretim kitabı ε-stratejisini standart olarak uygular. Bu
+sitenin çözücüsü de bu yolu izler — kullanıcı tarafında görünmez,
+sadece sonuç gelir.
+
+## Karmaşıklık ve sınırlar
+
+- **Boyut:** Pratikte m × n ≤ 100 × 100 yerel olarak tarayıcıda
+  saniyeler içinde biter. Bu sitenin arayüzü m, n ≤ 20 ile sınırlı
+  (mobil ergonomi için).
+- **MODI iterasyon sayısı:** Genelde O(m + n), nadiren O(m·n).
+  Pratik üst sınır olarak 1000 alınır.
+- **Daha büyük örnekler:** 1000+ kaynak/hedef için ulaştırma simpleks
+  yetersiz kalmaz ama özelleşmiş ağ akışı (network flow) algoritmaları
+  daha hızlıdır (örn. Successive Shortest Path, Network Simplex).
+  Ulaştırma problemi aslında min-cost flow'un özel bir hâlidir; iki
+  taraflı bir bipartite graph üzerinde min-cost flow çözücüsü de
+  aynı sonucu verir.
+
+## Gerçek dünya örnekleri
+
+**Tedarik zinciri:** Üç fabrika, beş bölge deposu. Her hafta toplam
+talebi en az nakliye maliyetiyle dağıtmak. Bu sitenin Ulaştırma Çözücüsü
+bu boyutta klasik bir iş için yeter.
+
+**Bilgisayar ağı bant genişliği:** Veri merkezleri (kaynak) → bölgesel
+PoP'lar (hedef). Maliyet, mesafe + gecikme kombinasyonu. Talep, son
+kullanıcı isteği. Trafiği yönlendirmenin maliyetini optimize etmek.
+
+**Üretim planlama:** Birden fazla fabrika aynı ürünü farklı maliyetlerde
+üretiyor. Her ay her müşteri talebini hangi fabrikadan karşılayacağına
+karar vermek.
+
+**İnsan kaynakları:** Şubeler (kaynak) ile günlük vardiya talepleri
+(hedef). Maliyet, transfer ücreti veya konaklama. Çözüm, optimal
+personel dağılımı verir.
+
+**Atık yönetimi:** Çöp toplama bölgeleri → yakma/geri dönüşüm
+tesisleri. Maliyet, mesafe + tesis işletme. Bölgeleri tesislere bağlama.
+
+## Atama problemi ile ilişkisi
+
+Ulaştırma probleminin özel bir hâli **atama problemidir** (assignment
+problem): m = n, tüm a_i = 1, tüm b_j = 1. Yani her kaynak tam bir
+hedefe atanır. Genel ulaştırma simpleks çalışır ama atama yapısı
+bilindiğinde **Macar (Hungarian) algoritması** O(n³) zamanda kesin
+çözüm verir — bu daha hızlıdır. Bu sitedeki [Atama Problemi
+Çözücü](../araclar/atama-problemi-cozucu) tam olarak bunu uygular.
+
+## En İyi Çözüm tek mi?
+
+Hayır. Ulaştırma probleminin birden fazla optimum çözümü olabilir
+— LP'nin yüzü (face) üzerinde olmasından dolayı. MODI bittikten
+sonra eğer bazı taban dışı hücrelerin bağıl maliyeti tam olarak 0
+ise, alternatif optimumlar var demektir. Toplam maliyet aynı kalır,
+ama miktarların dağılımı farklı olabilir. Pratikte ek kısıt
+(örn. "Fabrika A her depoya en az 5 birim göndermeli") ekleyerek
+arzu edilen çözümü seçebilirsin — bu artık genel LP olur.
+
+## Aracı kullan
+
+[**Ulaştırma Problemi Çözücü →**](../araclar/ulastirma-problemi-cozucu)
+Kaynak ve hedef etiketlerini, birim maliyetleri, arz ve talep
+miktarlarını tabloda doğrudan düzenle. Çöz'e bas — optimum sevkiyat
+planı, toplam maliyet, MODI iterasyon sayısı ve dengesizlik raporu
+saniyeler içinde gelir. CSV indir, yazdır veya bağlantıyı paylaş.
+
+İlgili rehberler: [Macar (Hungarian) Algoritması ve Atama
+Problemi](./macar-algoritmasi) · [Doğrusal Programlama
+Nedir?](./dogrusal-programlama-nedir) · [Yöneylem Araştırması
+Nedir?](./yoneylem-arastirmasi-nedir)

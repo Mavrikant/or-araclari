@@ -1,0 +1,759 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import { withBase, SITE } from '../../data/site';
+import { TOOLS } from '../../data/tools';
+
+const tool = TOOLS.find((t) => t.slug === 'ulastirma-problemi-cozucu')!;
+const guideHref = tool.guideSlug ? withBase(`/rehberler/${tool.guideSlug}`) : null;
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: tool.title,
+  applicationCategory: 'WebApplication',
+  operatingSystem: 'Any',
+  description: tool.description,
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'TRY' },
+  inLanguage: SITE.locale,
+  isAccessibleForFree: true,
+};
+---
+
+<BaseLayout
+  title={tool.title}
+  description={tool.description}
+  image={withBase(`/og/${tool.slug}.png`)}
+  imageAlt={`${tool.title} — OR Araçları`}
+>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+  </Fragment>
+
+  <Container as="section" size="wide" class="pt-12 sm:pt-16">
+    <p class="text-sm font-medium text-brand-600 dark:text-accent-400">
+      <a href={withBase('/araclar')} class="hover:underline">Araçlar</a>
+      <span class="text-slate-400 dark:text-slate-600"> / </span>
+      <span>Optimizasyon</span>
+    </p>
+    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">
+      {tool.title}
+    </h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
+      Boyutu ayarla, satır ve sütun etiketlerini ızgarada düzenle, hücrelere
+      birim maliyetleri ve sağ/alt kenarlara arz/talep miktarlarını gir.
+      Kuzeybatı Köşesi başlangıcı ve MODI iterasyonları tarayıcıda en az (veya
+      en çok) maliyetli sevkiyat planını anlık olarak çözer.
+      {guideHref && (
+        <a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>
+      )}
+    </p>
+  </Container>
+
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,320px)_1fr] print:block">
+    <form id="trans-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="sample-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Örnek doldur
+        </button>
+        <button type="button" id="reset-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+          Sıfırla
+        </button>
+      </div>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Boyut
+        </legend>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Kaynak sayısı</span>
+            <input type="number" id="rows-input" min="1" max="20" step="1" value="3"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Hedef sayısı</span>
+            <input type="number" id="cols-input" min="1" max="20" step="1" value="4"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+        </div>
+        <p id="balance-preview" class="text-xs text-slate-500 dark:text-slate-400" aria-live="polite"></p>
+      </fieldset>
+
+      <fieldset>
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Yön
+        </legend>
+        <div class="mt-3 space-y-2">
+          <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
+            <input type="radio" name="dir" value="min" checked class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
+            <span class="flex-1">
+              <span class="block text-sm font-medium text-slate-900 dark:text-white">Minimize</span>
+              <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Maliyet, mesafe, süre gibi düşürülecek değerler.</span>
+            </span>
+          </label>
+          <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
+            <input type="radio" name="dir" value="max" class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
+            <span class="flex-1">
+              <span class="block text-sm font-medium text-slate-900 dark:text-white">Maximize</span>
+              <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Kâr, gelir gibi yükseltilecek değerler.</span>
+            </span>
+          </label>
+        </div>
+      </fieldset>
+
+      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">
+        Çöz
+      </button>
+
+      <div id="result-summary" hidden class="rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm dark:border-emerald-800/60 dark:bg-emerald-950/30">
+        <div class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+          Optimum bulundu
+        </div>
+        <div id="summary-total" class="mt-1 font-display text-2xl font-bold text-emerald-900 dark:text-emerald-100"></div>
+        <div id="summary-detail" class="mt-1 text-xs text-emerald-800 dark:text-emerald-300"></div>
+      </div>
+
+      <div id="result-actions" hidden class="flex flex-wrap gap-2">
+        <button type="button" id="csv-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          CSV indir
+        </button>
+        <button type="button" id="print-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Yazdır
+        </button>
+      </div>
+
+      <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
+    </form>
+
+    <section aria-live="polite" class="space-y-6">
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Maliyet matrisi
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Hücrelerde birim taşıma maliyetini gir. Sağdaki "Arz" sütununa kaynak
+          kapasitesini, alttaki "Talep" satırına hedef talebini yaz. Çöz'e
+          basınca optimum sevkiyat hücreleri vurgulanır.
+        </p>
+      </div>
+
+      <div id="warning-box" hidden class="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-300"></div>
+
+      <div id="matrix-container" class="overflow-x-auto"></div>
+
+      <div id="shipment-list" hidden class="space-y-3">
+        <h3 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Sevkiyat planı
+        </h3>
+        <div id="shipment-rows"></div>
+      </div>
+    </section>
+  </Container>
+
+  {guideHref && (
+    <Container as="section" size="wide" class="py-12 sm:py-16">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900/40">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">
+          Konuyu derinleştir
+        </p>
+        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          Ulaştırma problemi nedir ve nasıl çözülür?
+        </h2>
+        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+          LP'nin özel bir hâli olan ulaştırma problemi, Kuzeybatı Köşesi
+          / Vogel başlangıcı, MODI iterasyonu, dengesizlik ve gerçek dünya
+          uygulamaları üzerine Türkçe rehber.
+        </p>
+        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">
+          Rehberi oku →
+        </a>
+      </div>
+    </Container>
+  )}
+</BaseLayout>
+
+<script>
+  import { solveTransportation, TransportationError, type TransportationResult } from '../../lib/transportation';
+
+  /* ---------- types & constants ---------- */
+
+  interface FormState {
+    rows: number;
+    cols: number;
+    rowLabels: string[];
+    colLabels: string[];
+    cost: number[][];
+    supply: number[];
+    demand: number[];
+    maximize: boolean;
+  }
+
+  const STORAGE_KEY = 'ulastirma-state-v1';
+  const MIN_DIM = 1;
+  const MAX_DIM = 20;
+
+  const SAMPLE_STATE: FormState = {
+    rows: 3,
+    cols: 4,
+    rowLabels: ['Fabrika A', 'Fabrika B', 'Fabrika C'],
+    colLabels: ['Depo 1', 'Depo 2', 'Depo 3', 'Depo 4'],
+    cost: [
+      [17, 24, 19, 35],
+      [15, 21, 25, 14],
+      [19, 22, 18, 19],
+    ],
+    supply: [70, 90, 115],
+    demand: [50, 60, 70, 95],
+    maximize: false,
+  };
+
+  const defaultRowLabel = (i: number): string => `Kaynak ${i + 1}`;
+  const defaultColLabel = (j: number): string => `Hedef ${j + 1}`;
+
+  function emptyState(rows = 3, cols = 4): FormState {
+    return {
+      rows,
+      cols,
+      rowLabels: Array.from({ length: rows }, (_, i) => defaultRowLabel(i)),
+      colLabels: Array.from({ length: cols }, (_, j) => defaultColLabel(j)),
+      cost: Array.from({ length: rows }, () => Array.from({ length: cols }, () => 0)),
+      supply: Array.from({ length: rows }, () => 0),
+      demand: Array.from({ length: cols }, () => 0),
+      maximize: false,
+    };
+  }
+
+  /* ---------- helpers ---------- */
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el as T;
+  };
+
+  function escapeHtml(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function fmt(n: number): string {
+    if (!Number.isFinite(n)) return '∞';
+    if (Math.abs(n) < 1e-10) return '0';
+    return Number.isInteger(n) ? String(n) : n.toFixed(2);
+  }
+
+  function clampDim(n: number): number {
+    if (!Number.isFinite(n)) return 3;
+    return Math.max(MIN_DIM, Math.min(MAX_DIM, Math.round(n)));
+  }
+
+  /* ---------- state persistence ---------- */
+
+  function saveState(state: FormState): void {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function loadState(): FormState {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return structuredClone(SAMPLE_STATE);
+      const parsed = JSON.parse(raw) as Partial<FormState>;
+      const rows = clampDim(parsed.rows ?? 3);
+      const cols = clampDim(parsed.cols ?? 4);
+      const state = emptyState(rows, cols);
+      if (Array.isArray(parsed.rowLabels))
+        for (let i = 0; i < rows; i++)
+          if (typeof parsed.rowLabels[i] === 'string') state.rowLabels[i] = parsed.rowLabels[i] as string;
+      if (Array.isArray(parsed.colLabels))
+        for (let j = 0; j < cols; j++)
+          if (typeof parsed.colLabels[j] === 'string') state.colLabels[j] = parsed.colLabels[j] as string;
+      if (Array.isArray(parsed.cost))
+        for (let i = 0; i < rows; i++) {
+          if (!Array.isArray(parsed.cost[i])) continue;
+          for (let j = 0; j < cols; j++) {
+            const v = (parsed.cost[i] as unknown[])[j];
+            if (typeof v === 'number' && Number.isFinite(v)) state.cost[i][j] = v;
+          }
+        }
+      if (Array.isArray(parsed.supply))
+        for (let i = 0; i < rows; i++) {
+          const v = (parsed.supply as unknown[])[i];
+          if (typeof v === 'number' && Number.isFinite(v)) state.supply[i] = v;
+        }
+      if (Array.isArray(parsed.demand))
+        for (let j = 0; j < cols; j++) {
+          const v = (parsed.demand as unknown[])[j];
+          if (typeof v === 'number' && Number.isFinite(v)) state.demand[j] = v;
+        }
+      state.maximize = parsed.maximize === true;
+      return state;
+    } catch {
+      return structuredClone(SAMPLE_STATE);
+    }
+  }
+
+  function resizeState(state: FormState, newRows: number, newCols: number): void {
+    newRows = clampDim(newRows);
+    newCols = clampDim(newCols);
+
+    if (newRows > state.rowLabels.length)
+      for (let i = state.rowLabels.length; i < newRows; i++) state.rowLabels.push(defaultRowLabel(i));
+    else state.rowLabels.length = newRows;
+
+    if (newCols > state.colLabels.length)
+      for (let j = state.colLabels.length; j < newCols; j++) state.colLabels.push(defaultColLabel(j));
+    else state.colLabels.length = newCols;
+
+    if (newRows > state.cost.length)
+      for (let i = state.cost.length; i < newRows; i++) state.cost.push(Array.from({ length: newCols }, () => 0));
+    else state.cost.length = newRows;
+    for (let i = 0; i < newRows; i++) {
+      const row = state.cost[i];
+      if (newCols > row.length) for (let j = row.length; j < newCols; j++) row.push(0);
+      else row.length = newCols;
+    }
+
+    if (newRows > state.supply.length)
+      for (let i = state.supply.length; i < newRows; i++) state.supply.push(0);
+    else state.supply.length = newRows;
+    if (newCols > state.demand.length)
+      for (let j = state.demand.length; j < newCols; j++) state.demand.push(0);
+    else state.demand.length = newCols;
+
+    state.rows = newRows;
+    state.cols = newCols;
+  }
+
+  /* ---------- in-memory state ---------- */
+
+  const state: FormState = loadState();
+  let lastResult: TransportationResult | null = null;
+  let highlightSet: Set<string> = new Set();
+
+  /* ---------- element refs ---------- */
+
+  const form = $<HTMLFormElement>('trans-form');
+  const sampleBtn = $('sample-btn');
+  const resetBtn = $('reset-btn');
+  const rowsInput = $<HTMLInputElement>('rows-input');
+  const colsInput = $<HTMLInputElement>('cols-input');
+  const balancePreview = $('balance-preview');
+  const matrixContainer = $('matrix-container');
+  const errorBox = $('error-box');
+  const warningBox = $('warning-box');
+  const resultSummary = $('result-summary');
+  const summaryTotal = $('summary-total');
+  const summaryDetail = $('summary-detail');
+  const resultActions = $('result-actions');
+  const csvBtn = $<HTMLButtonElement>('csv-btn');
+  const printBtn = $<HTMLButtonElement>('print-btn');
+  const shipmentList = $('shipment-list');
+  const shipmentRows = $('shipment-rows');
+
+  /* ---------- renderers ---------- */
+
+  function renderBalancePreview(): void {
+    const s = state.supply.reduce((a, v) => a + v, 0);
+    const d = state.demand.reduce((a, v) => a + v, 0);
+    if (s === 0 && d === 0) {
+      balancePreview.textContent = `${state.rows} kaynak × ${state.cols} hedef · arz/talep girilmedi`;
+      return;
+    }
+    if (Math.abs(s - d) < 1e-9) {
+      balancePreview.textContent = `${state.rows} × ${state.cols} · dengeli (∑arz = ∑talep = ${fmt(s)})`;
+    } else if (s > d) {
+      balancePreview.textContent = `∑arz=${fmt(s)} > ∑talep=${fmt(d)} — fazla arz (${fmt(s - d)}) için kukla hedef eklenecek`;
+    } else {
+      balancePreview.textContent = `∑talep=${fmt(d)} > ∑arz=${fmt(s)} — eksik arz (${fmt(d - s)}) için kukla kaynak eklenecek`;
+    }
+  }
+
+  function renderMatrix(): void {
+    const { rows, cols, rowLabels, colLabels, cost, supply, demand } = state;
+
+    const labelInputCls =
+      'block w-full rounded border border-transparent bg-transparent px-1.5 py-1 text-sm font-medium text-slate-800 hover:border-slate-300 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20 dark:text-slate-100 dark:hover:border-slate-700 dark:focus:bg-slate-950';
+
+    const cellInputCls = (r: number, c: number): string => {
+      const key = `${r}-${c}`;
+      const highlighted = highlightSet.has(key);
+      const base =
+        'block w-full rounded border bg-white px-2 py-1.5 text-center font-mono text-sm tabular-nums focus:ring-2 dark:bg-slate-950';
+      return highlighted
+        ? `${base} border-emerald-500 bg-emerald-50 text-emerald-900 ring-1 ring-emerald-500 focus:border-emerald-600 focus:ring-emerald-500/30 dark:border-emerald-400 dark:bg-emerald-950/40 dark:text-emerald-100 dark:ring-emerald-400`
+        : `${base} border-slate-300 text-slate-900 focus:border-brand-500 focus:ring-brand-500/20 dark:border-slate-700 dark:text-slate-100`;
+    };
+
+    const edgeCellCls =
+      'block w-full rounded border border-slate-300 bg-slate-50 px-2 py-1.5 text-center font-mono text-sm font-semibold tabular-nums text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100';
+
+    /* Header: corner + dest labels + "Arz" */
+    const headerCells = [
+      `<div role="columnheader" class="bg-slate-50 dark:bg-slate-900"></div>`,
+      ...colLabels.map(
+        (label, j) =>
+          `<div role="columnheader" class="bg-slate-50 px-1 py-1 dark:bg-slate-900">
+            <input type="text" data-col-label="${j}" value="${escapeHtml(label)}" placeholder="${defaultColLabel(j)}" aria-label="Hedef ${j + 1} etiketi"
+              class="${labelInputCls} text-center" />
+          </div>`,
+      ),
+      `<div role="columnheader" class="bg-slate-100 px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300">Arz</div>`,
+    ].join('');
+
+    /* Body rows: source label + cost cells + supply cell */
+    const bodyRows = Array.from({ length: rows }, (_, i) => {
+      const labelCell = `<div role="rowheader" class="sticky left-0 z-10 bg-slate-50 px-1 py-1 dark:bg-slate-900">
+        <input type="text" data-row-label="${i}" value="${escapeHtml(rowLabels[i])}" placeholder="${defaultRowLabel(i)}" aria-label="Kaynak ${i + 1} etiketi"
+          class="${labelInputCls}" />
+      </div>`;
+      const costCells = Array.from({ length: cols }, (_, j) => {
+        const v = cost[i]?.[j] ?? 0;
+        return `<div role="gridcell" class="bg-white p-1 dark:bg-slate-900/40">
+          <input type="number" data-cost="${i}-${j}" value="${v}" step="any" min="0" inputmode="decimal" aria-label="Birim maliyet ${escapeHtml(rowLabels[i])} → ${escapeHtml(colLabels[j])}"
+            class="${cellInputCls(i, j)}" />
+        </div>`;
+      }).join('');
+      const supplyCell = `<div role="gridcell" class="bg-slate-100 p-1 dark:bg-slate-800/40">
+        <input type="number" data-supply="${i}" value="${supply[i] ?? 0}" step="any" min="0" inputmode="decimal" aria-label="Arz ${escapeHtml(rowLabels[i])}"
+          class="${edgeCellCls}" />
+      </div>`;
+      return labelCell + costCells + supplyCell;
+    }).join('');
+
+    /* Footer: "Talep" label + demand cells + sum corner */
+    const totalSupply = supply.reduce((a, v) => a + v, 0);
+    const totalDemand = demand.reduce((a, v) => a + v, 0);
+    const balanced = Math.abs(totalSupply - totalDemand) < 1e-9;
+    const cornerCls = balanced
+      ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300'
+      : 'bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300';
+
+    const footerLabel = `<div role="rowheader" class="sticky left-0 z-10 flex items-center justify-end bg-slate-100 px-2 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300">Talep</div>`;
+    const demandCells = Array.from({ length: cols }, (_, j) => {
+      return `<div role="gridcell" class="bg-slate-100 p-1 dark:bg-slate-800/40">
+        <input type="number" data-demand="${j}" value="${demand[j] ?? 0}" step="any" min="0" inputmode="decimal" aria-label="Talep ${escapeHtml(colLabels[j])}"
+          class="${edgeCellCls}" />
+      </div>`;
+    }).join('');
+    const sumCorner = `<div role="gridcell" class="flex items-center justify-center px-2 py-1.5 text-center font-mono text-sm font-semibold tabular-nums ${cornerCls}">${fmt(totalSupply)} / ${fmt(totalDemand)}</div>`;
+
+    matrixContainer.innerHTML = `
+      <div role="grid" class="inline-block overflow-hidden rounded-xl border border-slate-200 align-top dark:border-slate-800">
+        <div class="grid gap-px bg-slate-200 dark:bg-slate-800" style="grid-template-columns: minmax(8rem, max-content) repeat(${cols}, minmax(5rem, 1fr)) minmax(4.5rem, max-content);">
+          ${headerCells}
+          ${bodyRows}
+          ${footerLabel}${demandCells}${sumCorner}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderShipmentList(): void {
+    if (!lastResult) {
+      shipmentList.hidden = true;
+      return;
+    }
+    const dirNoun = state.maximize ? 'kâr' : 'maliyet';
+    const rows = lastResult.shipments
+      .filter((s) => !s.isDummy)
+      .map((s) => {
+        const r = state.rowLabels[s.i] ?? defaultRowLabel(s.i);
+        const c = state.colLabels[s.j] ?? defaultColLabel(s.j);
+        const lineCost = s.amount * s.unitCost;
+        return `<li class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-2 last:border-0 dark:border-slate-800">
+          <span class="text-sm text-slate-900 dark:text-slate-100">
+            <span class="font-medium">${escapeHtml(r)}</span>
+            <span class="mx-2 text-slate-400">→</span>
+            <span>${escapeHtml(c)}</span>
+          </span>
+          <span class="font-mono text-sm tabular-nums text-slate-600 dark:text-slate-400">${fmt(s.amount)} × ${fmt(s.unitCost)} = ${fmt(lineCost)}</span>
+        </li>`;
+      })
+      .join('');
+
+    const dummyShipments = lastResult.shipments.filter((s) => s.isDummy);
+    const dummyBlock = dummyShipments.length
+      ? `<div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-300">
+          <p class="font-semibold">Dengelenmemiş miktar</p>
+          <ul class="mt-1 space-y-0.5">
+            ${dummyShipments
+              .map((s) => {
+                if (lastResult!.dummyDestination !== null && s.j === lastResult!.dummyDestination) {
+                  return `<li>${escapeHtml(state.rowLabels[s.i] ?? defaultRowLabel(s.i))}: ${fmt(s.amount)} birim arz kullanılmadı</li>`;
+                }
+                return `<li>${escapeHtml(state.colLabels[s.j] ?? defaultColLabel(s.j))}: ${fmt(s.amount)} birim talep karşılanamadı</li>`;
+              })
+              .join('')}
+          </ul>
+        </div>`
+      : '';
+
+    shipmentRows.innerHTML = `<ul class="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40">${rows || '<li class="px-4 py-3 text-sm text-slate-500">Sıfırdan büyük sevkiyat yok.</li>'}</ul>${dummyBlock}`;
+    shipmentList.hidden = false;
+
+    summaryTotal.textContent = `Toplam ${dirNoun}: ${fmt(lastResult.totalCost)}`;
+    const iterNote = lastResult.iterations === 0 ? 'KKK çözümü zaten optimum' : `${lastResult.iterations} MODI iterasyonu`;
+    summaryDetail.textContent = `${lastResult.shipments.filter((s) => !s.isDummy).length} sevkiyat · ${iterNote}`;
+  }
+
+  function renderAll(): void {
+    rowsInput.value = String(state.rows);
+    colsInput.value = String(state.cols);
+    (form.elements.namedItem('dir') as RadioNodeList).value = state.maximize ? 'max' : 'min';
+    renderBalancePreview();
+    renderMatrix();
+    renderShipmentList();
+  }
+
+  /* ---------- solve & display ---------- */
+
+  function showError(msg: string): void {
+    errorBox.textContent = msg;
+    errorBox.hidden = false;
+    resultSummary.hidden = true;
+    resultActions.hidden = true;
+    shipmentList.hidden = true;
+    warningBox.hidden = true;
+    lastResult = null;
+    highlightSet = new Set();
+    renderMatrix();
+  }
+
+  function clearError(): void {
+    errorBox.hidden = true;
+    errorBox.textContent = '';
+  }
+
+  function solve(): void {
+    clearError();
+    state.maximize = (form.elements.namedItem('dir') as RadioNodeList).value === 'max';
+    saveState(state);
+
+    try {
+      const result = solveTransportation({
+        supply: state.supply,
+        demand: state.demand,
+        cost: state.cost,
+        direction: state.maximize ? 'max' : 'min',
+      });
+      lastResult = result;
+      highlightSet = new Set(
+        result.shipments
+          .filter((s) => !s.isDummy && s.i < state.rows && s.j < state.cols)
+          .map((s) => `${s.i}-${s.j}`),
+      );
+      if (result.dummySource !== null) {
+        warningBox.hidden = false;
+        warningBox.textContent = `Toplam talep toplam arzdan ${fmt(result.totalDemand - result.totalSupply)} birim fazla — kukla kaynak ile dengelendi. Karşılanamayan talep aşağıdaki listede.`;
+      } else if (result.dummyDestination !== null) {
+        warningBox.hidden = false;
+        warningBox.textContent = `Toplam arz toplam talepten ${fmt(result.totalSupply - result.totalDemand)} birim fazla — kukla hedef ile dengelendi. Kullanılmayan arz aşağıdaki listede.`;
+      } else {
+        warningBox.hidden = true;
+      }
+      resultSummary.hidden = false;
+      resultActions.hidden = false;
+      renderMatrix();
+      renderShipmentList();
+      shipmentList.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (err) {
+      const msg =
+        err instanceof TransportationError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Bilinmeyen hata.';
+      showError(msg);
+    }
+  }
+
+  /* ---------- CSV export ---------- */
+
+  function downloadCsv(): void {
+    if (!lastResult) return;
+    const escape = (v: string): string => {
+      if (v.includes(',') || v.includes('"') || v.includes('\n')) {
+        return `"${v.replace(/"/g, '""')}"`;
+      }
+      return v;
+    };
+
+    const lines: string[] = [];
+    lines.push(['', ...state.colLabels, 'Arz'].map(escape).join(','));
+    for (let i = 0; i < state.rows; i++) {
+      const cells = state.cost[i].map((v, j) => {
+        const isPath = highlightSet.has(`${i}-${j}`);
+        return isPath ? `*${fmt(v)}*` : fmt(v);
+      });
+      lines.push([state.rowLabels[i], ...cells, fmt(state.supply[i])].map(escape).join(','));
+    }
+    lines.push(['Talep', ...state.demand.map((v) => fmt(v)), ''].map(escape).join(','));
+    lines.push('');
+    lines.push(['Kaynak', 'Hedef', 'Miktar', 'Birim maliyet', 'Satır maliyeti'].join(','));
+    for (const s of lastResult.shipments.filter((x) => !x.isDummy)) {
+      const r = state.rowLabels[s.i] ?? defaultRowLabel(s.i);
+      const c = state.colLabels[s.j] ?? defaultColLabel(s.j);
+      lines.push([r, c, fmt(s.amount), fmt(s.unitCost), fmt(s.amount * s.unitCost)].map(escape).join(','));
+    }
+    lines.push(`Toplam,,,${state.maximize ? 'kâr' : 'maliyet'},${fmt(lastResult.totalCost)}`);
+
+    const csv = lines.join('\n') + '\n';
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ulastirma.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  /* ---------- input handlers ---------- */
+
+  function commitState(): void {
+    saveState(state);
+  }
+
+  function invalidateResult(): void {
+    if (!lastResult && highlightSet.size === 0) {
+      renderBalancePreview();
+      return;
+    }
+    lastResult = null;
+    highlightSet = new Set();
+    resultSummary.hidden = true;
+    resultActions.hidden = true;
+    shipmentList.hidden = true;
+    warningBox.hidden = true;
+    renderBalancePreview();
+  }
+
+  rowsInput.addEventListener('input', () => {
+    const v = clampDim(Number(rowsInput.value));
+    if (v === state.rows) return;
+    resizeState(state, v, state.cols);
+    invalidateResult();
+    renderMatrix();
+    commitState();
+  });
+
+  colsInput.addEventListener('input', () => {
+    const v = clampDim(Number(colsInput.value));
+    if (v === state.cols) return;
+    resizeState(state, state.rows, v);
+    invalidateResult();
+    renderMatrix();
+    commitState();
+  });
+
+  form.addEventListener('change', (e) => {
+    const t = e.target as HTMLElement;
+    if (t instanceof HTMLInputElement && t.name === 'dir') {
+      state.maximize = t.value === 'max';
+      invalidateResult();
+      renderMatrix();
+      commitState();
+    }
+  });
+
+  matrixContainer.addEventListener('input', (e) => {
+    const t = e.target as HTMLElement;
+    if (!(t instanceof HTMLInputElement)) return;
+
+    if (t.dataset.cost) {
+      const [iStr, jStr] = t.dataset.cost.split('-');
+      const i = Number(iStr);
+      const j = Number(jStr);
+      const v = Number(t.value);
+      state.cost[i][j] = Number.isFinite(v) ? v : 0;
+      invalidateResult();
+      commitState();
+      return;
+    }
+    if (t.dataset.supply !== undefined) {
+      const i = Number(t.dataset.supply);
+      const v = Number(t.value);
+      state.supply[i] = Number.isFinite(v) ? v : 0;
+      invalidateResult();
+      // Update the supply/demand totals shown in the corner cell.
+      renderMatrix();
+      commitState();
+      return;
+    }
+    if (t.dataset.demand !== undefined) {
+      const j = Number(t.dataset.demand);
+      const v = Number(t.value);
+      state.demand[j] = Number.isFinite(v) ? v : 0;
+      invalidateResult();
+      renderMatrix();
+      commitState();
+      return;
+    }
+    if (t.dataset.rowLabel !== undefined) {
+      const i = Number(t.dataset.rowLabel);
+      state.rowLabels[i] = t.value;
+      commitState();
+      return;
+    }
+    if (t.dataset.colLabel !== undefined) {
+      const j = Number(t.dataset.colLabel);
+      state.colLabels[j] = t.value;
+      commitState();
+      return;
+    }
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    solve();
+  });
+
+  sampleBtn.addEventListener('click', () => {
+    Object.assign(state, structuredClone(SAMPLE_STATE));
+    invalidateResult();
+    renderAll();
+    commitState();
+    clearError();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('Matris sıfırlanacak. Devam edilsin mi?')) return;
+    Object.assign(state, emptyState());
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    invalidateResult();
+    renderAll();
+    clearError();
+  });
+
+  csvBtn.addEventListener('click', downloadCsv);
+  printBtn.addEventListener('click', () => window.print());
+
+  /* ---------- boot ---------- */
+
+  renderAll();
+</script>
+
+<style>
+  @media print {
+    @page {
+      margin: 1.5cm;
+    }
+    body {
+      background: white !important;
+    }
+  }
+</style>

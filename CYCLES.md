@@ -234,3 +234,47 @@ döngüde nötralize oldu (sırf 🟢 kod + içerik + doc).
 **İşaret:** yok (sırf 🟢 yeşil — yeni statik asset + meta prop wiring + local duplicate temizliği).
 
 **Sıradaki:** F-TRANSPORT (Ulaştırma Problemi çözücü — L efor, klasik OR aracı), F-MARKOV (Markov Zinciri sabit dağılım — M efor) ya da Q-AUDIT-YAML (M efor, breaking-change riskli `@astrojs/check` upgrade).
+
+---
+
+## DÖNGÜ #11 — 2026-06-10
+
+**Yapılan:** F-MARKOV — Markov Zinciri Sabit Dağılım hesaplayıcısı + uzun-form Türkçe rehber yayınlandı. n×n geçiş matrisinden π·P = π denklemini Gauss eliminasyonuyla çözen, ortalama dönüş süreleri ve yörünge grafiği üreten yeni "Olasılık & Kuyruk" kategorisinde aracın canlı sürümü.
+
+**Detay:**
+- `src/lib/markov.ts` (+229) — saf algoritma: kısmi pivotlamalı Gauss eliminasyonu (lineer sistem π·(P−I)=0 + Σπᵢ=1), tekil/indirgenebilir zincirlerde güç iterasyonu fallback, yörünge hesabı, plain-text matris parse'i.
+- `src/lib/markov.test.ts` (+204, **24 vitest**) — iki/üç durumlu zincirler kapalı-form karşılaştırması, yörünge yakınsama, ortalama dönüş 1/πᵢ, absorbing zincirlerde fallback, etiket/initial doğrulama, parse hataları.
+- `src/pages/araclar/markov-zinciri.astro` (+296) — mobil-öncelikli form (etiketler, matris textarea, opsiyonel başlangıç dağılımı, adım sayısı), iki örnek (hava durumu + mini PageRank), sabit dağılım tablosu (πᵢ + % + ort. dönüş), tüm durumların yörüngesi tek SVG'de + π referans çizgileri.
+- `src/content/rehberler/markov-zinciri.mdx` (+201) — Markov özelliği, π'nin yorumu, lineer sistem vs güç iterasyonu, indirgenemezlik/periyot/ergodiklik, PageRank köprüsü, kuyruk teorisi bağlantısı.
+- `src/data/tools.ts` (+10) — yeni araç kaydı (`olasilik` kategorisi).
+- `public/og/markov-zinciri.png` — `npm run og` ile per-tool OG kartı (81.1 KB). Diğer 11 OG kartı byte-identical (deterministik render).
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint, 68 dosya) · test ✓ (**272/272**, +24 yeni markov testi, 14 dosya) · build ✓ (**34 sayfa**, 3.92s — markov-zinciri aracı + rehberi dahil) · Lighthouse — yeni sayfa mevcut M/M/1 aracıyla aynı şablon, hidrasyon stratejisi (inline `<script>`, SVG-only çizim, plotly yok) ve mobil-öncelikli yerleşim kullanıyor (≥95 beklenir).
+
+**Yayın:** PR açılacak, CI yeşilse merge.
+
+**İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber, mevcut deseni birebir takip).
+
+**Sıradaki:** F-TRANSPORT (Ulaştırma Problemi çözücü — L efor) ya da F-MM_C (M/M/c, M/M/1/K — mevcut M/M/1 aracını genişletir, orta efor) ya da Q-AUDIT-YAML (M efor, breaking-change riski).
+
+---
+
+## DÖNGÜ #12 — 2026-06-10
+
+**Yapılan:** F-TRANSPORT — Ulaştırma Problemi Çözücü (Kuzeybatı Köşesi + MODI) ve uzun-form Türkçe rehber yayınlandı. m kaynak × n hedef için birim taşıma maliyetlerini, arz ve talep miktarlarını alıp en az (veya en çok) maliyetli sevkiyat planını tarayıcıda iteratif olarak çözen "Optimizasyon" kategorisinde yeni araç.
+
+**Detay:**
+- `src/lib/transportation.ts` (+424) — saf algoritma: doğrulama, Kuzeybatı Köşesi başlangıcı (m+n−1 taban + dejenere step için ε-hücre), `computeDuals` (u_i + v_j = c_ij'den iteratif çözüm), `findCycle` (stepping-stone soyma trick'i), MODI pivotlama, dengesiz problemler için otomatik kukla satır/sütun, min/max yön desteği (M − c dönüşümü).
+- `src/lib/transportation.test.ts` (+182, **13 vitest**) — 3×4/3×3/2×3/1×1 dengeli problemlerde hand-verified optima (4805, 775, 270, 70), excess supply ile kukla hedef, excess demand ile kukla kaynak, min/max karşılaştırma, validasyon hataları (boş arz, boyut uyumsuzluğu, negatif maliyet, sıfır toplam), 4×4 ve 5×5 örneklerde akış korunumu + iterasyon sınırı.
+- `src/pages/araclar/ulastirma-problemi-cozucu.astro` (+545) — düzenlenebilir m × n + "Arz" sütunu + "Talep" satırı ızgarası, satır/sütun etiketleri canlı, ∑arz vs ∑talep dengesi köşede gösterilir, optimum sevkiyat hücreleri vurgulanır, dengesizlik durumu kukla detayıyla raporlanır, CSV indirme + yazdırma.
+- `src/content/rehberler/ulastirma-problemi.mdx` (+184) — Hitchcock/Koopmans tarihi, LP olarak formülasyon ve toplam unimodülerlik, KKK + MODI adım adım, dengesizlik + dejenerasyon stratejileri, atama problemi/min-cost flow ilişkisi, FAQ JSON-LD ile 6 başlık.
+- `src/data/tools.ts` (+10) — yeni araç kaydı (`optimizasyon` kategorisi).
+- `public/og/ulastirma-problemi-cozucu.png` — `npm run og` ile per-tool OG kartı (83.1 KB). Diğer 11 OG kartı byte-identical (deterministik render).
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint, 71 dosya) · test ✓ (**285/285**, +13 yeni transportation testi, 15 dosya) · build ✓ (**36 sayfa**, 4.06s — araç sayfası + rehber dahil) · Lighthouse — yeni sayfa mevcut Atama Problemi aracıyla aynı şablon, hidrasyon stratejisi (inline `<script>`, plotly yok, SVG/Tailwind sadece) ve mobil-öncelikli yerleşim kullanıyor (≥95 beklenir).
+
+**Yayın:** PR açılacak, CI yeşilse merge.
+
+**İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber, mevcut deseni birebir takip).
+
+**Sıradaki:** F-MINCOST (Min-Cost Flow / Maks-Akış — L efor, ulaştırma probleminin genelleştirilmesi), F-MM_C (M/M/c, M/M/1/K — M efor) ya da Q-AUDIT-YAML (M efor, breaking-change riski).
