@@ -1,0 +1,193 @@
+---
+title: "Sonlu Kapasiteli Kuyruklar: M/M/1/K, M/M/c/K ve Erlang-B Kayıp Sistemi"
+description: "Sonlu kapasiteli M/M/1/K ve M/M/c/K kuyruk modelleri Türkçe rehber. Doğum-ölüm zinciri çözümü, bloklama olasılığı P_K, efektif geliş hızı, Erlang-B formülü ve gerçek dünya uygulamaları."
+pubDate: 2026-06-10
+relatedTool: "sonlu-kapasite-kuyruk"
+keywords:
+  - "M/M/1/K"
+  - "M/M/c/K"
+  - "Erlang-B"
+  - "bloklama olasılığı"
+  - "sonlu kapasite kuyruk"
+  - "kayıp sistemi"
+  - "PASTA"
+  - "queueing theory"
+readingMinutes: 10
+faq:
+  - question: "Sonlu kapasiteli kuyruk ne demek?"
+    answer: "Sistemin aynı anda barındırabileceği müşteri sayısı sınırlı olan kuyruktur — örneğin K kişilik bekleme salonu, K kapasiteli ağ buffer'ı, K kasalı süpermarket. Sistem K müşteriye ulaştığında gelen yeni müşteri reddedilir ve kaybolur (loss system). Sonsuz kapasiteli M/M/c modellerinin aksine, sonlu sistemler λ > μ olsa bile her zaman kararlıdır — sınırlı durum uzayı kuyruğun patlamasına izin vermez."
+  - question: "Bloklama olasılığı P_K nasıl yorumlanır?"
+    answer: "P_K = P(N = K), sistem tam dolu iken yeni bir müşterinin gelme olasılığıdır. PASTA özelliği (Poisson varışlar zaman-ortalama dağılımı görür) gereği bu, aynı zamanda gelen bir müşterinin reddedilme olasılığıdır. Pratikte tasarım hedefi belirlenir (ör. P_K < %2) ve buna göre K veya c ayarlanır."
+  - question: "Efektif geliş hızı λ_eff neden önemli?"
+    answer: "λ_eff = λ · (1 − P_K), uzun-dönem kabul edilen müşterilerin geliş hızıdır. Little Yasası L = λ_eff · W bu efektif hız ile kullanılır — orijinal λ ile değil. Reddedilen müşteriler sistem dinamiğine katkı yapmaz. Bu, sonlu sistemlerde W ve W_q hesaplarken sık unutulan bir noktadır."
+  - question: "Erlang-B formülü tam olarak ne hesaplar?"
+    answer: "B(c, a), M/M/c/c kayıp sisteminde bloklama olasılığıdır. Kuyrukta beklenmez — sunucular doluysa müşteri reddedilir. Formülü: B(c,a) = (a^c/c!) / Σ_{n=0}^{c} a^n/n!. Klasik telefon devre tasarımı bu formülle yapılmıştır; 'kaç devre koyarsam çağrıların %1'i bloklanır?' sorusunun matematiksel cevabıdır. Sayısal olarak kararsız olabilen toplam yerine standart bir özyineli formülle hesaplanır: B(0)=1, B(n)=a·B(n-1)/(n+a·B(n-1))."
+  - question: "Erlang-B ve Erlang-C arasındaki fark nedir?"
+    answer: "İki formül farklı sistemleri model alır. **Erlang-B** kayıp sistemini (M/M/c/c) — sunucular doluysa müşteri redde gider, beklemez. **Erlang-C** ise sınırsız bekleme alanı olan M/M/c'de bir müşterinin beklemeye düşme olasılığını verir. İkisi de M/M/c'nin değişik sınır hâlleri: B 'kapı tıka basa kapalı' senaryosu, C 'kuyruk başlamaz mı?' sorusu. Modern çağrı merkezleri ikisini de gözden geçirir; bu site ayrıca [M/M/c Çoklu Sunucu Kuyruk Analizci](/or-araclari/araclar/mmc-kuyruk-analizci) aracını sınırsız buffer için sağlar."
+  - question: "K → ∞ yaparsam ne olur?"
+    answer: "Sonlu sistem, sonsuz kuyruğa yakınsar. ρ = λ/(cμ) < 1 ise sistem M/M/c'ye düşer; bloklama olasılığı 0'a iner ve Erlang-C dinamikleri geçerli olur. ρ ≥ 1 ise klasik M/M/c kararsız hâle gelir (formüller geçersiz); bu durumda sonlu K vazgeçilmezdir. Yani sonlu K iki amaçla seçilir: fiziksel bir bekleme alanı sınırı modellemek ya da matematiksel olarak kararsız bir sistemi 'tıkamak' ve bloklama maliyetine dönüştürmek."
+---
+
+Bekleme yeri sonsuz olan kuyruk modelleri — M/M/1 ve M/M/c — pedagojik
+açıdan temizdir ama gerçek dünya neredeyse hep sonludur: 30 kişilik
+bekleme salonu, 100 paketlik ağ buffer'ı, 6 muayene odası, 12 kapasiteli
+otopark. Bu sınırlar **bloklama** üretir: sistem doluyken gelen müşteri
+reddedilir. Bu rehber, M/M/1/K ve M/M/c/K modellerini ele alıyor.
+
+## Kendall hatırlatması
+
+Kuyruk sisteminin Kendall notasyonu **A/S/c/K** biçimindedir:
+
+- **A** — varış sürecinin dağılımı (M = Markov / Üstel)
+- **S** — hizmet süresinin dağılımı (M = Markov / Üstel)
+- **c** — paralel sunucu sayısı
+- **K** — sistem kapasitesi; belirtilmezse ∞
+
+Bu rehberin kapsamı:
+
+| Model | Sunucu | Kapasite | Karakter |
+| :--- | :---: | :---: | :--- |
+| **M/M/1/K** | 1 | K | Tek sunucu, sonlu bekleme |
+| **M/M/c/K** | c | K | Çok sunucu, sonlu bekleme (K ≥ c) |
+| **M/M/c/c** | c | c | Erlang-B kayıp sistemi (özel hâl) |
+
+Sınırsız buffer hâli için [M/M/c Çoklu Sunucu Kuyruk
+Analizci](/or-araclari/araclar/mmc-kuyruk-analizci) tek başına bulunur.
+
+## Doğum-ölüm zinciri çözümü
+
+Hem M/M/1/K hem M/M/c/K, durum uzayı N = `{0, 1, …, K}` olan sonlu bir
+doğum-ölüm zinciridir:
+
+- **Doğum hızı (varış):** her n &lt; K için λ_n = λ. n = K olduğunda
+  varan müşteri reddedilir; **λ_K = 0**.
+- **Ölüm hızı (servis):** n müşteri varken aktif sunucu sayısı min(n, c),
+  böylece μ_n = min(n, c) · μ.
+
+Detaylı denge denklemleri (`P_n · λ_n = P_{n+1} · μ_{n+1}`) çözüldüğünde:
+
+$$P_n = q_n / \sum_{k=0}^{K} q_k, \quad q_0 = 1, \quad q_n = q_{n-1} \cdot \frac{a}{\min(n, c)}$$
+
+burada **a = λ/μ** sunulan yüktür (offered load, Erlang birimi).
+
+Bu araç tam olarak bu özyineli formülü uygular; **faktoriyel taşması
+yaşanmaz**, büyük c, K değerleri sayısal olarak temiz çalışır.
+
+## M/M/1/K — tek sunuculu sonlu sistem
+
+c = 1 alındığında P_n için kapalı form çıkar:
+
+- ρ ≠ 1 için: **P_n = ρ^n · (1−ρ) / (1 − ρ^(K+1))**, n = 0…K
+- ρ = 1 için: **P_n = 1/(K+1)** (uniform)
+
+Bloklama: P_K. Efektif geliş: λ_eff = λ · (1 − P_K).
+
+Ortalamalar:
+
+- L = Σ n · P_n
+- L_q = L − (1 − P_0)  (1 − P_0 = sunucu kullanım oranı = ortalama
+  serviste olan)
+- W = L / λ_eff, W_q = L_q / λ_eff
+
+**Sayısal örnek.** λ = 2/dk, μ = 3/dk, K = 4:
+
+- ρ = 2/3, P_0 = 81/211 ≈ 0.384
+- **P_block = P_4 = 16/211 ≈ %7.6**
+- λ_eff ≈ 1.85/dk
+- L ≈ 1.24, L_q ≈ 0.63
+- W ≈ 0.67 dk, W_q ≈ 0.34 dk
+
+## M/M/c/K — genel hâl
+
+c sunucu, K kapasite (K ≥ c). Birinci bölgede (n ≤ c) sunucular
+paralel açılır; ikinci bölgede (n &gt; c) tüm sunucular meşgul ve
+kuyruk birikir. Aynı özyineli formülasyon hem bölgeyi de kapsar.
+
+**Bloklama.** P_block = P_K. λ_eff = λ(1 − P_K).
+
+**İki özel sınır hâli:**
+
+- **K = c (M/M/c/c = Erlang loss):** Hiç bekleme yok; müşteri ya hemen
+  servise girer ya reddedilir. Bloklama olasılığı **Erlang-B**:
+  $B(c, a) = (a^c/c!) / \sum_{n=0}^{c} a^n/n!$
+  Telekom devre tasarımı bu formülle yapılmıştır.
+- **K → ∞ (ve ρ &lt; 1):** Sistem M/M/c'ye yakınsar; bloklama 0'a düşer
+  ve Erlang-C dinamikleri devreye girer.
+
+**Sayısal örnek.** λ = 4/dk, μ = 2/dk, c = 2, K = 5:
+
+- a = 2.0, ρ = 1.0 — sınırsız M/M/c kararsız olurdu, ama K sınırı
+  sistemi kararlı tutar.
+- P_block ≈ 0.226 → arayanların yaklaşık %22.6'sı reddediliyor.
+- λ_eff ≈ 3.10/dk.
+
+## Erlang-B sayısal olarak nasıl hesaplanır?
+
+Doğrudan toplama formülü (a^n/n!) büyük c'de taşma yapar. Standart
+özyineli formülü kullan:
+
+```
+B(0, a) = 1
+B(n, a) = (a · B(n-1, a)) / (n + a · B(n-1, a))
+```
+
+Bu süreç c adımda durur ve hassasiyeti korur. Bu sitenin sonlu-kuyruk
+aracı içeride aynı özyineli formülü kullanır (`erlangB` fonksiyonu).
+
+## Tasarım: K ve c nasıl seçilir?
+
+Tipik kararlar iki adımlıdır:
+
+1. **Servis hedefi belirle.** "Bloklama oranı en fazla %2 olsun" ya da
+   "P(W &gt; 30 sn) ≤ %10" gibi.
+2. **(K, c) parametrelerini hedefe uydur.** ρ → a alan c'yi bul; sonra K
+   arttırarak P_K'yı hedefe çek.
+
+Trade-off: c artırmak (daha çok sunucu) servisi hızlandırır ama
+maliyetlidir; K artırmak (daha çok bekleme yeri) bloklamayı düşürür ama
+fiziksel/algoritmik sınırı olabilir (raf alanı, buffer bellek). İyi
+tasarım iki tarafı dengeler.
+
+## Çağrı merkezi tasarımı: Erlang-B vs gerçek dünya
+
+Gerçek çağrı merkezleri tamamen kayıp (Erlang-B) ya da tamamen bekleme
+(Erlang-C) değildir — bir kısım IVR'a takılır, bir kısım meşgul sinyali
+alır, geri kalan kuyrukta bekler. Sektörde:
+
+- **Erlang-B** — trunk grubu boyutlamada (PBX hat sayısı)
+- **Erlang-C** — agent sayısı belirlemede (sınırsız hold süresi varsayımı)
+- **Erlang-A** — Erlang-C + sabırsız müşteri (abandon) modeli; modern
+  çağrı merkezi standardı
+
+Bu site şimdilik Erlang-B (bu araç, M/M/c/c modu) ve Erlang-C (M/M/c
+aracı) sağlar; Erlang-A ileride eklenebilir.
+
+## Bu araçla ne yapabilirsin?
+
+Sonlu Kapasiteli Kuyruk Analizci aracında:
+
+- **Model seç** — M/M/1/K veya M/M/c/K
+- **λ, μ, c, K gir** — modele göre alanlar dinamik gösterilir
+- **Sonuçları gör** — P_K (bloklama), λ_eff, ρ, L, L_q, W_q
+- **Durum olasılığı çubuk grafiği** — P_n dağılımı, son çubuk kehribar
+  rengiyle bloklamayı vurgular
+- **Tarayıcıda hesaplama** — sunucu yok, veri ayrılmıyor, çevrimdışı
+  çalışır
+
+[**→ Aracı aç**](/or-araclari/araclar/sonlu-kapasite-kuyruk)
+
+## Bu modelden bağımsız diğer yaklaşımlar
+
+Sonlu-K M/M sınıfı dışında pratik problemleri kapsamak için:
+
+- **G/G/c/K** — genel dağılımlı varış/servis; kapalı çözüm yok,
+  simülasyon veya yaklaşımlar gerekir
+- **M/M/c with abandonment (Erlang-A)** — kuyrukta beklerken
+  vazgeçen müşteriler
+- **Network of queues (Jackson, BCMP)** — birbirine bağlı kuyruklar
+- **Phase-type service** — multi-stage servis
+
+Klasik tekil sunucu temellerini gözden geçirmek istersen [M/M/1
+Kuyruk Analizci](/or-araclari/araclar/mm1-kuyruk-analizci) ve eşlik
+eden [M/M/1 Kuyruk Teorisi
+Rehberi](/or-araclari/rehberler/mm1-kuyruk-teorisi) burada.
