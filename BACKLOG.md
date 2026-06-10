@@ -23,7 +23,6 @@ Durum: open · in-progress · blocked · done
 | id | başlık | tür | değer | efor | durum |
 |---|---|---|---|---|---|
 | F-MINCOST | Min-Cost Flow / Maks-Akış Çözücü (Ford-Fulkerson, Edmonds-Karp) | feature | M | L | open |
-| F-DECISION | Karar Ağacı / Beklenen Değer Çözücü (EMV, EVPI) | feature | M | M | open |
 | F-GAME | İki Kişilik Sıfır Toplamlı Oyun (saddle point + karışık strateji LP) | feature | M | M | open |
 | F-MM_C | M/M/c, M/M/1/K, M/M/c/K kuyrukları | feature | M | M | open |
 
@@ -44,3 +43,4 @@ Durum: open · in-progress · blocked · done
 | Q-OG-PERTOOL | Araç başına özel 1200×630 OG kartı (kategori pill + başlık + URL); `scripts/generate-og.mjs` `tools.ts`'den iterate ediyor, 11 araç sayfası kendi `image`/`imageAlt` prop'unu wire ediyor (PR #26) | #10 |
 | F-MARKOV | Markov Zinciri Sabit Dağılım hesaplayıcısı (n×n geçiş matrisinde Gauss eliminasyonu ile π·P = π çözümü, ortalama dönüş süreleri, yörünge grafiği) + 12 dakikalık Türkçe rehber + 24 yeni vitest | #11 |
 | F-TRANSPORT | Ulaştırma Problemi Çözücü (m × n birim maliyet + arz/talep, Kuzeybatı Köşesi + MODI, min/max, otomatik dengeleme) + uzun-form Türkçe rehber + 13 yeni vitest | #12 |
+| F-DECISION | Karar Analizi aracı — Maximax / Maximin (Wald) / Laplace / Hurwicz (α∈[0,1]) / Savage Regret + risk altında EMV / EOL / EVwPI / EVPI; min/max yön; pure JS; +21 vitest (PR #30) | #13 |

@@ -278,3 +278,47 @@ döngüde nötralize oldu (sırf 🟢 kod + içerik + doc).
 **İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber, mevcut deseni birebir takip).
 
 **Sıradaki:** F-MINCOST (Min-Cost Flow / Maks-Akış — L efor, ulaştırma probleminin genelleştirilmesi), F-MM_C (M/M/c, M/M/1/K — M efor) ya da Q-AUDIT-YAML (M efor, breaking-change riski).
+
+---
+
+## DÖNGÜ #13 — 2026-06-10
+
+**Yapılan:** F-DECISION — Karar Analizi (EMV / EVPI) aracı + uzun-form Türkçe rehber yayınlandı. Alternatif × doğa durumu getiri matrisinden Maximax, Maximin (Wald), Laplace, Hurwicz (α∈[0,1]), Savage Regret ve risk altında EMV, EOL, EVwPI, EVPI tek geçişte hesaplanıyor; "Olasılık & Kuyruk" kategorisinde yeni araç.
+
+**Detay:**
+- `src/lib/decision.ts` (+213) — saf algoritma: validasyon (matris boyutu, NaN, olasılık toplamı, α aralığı, yön), beş belirsizlik kriteri, regret matrisi, risk altında EMV/EOL/EVwPI/EVPI; min ve max yönlerinde "iyi/kötü" tanımlarının doğru tarafta kalmasını sağlayan `better()` yardımcı.
+- `src/lib/decision.test.ts` (+207, **21 vitest**) — klasik Thompson Lumber örneği (Render-Stair-Hanna) üzerinde Maximax/Maximin/Laplace/Hurwicz(α=0.2 ve 0.8)/Regret/EMV/EVPI hand-verified; **EOL minimize ≡ EMV maksimize aynı alternatife götürür** ve **min EOL = EVPI** klasik özdeşliklerinin sağlaması; min (maliyet) modu tedarikçi senaryosu; kenar durumlar (1×1, tüm satırlar eşit beraberlik); validasyon hataları.
+- `src/pages/araclar/karar-analizi.astro` (+551) — mobil-öncelikli form (yön radyosu, alternatif satırları, durum CSV'si, payoff matrisi, opsiyonel olasılıklar, Hurwicz α canlı kaydırma çubuğu), kriter karşılaştırma tablosu (sütun bazında en iyi vurgulanır + berabere kalanlar), kart şeklinde "Önerilen alternatifler", EVPI bloku (EVwPI + EMV* + EVPI), regret matrisi tablosu, iki örnek (Thompson + tedarikçi), localStorage'da form kalıcılığı, plotly yok (sırf SVG + Tailwind).
+- `src/content/rehberler/karar-analizi-emv.mdx` (+275) — 11 dakikalık Türkçe rehber: belirsizlik vs risk farkı, beş kriter sezgi + formül + örnek, Thompson Lumber çözüm akışı, EMV/EOL/EVPI/EVwPI birbirine bağlanmış, min modu kriter dönüşümleri, EVSI/Bayes güncellemesi/karar ağaçları köprüsü, FAQ JSON-LD ile 7 başlık.
+- `src/data/tools.ts` (+10) — yeni araç kaydı (`olasilik` kategorisi).
+- `public/og/karar-analizi.png` — `npm run og` ile per-tool OG kartı (79.1 KB). Diğer OG kartları byte-identical (deterministik render).
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint, 74 dosya) · test ✓ (**306/306**, +21 yeni decision testi, 16 dosya) · build ✓ (**38 sayfa**, 5.07s — araç + rehber dahil) · Lighthouse — yeni sayfa mevcut Markov aracıyla aynı şablon, hidrasyon stratejisi (inline `<script>`, plotly yok, SVG/Tailwind) ve mobil-öncelikli yerleşim kullanıyor (≥95 beklenir).
+
+**Yayın:** PR #30 squash-merge edildi (commit `45f962b`). `Deploy to GitHub Pages` workflow başarıyla tamamlandı (run 27269578448, 47s). Canlı: <https://karaman.dev/or-araclari/araclar/karar-analizi>.
+
+**İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber, mevcut deseni birebir takip).
+
+**Sıradaki:** F-GAME (İki kişilik sıfır-toplamlı oyun — M efor, mevcut LP altyapısını kullanır), F-MINCOST (Min-Cost Flow / Maks-Akış — L efor) ya da Q-AUDIT-YAML (M efor, breaking-change riski).
+
+---
+
+## DÖNGÜ #13 — 2026-06-10
+
+**Yapılan:** F-DECISION — Karar Analizi (EMV / EVPI + 5 belirsizlik kriteri) aracı ve uzun-form Türkçe rehber yayınlandı. Alternatif × doğa durumu getiri matrisinden, olasılıklar yokken Maximax / Maximin (Wald) / Laplace / Hurwicz / Savage Regret; olasılıklar varken EMV / EOL / EVwPI / EVPI tek geçişte tarayıcıda hesaplanır. "Olasılık & Kuyruk" kategorisindeki ikinci araç.
+
+**Detay:**
+- `src/lib/decision.ts` (+265) — saf algoritma: doğrulama, min/max yön (kâr/maliyet), 5 belirsizlik kriteri (Hurwicz α∈[0,1] parametrik), Savage regret matrisi, EMV/EOL, perfect-information beklenen değeri ve EVPI = EVwPI − EMV*. Pure JS — LP/WASM/harici bağımlılık yok.
+- `src/lib/decision.test.ts` (+219, **21 vitest**) — Render & Stair "Thompson Lumber" referans senaryosu (kâr matrisi, EMV/EOL/EVPI hand-verified), tedarikçi seçimi (maliyet matrisi, min yön), Hurwicz α=0/0.5/1 köşe vakaları, Savage regret yapısı, validation (boş matris, satır uzunluk uyumsuzluğu, olasılık toplamı ≠ 1, negatif olasılık).
+- `src/pages/araclar/karar-analizi.astro` (+674) — alternatif × doğa durumu düzenlenebilir ızgara, satır/sütun etiketleri canlı, opsiyonel olasılık satırı (toplam göstergesi), Hurwicz α canlı kaydırma çubuğu (0 ↔ 1), kriter karşılaştırma tablosu, regret matrisi, EVPI bloku (varsa), CSV indirme + yazdırma.
+- `src/content/rehberler/karar-analizi-emv.mdx` (+351) — 11 dk Türkçe rehber: belirsizlik vs risk ayrımı, 5 kriter (formül + ne zaman kullanılır), EMV / EOL / EVPI yorumu, Thompson Lumber adım adım, karar ağaçlarına köprü, FAQ JSON-LD.
+- `src/data/tools.ts` (+10) — `olasilik` kategorisinde yeni araç kaydı.
+- `public/og/karar-analizi.png` — `npm run og` ile per-tool OG kartı (81.0 KB). Diğer 12 OG kartı byte-identical (deterministik render).
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint, 74 dosya) · test ✓ (**306/306**, +21 yeni decision testi, 16 dosya) · build ✓ (**38 sayfa**, 4.17s — araç sayfası + rehber dahil) · Lighthouse — yeni sayfa mevcut Markov / M/M/1 araçlarıyla aynı şablon, hidrasyon stratejisi (inline `<script>`, plotly yok, SVG/Tailwind sadece) ve mobil-öncelikli yerleşim kullanıyor (≥95 beklenir).
+
+**Yayın:** PR #30 squash-merge edildi (commit `45f962b`). `Deploy to GitHub Pages` workflow başarıyla tamamlandı (run 27269578448). Canlı: <https://karaman.dev/or-araclari/araclar/karar-analizi>.
+
+**İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber, mevcut deseni birebir takip).
+
+**Sıradaki:** F-MINCOST (Min-Cost Flow / Maks-Akış — L efor), F-MM_C (M/M/c, M/M/1/K — M efor) ya da Q-AUDIT-YAML (M efor, breaking-change riski).
