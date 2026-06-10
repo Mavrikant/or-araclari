@@ -177,6 +177,16 @@ export const TOOLS: readonly Tool[] = [
     status: 'ready',
     guideSlug: 'karar-analizi-emv',
   },
+  {
+    slug: 'sonlu-kapasite-kuyruk',
+    title: 'Sonlu Kapasiteli Kuyruk Analizci (M/M/1/K, M/M/c/K)',
+    shortTitle: 'M/M/1/K · M/M/c/K',
+    description:
+      'M/M/1/K ve M/M/c/K sonlu kapasiteli kuyruk modellerinde bloklama olasılığı P_K, efektif geliş hızı, durum olasılıkları ve kararlı durum ortalamaları (L, Lq, W, Wq) tarayıcıda anında hesaplansın. Erlang-B kayıp sistemi (M/M/c/c) özel hâliyle birlikte. λ > μ olsa da sistem kararlı kalır.',
+    category: 'olasilik',
+    status: 'ready',
+    guideSlug: 'sonlu-kapasite-kuyruk',
+  },
 ] as const;
 
 export function getReadyTools(): readonly Tool[] {

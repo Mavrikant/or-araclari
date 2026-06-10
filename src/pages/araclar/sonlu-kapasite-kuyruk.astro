@@ -1,0 +1,433 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import { withBase, SITE } from '../../data/site';
+import { TOOLS } from '../../data/tools';
+
+const tool = TOOLS.find((t) => t.slug === 'sonlu-kapasite-kuyruk')!;
+const guideHref = tool.guideSlug ? withBase(`/rehberler/${tool.guideSlug}`) : null;
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: tool.title,
+  applicationCategory: 'WebApplication',
+  operatingSystem: 'Any',
+  description: tool.description,
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'TRY' },
+  inLanguage: SITE.locale,
+  isAccessibleForFree: true,
+};
+---
+
+<BaseLayout
+  title={tool.title}
+  description={tool.description}
+  image={withBase(`/og/${tool.slug}.png`)}
+  imageAlt={`${tool.title} — OR Araçları`}
+>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+  </Fragment>
+
+  <Container as="section" size="wide" class="pt-12 sm:pt-16">
+    <p class="text-sm font-medium text-brand-600 dark:text-accent-400">
+      <a href={withBase('/araclar')} class="hover:underline">Araçlar</a>
+      <span class="text-slate-400 dark:text-slate-600"> / </span>
+      <span>Olasılık & Kuyruk</span>
+    </p>
+    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">
+      {tool.title}
+    </h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
+      Sınırlı bekleme alanı olan kuyruk sistemlerinde — <strong>M/M/1/K</strong>
+      (tek sunucu, K kapasite) ve <strong>M/M/c/K</strong> (c sunucu, K
+      kapasite) — bloklama olasılığı P<sub>K</sub>, efektif geliş hızı
+      λ<sub>eff</sub>, ortalama bekleme ve durum dağılımı tarayıcıda
+      anlık hesaplansın. Tıka basa doluyken gelen müşteri reddedilir
+      (lost system); sistem λ &gt; μ olsa bile her zaman kararlıdır.
+      {guideHref && (
+        <a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>
+      )}
+    </p>
+  </Container>
+
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,360px)_1fr] print:block">
+    <form id="finite-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="sample-mm1k-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          M/M/1/K örneği
+        </button>
+        <button type="button" id="sample-mmck-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          M/M/c/K örneği
+        </button>
+        <button type="button" id="reset-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+          Sıfırla
+        </button>
+      </div>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Model
+        </legend>
+        <div class="grid grid-cols-2 gap-2 text-sm text-slate-700 dark:text-slate-300">
+          <label class="inline-flex items-center gap-2 rounded-md border border-slate-200 px-2.5 py-1.5 dark:border-slate-700">
+            <input type="radio" name="model" value="mm1k" checked class="text-brand-600 focus:ring-brand-500" />
+            <span>M/M/1/K</span>
+          </label>
+          <label class="inline-flex items-center gap-2 rounded-md border border-slate-200 px-2.5 py-1.5 dark:border-slate-700">
+            <input type="radio" name="model" value="mmck" class="text-brand-600 focus:ring-brand-500" />
+            <span>M/M/c/K</span>
+          </label>
+        </div>
+        <p id="model-hint" class="text-xs text-slate-500 dark:text-slate-400"></p>
+      </fieldset>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Akış parametreleri
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Geliş hızı λ (birim/zaman)
+          </span>
+          <input type="number" id="lambda-input" min="0" step="any" inputmode="decimal" value="2"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Hizmet hızı μ (birim/zaman, sunucu başına)
+          </span>
+          <input type="number" id="mu-input" min="0" step="any" inputmode="decimal" value="3"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+      </fieldset>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Kapasiteler
+        </legend>
+        <label id="servers-label" class="block" hidden>
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Sunucu sayısı c
+          </span>
+          <input type="number" id="servers-input" min="1" step="1" value="2"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Sistem kapasitesi K <span class="font-normal text-slate-500">(hizmette olanlar dahil)</span>
+          </span>
+          <input type="number" id="capacity-input" min="1" step="1" value="4"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+      </fieldset>
+
+      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">
+        Çöz
+      </button>
+
+      <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
+    </form>
+
+    <section id="output" hidden aria-live="polite" class="space-y-6">
+      <div class="grid gap-4 sm:grid-cols-3">
+        <div class="rounded-2xl border border-amber-300 bg-amber-50 p-5 dark:border-amber-800/60 dark:bg-amber-950/30">
+          <p class="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">Bloklama P<sub>K</sub></p>
+          <p id="m-block" class="mt-1 font-mono text-2xl font-semibold tabular-nums text-amber-900 dark:text-amber-100"></p>
+          <p class="mt-1 text-xs text-amber-700 dark:text-amber-300">Sistem doluyken müşterinin reddedilme olasılığı.</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Efektif geliş λ<sub>eff</sub></p>
+          <p id="m-leff" class="mt-1 font-mono text-2xl font-semibold tabular-nums text-slate-900 dark:text-white"></p>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">λ · (1 − P<sub>K</sub>)</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Sunucu yoğunluğu ρ</p>
+          <p id="m-rho" class="mt-1 font-mono text-2xl font-semibold tabular-nums text-slate-900 dark:text-white"></p>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">ρ = λ/(cμ); ρ ≥ 1 olabilir (sistem kararlı kalır).</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Sistemde ortalama L</p>
+          <p id="m-L" class="mt-1 font-mono text-2xl font-semibold tabular-nums text-slate-900 dark:text-white"></p>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Σ n · P<sub>n</sub></p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Kuyrukta ortalama L<sub>q</sub></p>
+          <p id="m-Lq" class="mt-1 font-mono text-2xl font-semibold tabular-nums text-slate-900 dark:text-white"></p>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Hizmette olanlar hariç.</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Beklemede süre W<sub>q</sub></p>
+          <p id="m-Wq" class="mt-1 font-mono text-2xl font-semibold tabular-nums text-slate-900 dark:text-white"></p>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">L<sub>q</sub> / λ<sub>eff</sub> (Little).</p>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40">
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Durum olasılıkları P<sub>n</sub>
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          n = 0…K arası tüm dağılım. Son çubuk (n = K, kehribar) bloklama
+          olasılığıdır.
+        </p>
+        <div id="state-chart" class="mt-3"></div>
+      </div>
+    </section>
+  </Container>
+
+  {guideHref && (
+    <Container as="section" size="wide" class="py-12 sm:py-16">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900/40">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">
+          Konuyu derinleştir
+        </p>
+        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          Sonlu kapasiteli kuyruklar ve Erlang-B kayıp sistemi
+        </h2>
+        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+          M/M/1/K ve M/M/c/K modellerinin doğum-ölüm zinciri çözümü,
+          Erlang-B formülü (M/M/c/c kayıp sistemi), PASTA özelliği,
+          λ<sub>eff</sub> hesabı ve gerçek dünya uygulamaları üzerine
+          Türkçe rehber.
+        </p>
+        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">
+          Rehberi oku →
+        </a>
+      </div>
+    </Container>
+  )}
+</BaseLayout>
+
+<script>
+  import {
+    analyzeFiniteQueue,
+    FiniteQueueError,
+    type FiniteQueueModel,
+    type FiniteQueueResult,
+  } from '../../lib/queue-finite';
+
+  const STORAGE_KEY = 'queue-finite-state-v1';
+
+  interface Sample {
+    model: FiniteQueueModel;
+    lambda: string;
+    mu: string;
+    servers: string;
+    capacity: string;
+  }
+  const SAMPLE_MM1K: Sample = { model: 'mm1k', lambda: '2', mu: '3', servers: '1', capacity: '4' };
+  const SAMPLE_MMCK: Sample = { model: 'mmck', lambda: '4', mu: '2', servers: '2', capacity: '5' };
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el as T;
+  };
+
+  function fmt(n: number, decimals = 4): string {
+    if (!Number.isFinite(n)) return '∞';
+    if (Math.abs(n) < 1e-10) return '0';
+    return Number(n.toFixed(decimals)).toString();
+  }
+
+  const form = $<HTMLFormElement>('finite-form');
+  const lambdaInput = $<HTMLInputElement>('lambda-input');
+  const muInput = $<HTMLInputElement>('mu-input');
+  const serversInput = $<HTMLInputElement>('servers-input');
+  const capacityInput = $<HTMLInputElement>('capacity-input');
+  const serversLabel = $('servers-label');
+  const modelHint = $('model-hint');
+  const errorBox = $('error-box');
+  const output = $('output');
+  const mBlock = $('m-block');
+  const mLeff = $('m-leff');
+  const mRho = $('m-rho');
+  const mL = $('m-L');
+  const mLq = $('m-Lq');
+  const mWq = $('m-Wq');
+  const stateChart = $('state-chart');
+
+  function getModel(): FiniteQueueModel {
+    const r = form.querySelector<HTMLInputElement>('input[name="model"]:checked');
+    return (r?.value as FiniteQueueModel) ?? 'mm1k';
+  }
+  function syncFields(): void {
+    const m = getModel();
+    serversLabel.hidden = m === 'mm1k';
+    modelHint.textContent =
+      m === 'mm1k'
+        ? 'Tek sunucu, K müşteriden fazlası kabul edilmez. K kapasitesi hizmettekini de kapsar.'
+        : 'c sunucu, sistem kapasitesi K (≥ c). Tıka basa doluyken gelen müşteri reddedilir.';
+  }
+
+  function loadState(): void {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      if (s.model === 'mm1k' || s.model === 'mmck') {
+        const r = form.querySelector<HTMLInputElement>(`input[name="model"][value="${s.model}"]`);
+        if (r) r.checked = true;
+      }
+      if (typeof s.lambda === 'string') lambdaInput.value = s.lambda;
+      if (typeof s.mu === 'string') muInput.value = s.mu;
+      if (typeof s.servers === 'string') serversInput.value = s.servers;
+      if (typeof s.capacity === 'string') capacityInput.value = s.capacity;
+    } catch {
+      /* ignore */
+    }
+  }
+  function saveState(): void {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          model: getModel(),
+          lambda: lambdaInput.value,
+          mu: muInput.value,
+          servers: serversInput.value,
+          capacity: capacityInput.value,
+        }),
+      );
+    } catch {
+      /* ignore */
+    }
+  }
+  function applySample(s: Sample): void {
+    const r = form.querySelector<HTMLInputElement>(`input[name="model"][value="${s.model}"]`);
+    if (r) r.checked = true;
+    lambdaInput.value = s.lambda;
+    muInput.value = s.mu;
+    serversInput.value = s.servers;
+    capacityInput.value = s.capacity;
+    syncFields();
+    saveState();
+    clearError();
+  }
+  loadState();
+  syncFields();
+
+  function renderStateChart(r: FiniteQueueResult): void {
+    const probs = r.stateProbabilities;
+    const n = probs.length;
+    const max = probs.reduce((a, b) => Math.max(a, b), 0);
+    if (n === 0 || max <= 0) {
+      stateChart.innerHTML = '<p class="text-xs text-slate-500">Veri yok.</p>';
+      return;
+    }
+    const W = 720;
+    const H = 220;
+    const PL = 44;
+    const PR = 16;
+    const PT = 10;
+    const PB = 28;
+    const innerW = W - PL - PR;
+    const innerH = H - PT - PB;
+    const barGap = 2;
+    const barW = Math.max(2, innerW / n - barGap);
+    const sx = (i: number) => PL + i * (innerW / n) + barGap / 2;
+    const sh = (p: number) => (p / max) * innerH;
+
+    const bars = probs
+      .map((p, i) => {
+        const h = sh(p);
+        const x = sx(i);
+        const y = PT + (innerH - h);
+        const isBlock = i === r.capacity;
+        const cls = isBlock ? 'fill-amber-500' : 'fill-brand-600 dark:fill-accent-400';
+        return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" class="${cls}"><title>P(n=${i}) = ${fmt(p, 5)}</title></rect>`;
+      })
+      .join('');
+
+    const tickStep = Math.max(1, Math.ceil(n / 14));
+    const xLabels = Array.from({ length: n }, (_, i) => i)
+      .filter((i) => i % tickStep === 0 || i === n - 1)
+      .map((i) => `<text x="${(sx(i) + barW / 2).toFixed(1)}" y="${H - 10}" text-anchor="middle" class="fill-slate-500 text-[10px] dark:fill-slate-400">${i}</text>`)
+      .join('');
+
+    const yTicks = [0, 0.25, 0.5, 0.75, 1]
+      .map((q) => {
+        const p = q * max;
+        const y = PT + (1 - q) * innerH;
+        return `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" class="stroke-slate-200 dark:stroke-slate-800" stroke-width="1"/>
+            <text x="${PL - 6}" y="${(y + 3).toFixed(1)}" text-anchor="end" class="fill-slate-500 text-[10px] dark:fill-slate-400">${fmt(p, 3)}</text>`;
+      })
+      .join('');
+
+    stateChart.innerHTML = `<svg viewBox="0 0 ${W} ${H}" class="block w-full h-auto" role="img" aria-label="Durum olasılıkları çubuk grafiği">
+        ${yTicks}
+        ${bars}
+        <text x="${W - PR}" y="${PT + 12}" text-anchor="end" class="fill-amber-600 text-[10px] dark:fill-amber-300">P<tspan dy="2" font-size="8">K</tspan><tspan dy="-2"> = bloklama</tspan></text>
+        <line x1="${PL}" y1="${H - PB}" x2="${W - PR}" y2="${H - PB}" class="stroke-slate-300 dark:stroke-slate-700" stroke-width="1"/>
+        ${xLabels}
+        <text x="${(W + PL) / 2}" y="${H - 2}" text-anchor="middle" class="fill-slate-500 text-[10px] dark:fill-slate-400">Sistemdeki müşteri sayısı n</text>
+      </svg>`;
+  }
+
+  function showError(msg: string): void {
+    errorBox.textContent = msg;
+    errorBox.hidden = false;
+    output.hidden = true;
+  }
+  function clearError(): void {
+    errorBox.hidden = true;
+    errorBox.textContent = '';
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clearError();
+    saveState();
+    try {
+      const model = getModel();
+      const lambda = Number(lambdaInput.value);
+      const mu = Number(muInput.value);
+      const servers = model === 'mm1k' ? 1 : Math.max(1, Math.round(Number(serversInput.value) || 1));
+      const capacity = Math.max(1, Math.round(Number(capacityInput.value) || 1));
+      const r = analyzeFiniteQueue({ model, arrivalRate: lambda, serviceRate: mu, servers, capacity });
+
+      mBlock.textContent = fmt(r.blockingProbability, 4);
+      mLeff.textContent = fmt(r.effectiveArrivalRate, 4);
+      mRho.textContent = fmt(r.utilisation, 4);
+      mL.textContent = fmt(r.avgInSystem, 4);
+      mLq.textContent = fmt(r.avgInQueue, 4);
+      mWq.textContent = fmt(r.avgTimeInQueue, 4);
+
+      renderStateChart(r);
+      output.hidden = false;
+      output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      const msg = err instanceof FiniteQueueError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
+      showError(msg);
+    }
+  });
+
+  form.querySelectorAll<HTMLInputElement>('input[name="model"]').forEach((el) =>
+    el.addEventListener('change', () => {
+      syncFields();
+      saveState();
+    }),
+  );
+  [lambdaInput, muInput, serversInput, capacityInput].forEach((el) =>
+    el.addEventListener('input', saveState),
+  );
+
+  $('sample-mm1k-btn').addEventListener('click', () => applySample(SAMPLE_MM1K));
+  $('sample-mmck-btn').addEventListener('click', () => applySample(SAMPLE_MMCK));
+
+  $('reset-btn').addEventListener('click', () => {
+    if (!confirm('Form sıfırlanacak. Devam edilsin mi?')) return;
+    form.reset();
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    syncFields();
+    clearError();
+    output.hidden = true;
+  });
+</script>
