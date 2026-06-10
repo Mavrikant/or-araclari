@@ -214,3 +214,23 @@ döngüde nötralize oldu (sırf 🟢 kod + içerik + doc).
 **İşaret:** yok (sırf 🟢 yeşil — yeni statik asset + meta etiketleri).
 
 **Sıradaki:** Q-OG-PERTOOL (her araç için kendi başlığını taşıyan OG kartı — script'i iterate ederek per-tool PNG üretmek; BaseLayout altyapısı zaten hazır) ya da F-TRANSPORT (Ulaştırma Problemi çözücü).
+
+---
+
+## DÖNGÜ #10 — 2026-06-10
+
+**Yapılan:** Q-OG-PERTOOL — her araç sayfası kendi başlığını ve kategori etiketini taşıyan 1200×630 PNG Open Graph kartına sahip oldu. #9'daki `BaseLayout` `image` prop altyapısı per-tool kartlara wire edildi. Site-default kart ana sayfa / `/araclar` listesi / rehberler için korundu.
+
+**Detay:**
+- `scripts/generate-og.mjs` (+179/−51): `src/data/tools.ts`'den iterasyon — her araç için `public/og/<slug>.png` (kategori pill + 1–2 satırlık başlık + URL). `NaN KB` log düzeltmesi (`sharp.metadata().size` yerine `fs.stat`).
+- `public/og/*.png`: 11 yeni statik asset (~80–86 KB her biri), `npm run og` ile regen edilebilir.
+- 11 araç sayfası (`src/pages/araclar/*.astro`): `<BaseLayout>`'a `image={withBase(\`/og/${tool.slug}.png\`)}` ve `imageAlt` prop'ları.
+- Lokal temizlik: `public/og/` altında 10 adet macOS Finder duplikası (`<slug> 2.png`, hepsi orijinalle byte-byte aynı, hiç track edilmemiş) çalışma ağacından silindi — deploy yolundan tamamen ayrı, sırf yerel kirlilikti.
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint) · test ✓ (248/248, 13 dosya) · build ✓ (32 sayfa) · Lighthouse — paylaşım önizleme PNG'leri share-bot tarafından bir kez fetch edilen statik asset; sayfa render path'ini etkilemez (regresyon beklenmez).
+
+**Yayın:** PR #26 squash-merge edildi (commit `c642c69`). `Deploy to GitHub Pages` workflow başarıyla tamamlandı (run 27234017914).
+
+**İşaret:** yok (sırf 🟢 yeşil — yeni statik asset + meta prop wiring + local duplicate temizliği).
+
+**Sıradaki:** F-TRANSPORT (Ulaştırma Problemi çözücü — L efor, klasik OR aracı), F-MARKOV (Markov Zinciri sabit dağılım — M efor) ya da Q-AUDIT-YAML (M efor, breaking-change riskli `@astrojs/check` upgrade).
