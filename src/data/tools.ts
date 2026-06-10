@@ -147,6 +147,16 @@ export const TOOLS: readonly Tool[] = [
     status: 'ready',
     guideSlug: 'markov-zinciri',
   },
+  {
+    slug: 'ulastirma-problemi-cozucu',
+    title: 'Ulaştırma Problemi Çözücü',
+    shortTitle: 'Ulaştırma Problemi',
+    description:
+      'Kaynak kapasitelerini, hedef taleplerini ve birim taşıma maliyetlerini gir; Kuzeybatı Köşesi başlangıcı + MODI iterasyonları ile en az (veya en çok) maliyetli sevkiyat planını anlık olarak bul. Dengesiz problemler otomatik dengelenir.',
+    category: 'optimizasyon',
+    status: 'ready',
+    guideSlug: 'ulastirma-problemi',
+  },
 ] as const;
 
 export function getReadyTools(): readonly Tool[] {
