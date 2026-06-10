@@ -273,7 +273,7 @@ döngüde nötralize oldu (sırf 🟢 kod + içerik + doc).
 
 **Kalite kapıları:** check ✓ (0 hata, 0 hint, 71 dosya) · test ✓ (**285/285**, +13 yeni transportation testi, 15 dosya) · build ✓ (**36 sayfa**, 4.06s — araç sayfası + rehber dahil) · Lighthouse — yeni sayfa mevcut Atama Problemi aracıyla aynı şablon, hidrasyon stratejisi (inline `<script>`, plotly yok, SVG/Tailwind sadece) ve mobil-öncelikli yerleşim kullanıyor (≥95 beklenir).
 
-**Yayın:** PR açılacak, CI yeşilse merge.
+**Yayın:** PR #28 squash-merge edildi (commit `eaaec0f`). `Deploy to GitHub Pages` workflow başarıyla tamamlandı (run 27268558485). Canlı: <https://karaman.dev/or-araclari/araclar/ulastirma-problemi-cozucu>.
 
 **İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber, mevcut deseni birebir takip).
 
