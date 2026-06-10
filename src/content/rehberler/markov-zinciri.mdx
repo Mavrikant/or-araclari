@@ -1,0 +1,282 @@
+---
+title: "Markov Zincirleri ve Sabit Dağılım: Hafızasız Süreçlerin Matematiği"
+description: "Markov zinciri nedir, geçiş matrisi nasıl kurulur, sabit dağılım (π) nasıl hesaplanır, indirgenemezlik ve periyot kavramları ne anlama gelir? Türkçe, sezgisel ve uygulamalı kapsamlı rehber."
+pubDate: 2026-06-10
+relatedTool: "markov-zinciri"
+keywords:
+  - "Markov zinciri"
+  - "stochastic process"
+  - "sabit dağılım"
+  - "stationary distribution"
+  - "geçiş matrisi"
+  - "ergodik zincir"
+  - "PageRank"
+  - "olasılık"
+readingMinutes: 12
+faq:
+  - question: "Markov zinciri tam olarak nedir?"
+    answer: "Markov zinciri, geleceğin yalnızca şu anki duruma bağlı olduğu (geçmişe değil) hafızasız bir stokastik süreçtir. Resmi olarak Andrei Markov'un 1906'da tanımladığı bu özellik 'Markov property' olarak bilinir: P(X_{t+1} | X_t, X_{t-1}, …, X_0) = P(X_{t+1} | X_t). Durumlar arasındaki geçişler bir geçiş matrisi P ile özetlenir; satır i j sütunundaki değer, i'den j'ye tek adımda geçiş olasılığını verir."
+  - question: "Sabit dağılım (π) ne anlama gelir?"
+    answer: "Sabit dağılım (stationary distribution) π, π·P = π denklemini sağlayan olasılık vektörüdür. Sezgisel anlamı: zincir yeterince uzun süre çalıştırılırsa, her durumda harcanan uzun-dönem zaman payı πᵢ'ye yakınsar — başlangıç durumu ne olursa olsun (ergodik zincirlerde). Yani bir hava durumu zincirinde π=(0.625, 0.3125, 0.0625) çıkarsa, uzun vadede günlerin %62.5'i güneşli, %31.25'i bulutlu, %6.25'i yağmurlu olur."
+  - question: "Her Markov zincirinin sabit dağılımı var mı?"
+    answer: "Sonlu durumlu Markov zincirlerinin hepsinin en az bir sabit dağılımı vardır. Ancak tek olması için zincirin 'indirgenemez' (her durumdan her duruma ulaşılabilir) olması gerekir. Aperiyodik + indirgenemez (ergodik) zincirlerde her başlangıç dağılımı yörüngesi π'ye yakınsar — bu klasik ergodik teoremidir."
+  - question: "Sabit dağılımı nasıl hesaplarım?"
+    answer: "İki ana yol var. (1) Lineer sistem: π·(P − I) = 0 ve Σπᵢ = 1; bunu Gauss eliminasyonu veya doğrudan çözücüyle çözmek küçük matrislerde en kesin yöntem. (2) Güç iterasyonu: π⁰ = uniform al, π^(k+1) = π^(k)·P uygula; ergodik zincirlerde yakınsar. Bu sitenin Markov Zinciri aracı (1)'i kullanır, indirgenebilir/tekil matrislerde (2)'ye düşer."
+  - question: "PageRank gerçekten bir Markov zinciri mi?"
+    answer: "Evet — orijinal PageRank algoritması, Web sayfalarını bir Markov zincirinin durumları olarak modeller. Her sayfanın çıkış linklerinin uniform dağılımına 'rastgele tıklama' artı küçük bir 'teleport' olasılığı (0.15) eklenir; ortaya çıkan ergodik zincirin sabit dağılımı sayfaların PageRank skorudur. Google'ın orijinal makalesi (Brin & Page, 1998) bu yöntemi web ölçeğinde uygulayarak arama motorunu kurdu."
+  - question: "Periyodik zincir ne demek?"
+    answer: "Bir durumun periyodu, o duruma geri dönüşün mümkün olduğu adım sayılarının en büyük ortak böleni (gcd'si) ile tanımlanır. Tüm durumlar periyot 1'e sahipse zincir 'aperiyodik' denir. Periyodik bir zincirde (örn. iki durumlu deterministik salınım: A→B→A→B…) güç iterasyonu yakınsamaz, sürekli salınır — ama lineer sistem çözümü hâlâ uzun-dönem ortalama olasılıkları verir."
+---
+
+Geleceğin yalnızca şu ana bağlı olduğu, geçmişin önemli olmadığı bir
+sistem hayal et. Yarın hava güneşli mi yağmurlu mu olacak, bugünün
+durumuna bakarak tahmin ediyorsun; ama bu hafta neye benzediğinin ya da
+geçen ayın trendinin önemi yok. Bu **"hafızasızlık"** özelliği — Markov
+özelliği — basit görünür, ama operasyon araştırması, makine öğrenmesi,
+finans ve fizikte devasa bir matematiksel altyapıyı destekler. Markov
+zincirleri (Markov chains), bu hafızasız süreçlerin biçimsel modelidir.
+
+## Markov zinciri nedir?
+
+Bir **stokastik süreç**, zaman içinde rastgele değişen bir büyüklüktür:
+hava durumu, hisse fiyatı, bir web sayfasında bulunan kullanıcı, bir
+makine arızası, bir hastanın iyileşme aşaması… Bu sürecin Markov
+zinciri olabilmesi için iki ek özellik gerekir:
+
+1. **Sonlu (veya sayılabilir) durum uzayı.** Sistem her an "Güneşli",
+   "Bulutlu" gibi sayılabilir bir kümeye düşmeli.
+2. **Markov özelliği.** Bir sonraki durumun olasılığı yalnızca şu anki
+   duruma bağlı:
+
+   `P(X_{t+1} = j | X_t = i, X_{t-1}, …, X_0) = P(X_{t+1} = j | X_t = i)`
+
+İkinci özellik kritik: geçmişin ayrıntısı önemsiz; "şu anki konum" tüm
+bilgiyi taşır. Bu çoğu gerçek sistemde tam doğru değildir ama
+sürpriz biçimde iyi bir yaklaşım olur — özellikle "şu anki konum"u
+yeterince zengin tanımlarsak (örn. son 3 günün havası bir tek "durum"
+sayılabilir).
+
+Markov zinciri matematiksel olarak iki nesneyle tanımlanır:
+
+- **Durum uzayı** `S = {1, 2, …, n}`.
+- **Geçiş matrisi** P (n×n), `P[i][j] = P(X_{t+1} = j | X_t = i)`.
+
+P'nin her satırı 1'e toplanır (bir durumdan geçiş olasılıkları, bir
+yere gitmek zorunda); bu nedenle P "satır-stokastik" matristir.
+
+## Basit bir örnek: hava durumu
+
+Üç durumlu klasik bir zincir kuralım: Güneşli (G), Bulutlu (B),
+Yağmurlu (Y). Gözlemlerimize göre:
+
+- Güneşli bir gün → ertesi gün %80 G, %15 B, %5 Y.
+- Bulutlu bir gün → ertesi gün %70 G, %20 B, %10 Y.
+- Yağmurlu bir gün → ertesi gün %50 G, %30 B, %20 Y.
+
+Geçiş matrisi:
+
+```
+P =  [0.80  0.15  0.05]
+     [0.70  0.20  0.10]
+     [0.50  0.30  0.20]
+```
+
+Bugün güneşliyse (π₀ = (1, 0, 0)), iki gün sonraki dağılım?
+
+- π₁ = π₀ · P = (0.80, 0.15, 0.05)
+- π₂ = π₁ · P = (0.785, 0.165, 0.050)
+
+İlginç soru: bunu sonsuza kadar devam ettirirsek nereye yakınsar?
+
+## Sabit dağılım (stationary distribution)
+
+**Sabit dağılım**, π·P = π denklemini sağlayan olasılık vektörü
+π = (π₁, π₂, …, πₙ)'dir. Yani matrisi bir kez daha uyguladığımızda
+dağılım değişmez — sistem "termal denge"ye varmıştır.
+
+İki sezgisel yorumu vardır:
+
+1. **Uzun-dönem zaman payı.** πᵢ, sistem uzun süre çalıştırıldıktan
+   sonra i durumunda geçen zamanın kesridir.
+2. **Stasyoner olasılık.** Eğer başlangıç dağılımı π ise, her t için
+   X_t'nin dağılımı yine π'dir.
+
+Hava durumu örneğinde sabit dağılım yaklaşık π ≈ (0.766, 0.180, 0.054).
+Uzun vadede günlerin yaklaşık %76.6'sı güneşli geçer. İlginç biçimde
+bu, "güneşli'den güneşli"ye geçiş olasılığı 0.80'den **daha düşük**
+çıkar — çünkü zaman zaman bulutlu/yağmurlu dönemlere düşülmesi
+uzun-dönem güneşli oranını biraz çekiştirir.
+
+## Sabit dağılımı nasıl hesaplarız?
+
+İki temel yöntem var.
+
+### 1) Lineer sistem çözümü
+
+π·P = π denklemini π · (P − I) = 0 biçiminde yazarız. Bu n
+denklemden biri zaten diğerlerinin doğrusal kombinasyonudur (P
+satır-stokastik olduğu için), bu yüzden bu denklemlerden birini atıp
+yerine normalizasyon koşulunu yerleştiririz:
+
+  Σ πᵢ = 1
+
+Sonuç: n bilinmeyenli, n denklemli, çözülebilir bir doğrusal sistem.
+Gauss eliminasyonuyla doğrudan çözeriz.
+
+Bu sitenin [Markov Zinciri aracı](/or-araclari/araclar/markov-zinciri),
+ergodik zincirlerde bu yolu (kısmi pivotlamalı Gauss) kullanır; tekil
+matrislerde (indirgenebilir zincir) güç iterasyonuna düşer.
+
+### 2) Güç iterasyonu
+
+Daha sezgisel ama yavaş yöntem: keyfi bir başlangıç dağılımıyla
+(genelde uniform) başla, defalarca P ile çarp:
+
+  π^(k+1) = π^(k) · P
+
+Ergodik zincirler için (aşağıda tanımlanacak) bu dizinin π'ye
+yakınsadığı **ergodik teoremi** ile kanıtlanmıştır. Yakınsama hızı
+zincirin "spektral aralığı"na bağlı: ikinci en büyük özdeğer 1'den ne
+kadar uzaksa o kadar hızlı.
+
+Pratikte 50-100 iterasyon küçük zincirlerde yeterlidir; iki
+ardışık dağılım arasındaki fark belirli eşiğin altına düşünce
+dururuz.
+
+## İndirgenemezlik, periyot, ergodiklik
+
+Sabit dağılımın varlığı ve tekliği için zincirin yapısal
+özellikleri kritiktir:
+
+### İndirgenemezlik
+
+Bir zincir **indirgenemezdir** (irreducible) eğer her durumdan her
+duruma sonlu sayıda adımda ulaşmak mümkünse. İndirgenebilir
+zincirlerde "kapalı sınıflar" oluşur: bir alt küme içine girdikten
+sonra çıkamazsın. Örneğin:
+
+- `{0, 1, 2} → {3, 4}`: 0–2 geçişli, 3–4 mutlak.
+- `{3, 4}` altında zincir farklı bir π'ye sahip olur.
+
+İndirgenebilir zincirlerde **birden çok sabit dağılım** olabilir;
+hangisine yakınsayacağın başlangıca bağlıdır.
+
+### Periyot
+
+Bir durumun **periyodu**, o duruma geri dönüşün mümkün olduğu
+adım sayılarının en büyük ortak böleni. Periyot 1 → "aperiyodik".
+Klasik örnek: iki durumlu deterministik salınım
+
+```
+P = [0 1]
+    [1 0]
+```
+
+Bu zincirin sabit dağılımı π = (0.5, 0.5)'tir, ama güç iterasyonu
+(1, 0) → (0, 1) → (1, 0) … şeklinde salınır ve hiç yakınsamaz.
+Lineer sistem çözümü doğru yanıtı verir; periyodik zincirlerde π
+"uzun-dönem zaman ortalaması" olarak yorumlanır, "yörünge limiti"
+olarak değil.
+
+### Ergodiklik
+
+İndirgenemez + aperiyodik = **ergodik**. Ergodik zincirlerde sabit
+dağılım vardır, tektir ve her başlangıç dağılımı π'ye yakınsar.
+Pratikte tasarladığımız çoğu modelde küçük "teleport" terimleri (her
+durumdan her duruma çok düşük olasılıkla atlama) ekleyerek
+ergodiklik garanti edilir — bu PageRank'in temel hilesidir.
+
+## Ortalama dönüş süresi
+
+Ergodik zincirlerde i durumuna ortalama dönüş süresi:
+
+  μᵢᵢ = 1 / πᵢ
+
+Yorumu temiz: durum daha az sıklıkta ziyaret edilirse (πᵢ küçükse)
+geri dönmek için ortalama daha çok adım beklenir. Hava durumu
+örneğinde μ_yağmurlu ≈ 1/0.054 ≈ 18.5 — ortalama 18-19 günde bir
+yağmurlu güne dönülür.
+
+## Klasik uygulamalar
+
+### PageRank
+
+Google'ın orijinal arama motoru sıralaması, web sayfalarını
+durumlar olarak modelleyen devasa bir Markov zinciridir. Geçiş
+matrisi:
+
+  P = (1 − d) · L + d · (1/n) · J
+
+Burada L, link yapısından gelen geçiş matrisi (her sayfanın çıkış
+linklerinin uniform dağılımı); J tüm 1'lerden oluşan matris; d
+"teleport" olasılığı (genelde 0.15). Bu zincirin sabit dağılımı
+sayfaların PageRank skorudur. Brin & Page'in 1998 makalesi bu
+basit fikri milyarlık şirkete çevirdi.
+
+### Hava durumu, ekonomi, hastalık geçmişi
+
+Pek çok pratik sistem doğal olarak Markov zinciri şeklinde
+modellenir:
+
+- **Kredi notu geçişleri**: AAA → AA → A → BBB → … geçişleri tarihi
+  tahvil verilerinden tahmin edilir; sabit dağılım uzun-dönem
+  portföy karışımını verir.
+- **Müşteri davranışı**: Aktif / pasif / kayıp durumları arasındaki
+  geçişler; sabit dağılım uzun-dönem müşteri çevriliminin yapısını
+  gösterir.
+- **Makine arıza modelleri**: Çalışıyor / bozuk / bakımda durumları
+  arasında geçişler; sabit dağılım bakım planlamasına temel oluşturur.
+
+### Doğal dil işleme
+
+n-gram dil modelleri özünde Markov zincirleridir: bir sonraki
+sözcüğün olasılığı yalnızca önceki n-1 sözcüğe bağlıdır. Modern
+transformer modelleri Markov varsayımını esnetir ama matematiksel
+köklerini bu basit zincirlerden alır.
+
+### Kuyruk teorisi köprüsü
+
+M/M/1 ve genelleştirilmiş kuyruk modelleri, sistemdeki müşteri
+sayısını durum olarak alan **doğum-ölüm zincirleridir**. Sabit
+dağılım kuyruğun durum olasılıklarını verir — bu sitenin
+[M/M/1 Kuyruk Analizci](/or-araclari/araclar/mm1-kuyruk-analizci)
+aracında gördüğün P(n) = (1−ρ)·ρⁿ tam olarak bu zincirin sabit
+dağılımıdır.
+
+## Pratik ipuçları
+
+Markov zinciri modellemesi yaparken birkaç tuzağa dikkat:
+
+1. **Durum tanımı yeterince zengin olmalı.** Eğer geleceği tahmin
+   etmek için "şu an"dan daha fazlasına ihtiyacın varsa, durum
+   tanımını genişlet (örneğin son iki günü tek durum say).
+2. **Veri yeterli mi?** P'nin tahmini için her durumdan yeterince
+   gözlem gerekir; az gözlemli durumlarda Laplace düzeltmesi
+   (her satıra küçük ε ekleyip normalize) sayısal sorunları önler.
+3. **Ergodiklik garanti et.** Modelin pratik karar verme için
+   ergodik olmalı; PageRank'in teleport terimi tam bunun için.
+4. **Periyot kontrolü.** Deterministik döngüler periyodiklik
+   yaratır; çözüm verirken bu durumu fark et.
+
+## Sonuç
+
+Markov zincirleri, hafızasız stokastik süreçlerin matematiksel
+modelidir. Sabit dağılım kavramı, basit görünen π·P = π denklemi
+üzerinden uzun-dönem davranış, ortalama dönüş süresi ve sistem
+dengesi gibi güçlü sezgiler sunar. PageRank, doğal dil modelleri,
+kuyruk teorisi, finansal risk yönetimi gibi pek çok modern
+uygulama Markov zincirleri üzerine kuruludur.
+
+Bu sitenin
+[Markov Zinciri Sabit Dağılım](/or-araclari/araclar/markov-zinciri)
+aracı n×n matrisleri tarayıcıda doğrudan çözer; örnek girdileri
+(hava durumu ve mini PageRank) deneyerek π'nin geçiş matrisinin
+yapısından nasıl çıktığını ve yörüngenin nasıl yakınsadığını
+görsel olarak hissedebilirsin. Daha derin akademik kaynak için
+Sheldon Ross'un "Introduction to Probability Models" 4. bölümü,
+Norris'in "Markov Chains" kitabı ve Brin & Page'in 1998 PageRank
+makalesi referans noktalarıdır.
+
+Markov zincirleri, basitlikleri sayesinde öğrenmesi zarif, esnek
+formülasyonları sayesinde gerçek dünyada güçlü modellerdir.
+Yöneylem repertuarındaki kalıcı araçlardan biri.

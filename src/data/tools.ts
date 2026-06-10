@@ -137,6 +137,16 @@ export const TOOLS: readonly Tool[] = [
     category: 'cizelgeleme',
     status: 'ready',
   },
+  {
+    slug: 'markov-zinciri',
+    title: 'Markov Zinciri Sabit Dağılım',
+    shortTitle: 'Markov Zinciri',
+    description:
+      'n×n geçiş matrisini gir; sabit dağılımı (π), ortalama dönüş sürelerini ve başlangıç dağılımının zaman içinde nasıl değiştiğini anlık olarak hesapla. Tarayıcıda lineer sistem çözümü.',
+    category: 'olasilik',
+    status: 'ready',
+    guideSlug: 'markov-zinciri',
+  },
 ] as const;
 
 export function getReadyTools(): readonly Tool[] {

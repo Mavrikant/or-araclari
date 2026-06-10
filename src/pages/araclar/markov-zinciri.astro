@@ -1,0 +1,429 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import { withBase, SITE } from '../../data/site';
+import { TOOLS } from '../../data/tools';
+
+const tool = TOOLS.find((t) => t.slug === 'markov-zinciri')!;
+const guideHref = tool.guideSlug ? withBase(`/rehberler/${tool.guideSlug}`) : null;
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: tool.title,
+  applicationCategory: 'WebApplication',
+  operatingSystem: 'Any',
+  description: tool.description,
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'TRY' },
+  inLanguage: SITE.locale,
+  isAccessibleForFree: true,
+};
+---
+
+<BaseLayout
+  title={tool.title}
+  description={tool.description}
+  image={withBase(`/og/${tool.slug}.png`)}
+  imageAlt={`${tool.title} — OR Araçları`}
+>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+  </Fragment>
+
+  <Container as="section" size="wide" class="pt-12 sm:pt-16">
+    <p class="text-sm font-medium text-brand-600 dark:text-accent-400">
+      <a href={withBase('/araclar')} class="hover:underline">Araçlar</a>
+      <span class="text-slate-400 dark:text-slate-600"> / </span>
+      <span>Olasılık & Kuyruk</span>
+    </p>
+    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">
+      {tool.title}
+    </h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
+      Geçiş matrisini gir; sabit dağılım (π), ortalama dönüş süreleri ve
+      başlangıç dağılımının zaman içinde nasıl yakınsadığı tarayıcıda
+      anlık hesaplansın. Lineer sistem π·P = π Gauss eliminasyonu ile çözülür.
+      {guideHref && (
+        <a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>
+      )}
+    </p>
+  </Container>
+
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,380px)_1fr] print:block">
+    <form id="markov-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="sample-weather-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Hava durumu örneği
+        </button>
+        <button type="button" id="sample-pagerank-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          PageRank örneği
+        </button>
+        <button type="button" id="reset-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+          Sıfırla
+        </button>
+      </div>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Durum etiketleri
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Virgülle ayrılmış (sırayla)
+          </span>
+          <input type="text" id="labels-input" autocomplete="off" placeholder="Güneşli, Bulutlu, Yağmurlu"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          Boş bırakılırsa S1, S2 … olarak adlandırılır.
+        </p>
+      </fieldset>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Geçiş matrisi P
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Satırlar yeni satır, sütunlar boşluk/virgül ile
+          </span>
+          <textarea id="matrix-input" rows="6" spellcheck="false" autocomplete="off"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            placeholder="0.8 0.15 0.05&#10;0.7 0.2 0.1&#10;0.5 0.3 0.2"></textarea>
+        </label>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          P[i][j] = i durumundan j durumuna tek adımda geçiş olasılığı. Her
+          satır 1'e toplanmalı.
+        </p>
+      </fieldset>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Başlangıç dağılımı π₀ <span class="font-normal text-slate-500">(opsiyonel)</span>
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Virgülle ayrılmış, toplam = 1
+          </span>
+          <input type="text" id="initial-input" autocomplete="off" placeholder="1, 0, 0"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Adım sayısı (yörünge için)
+          </span>
+          <input type="number" id="steps-input" min="1" max="200" step="1" value="30"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+      </fieldset>
+
+      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">
+        Çöz
+      </button>
+
+      <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
+    </form>
+
+    <section id="output" hidden aria-live="polite" class="space-y-6">
+      <div id="warning-box" hidden class="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-300">
+        Lineer sistem tekil çıktı; zincir indirgenebilir görünüyor. Aşağıdaki
+        π, güç iterasyonu (uniform başlangıçtan) ile elde edildi — birden çok
+        kararlı dağılım olabilir.
+      </div>
+
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40">
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Sabit dağılım (π)
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          π · P = π , Σπᵢ = 1. Sistem yeterince uzun sürdükten sonra her
+          durumda harcanan uzun-dönem zaman payı.
+        </p>
+        <div id="stationary-table" class="mt-4 overflow-x-auto"></div>
+      </div>
+
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Yörünge: π₀ · Pᵗ
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Başlangıç dağılımının her adımdaki değeri; ergodik zincirlerde
+          eğriler π'ye yakınsar.
+        </p>
+        <div id="trajectory-chart" class="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40"></div>
+      </div>
+    </section>
+  </Container>
+
+  {guideHref && (
+    <Container as="section" size="wide" class="py-12 sm:py-16">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900/40">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">
+          Konuyu derinleştir
+        </p>
+        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          Markov zincirleri ve sabit dağılım
+        </h2>
+        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+          İndirgenemezlik, periyot, ergodiklik, π'nin sezgisi, Little Yasası
+          benzeri yorumlar ve gerçek dünya uygulamaları üzerine Türkçe rehber.
+        </p>
+        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">
+          Rehberi oku →
+        </a>
+      </div>
+    </Container>
+  )}
+</BaseLayout>
+
+<script>
+  import { analyzeMarkov, parseMatrix, MarkovError, type MarkovResult } from '../../lib/markov';
+
+  const STORAGE_KEY = 'markov-state-v1';
+
+  const SAMPLE_WEATHER = {
+    labels: 'Güneşli, Bulutlu, Yağmurlu',
+    matrix: '0.8 0.15 0.05\n0.7 0.2 0.1\n0.5 0.3 0.2',
+    initial: '1, 0, 0',
+    steps: 30,
+  };
+
+  const SAMPLE_PAGERANK = {
+    labels: 'A, B, C, D',
+    matrix: '0 0.5 0.5 0\n0 0 0 1\n0.5 0 0 0.5\n0 0 1 0',
+    initial: '0.25, 0.25, 0.25, 0.25',
+    steps: 40,
+  };
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el as T;
+  };
+
+  function fmt(n: number, decimals = 4): string {
+    if (!Number.isFinite(n)) return '∞';
+    if (Math.abs(n) < 1e-10) return '0';
+    return n.toFixed(decimals).replace(/\.?0+$/, '');
+  }
+
+  const form = $<HTMLFormElement>('markov-form');
+  const labelsInput = $<HTMLInputElement>('labels-input');
+  const matrixInput = $<HTMLTextAreaElement>('matrix-input');
+  const initialInput = $<HTMLInputElement>('initial-input');
+  const stepsInput = $<HTMLInputElement>('steps-input');
+  const sampleWeatherBtn = $('sample-weather-btn');
+  const samplePagerankBtn = $('sample-pagerank-btn');
+  const resetBtn = $('reset-btn');
+  const errorBox = $('error-box');
+  const output = $('output');
+  const warningBox = $('warning-box');
+  const stationaryTable = $('stationary-table');
+  const trajectoryChart = $('trajectory-chart');
+
+  function loadState(): void {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        applySample(SAMPLE_WEATHER);
+        return;
+      }
+      const s = JSON.parse(raw);
+      if (typeof s.labels === 'string') labelsInput.value = s.labels;
+      if (typeof s.matrix === 'string') matrixInput.value = s.matrix;
+      if (typeof s.initial === 'string') initialInput.value = s.initial;
+      if (typeof s.steps === 'number') stepsInput.value = String(s.steps);
+    } catch {
+      /* ignore */
+    }
+  }
+  function saveState(): void {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          labels: labelsInput.value,
+          matrix: matrixInput.value,
+          initial: initialInput.value,
+          steps: Number(stepsInput.value) || 30,
+        }),
+      );
+    } catch {
+      /* ignore */
+    }
+  }
+  function applySample(s: typeof SAMPLE_WEATHER): void {
+    labelsInput.value = s.labels;
+    matrixInput.value = s.matrix;
+    initialInput.value = s.initial;
+    stepsInput.value = String(s.steps);
+    saveState();
+    clearError();
+  }
+  loadState();
+
+  function parseList(text: string): string[] {
+    return text
+      .split(/[,;]/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }
+  function parseNumberList(text: string): number[] | null {
+    const parts = parseList(text);
+    if (parts.length === 0) return null;
+    const nums = parts.map((p) => Number(p));
+    if (nums.some((n) => !Number.isFinite(n))) return null;
+    return nums;
+  }
+
+  function renderStationary(r: MarkovResult): void {
+    const rows = r.labels
+      .map(
+        (lbl, i) => `<tr class="border-t border-slate-200 dark:border-slate-800">
+            <td class="px-3 py-2 text-sm text-slate-700 dark:text-slate-200">${escapeHtml(lbl)}</td>
+            <td class="px-3 py-2 text-right font-mono text-sm tabular-nums text-slate-900 dark:text-white">${fmt(r.stationary[i], 6)}</td>
+            <td class="px-3 py-2 text-right font-mono text-sm tabular-nums text-slate-900 dark:text-white">${fmt(r.stationary[i] * 100, 2)}%</td>
+            <td class="px-3 py-2 text-right font-mono text-sm tabular-nums text-slate-700 dark:text-slate-300">${fmt(r.meanRecurrence[i], 3)}</td>
+          </tr>`,
+      )
+      .join('');
+    stationaryTable.innerHTML = `<table class="min-w-full text-left">
+        <thead class="bg-slate-50 dark:bg-slate-900/60">
+          <tr>
+            <th scope="col" class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Durum</th>
+            <th scope="col" class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">πᵢ</th>
+            <th scope="col" class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">% pay</th>
+            <th scope="col" class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Ort. dönüş</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+  // 8-color cycle (brand + accent + a small palette). Used both for chart
+  // lines and table legend dots; defined in CSS via fill/stroke literals.
+  const PALETTE = ['#0d9488', '#2563eb', '#dc2626', '#d97706', '#7c3aed', '#db2777', '#65a30d', '#0891b2'];
+
+  function renderTrajectory(r: MarkovResult): void {
+    const traj = r.trajectory;
+    const T = traj.length;
+    const n = r.labels.length;
+    const W = 720;
+    const H = 280;
+    const PL = 44;
+    const PR = 16;
+    const PT = 16;
+    const PB = 36;
+
+    const sx = (t: number) => PL + (t / Math.max(1, T - 1)) * (W - PL - PR);
+    const sy = (p: number) => H - PB - p * (H - PT - PB);
+
+    const yTicks = [0, 0.25, 0.5, 0.75, 1]
+      .map((p) => `<line x1="${PL}" y1="${sy(p)}" x2="${W - PR}" y2="${sy(p)}" class="stroke-slate-200 dark:stroke-slate-800" stroke-width="1"/>
+          <text x="${PL - 6}" y="${sy(p) + 3}" text-anchor="end" class="fill-slate-500 text-[10px] dark:fill-slate-400">${p.toFixed(2)}</text>`)
+      .join('');
+
+    const tStep = Math.max(1, Math.ceil(T / 10));
+    const xTicks = Array.from({ length: T }, (_, t) => t)
+      .filter((t) => t % tStep === 0 || t === T - 1)
+      .map((t) => `<text x="${sx(t)}" y="${H - PB + 14}" text-anchor="middle" class="fill-slate-500 text-[10px] dark:fill-slate-400">${t}</text>`)
+      .join('');
+
+    const paths = Array.from({ length: n }, (_, i) => {
+      const d = traj
+        .map((row, t) => `${t === 0 ? 'M' : 'L'} ${sx(t).toFixed(1)} ${sy(row[i]).toFixed(1)}`)
+        .join(' ');
+      const color = PALETTE[i % PALETTE.length];
+      return `<path d="${d}" fill="none" stroke="${color}" stroke-width="2"/>
+        <line x1="${PL}" y1="${sy(r.stationary[i])}" x2="${W - PR}" y2="${sy(r.stationary[i])}" stroke="${color}" stroke-width="1" stroke-dasharray="4 4" opacity="0.4"/>`;
+    }).join('');
+
+    const legend = r.labels
+      .map(
+        (lbl, i) => `<span class="inline-flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
+            <span class="inline-block h-2.5 w-2.5 rounded-sm" style="background:${PALETTE[i % PALETTE.length]}"></span>${escapeHtml(lbl)}
+          </span>`,
+      )
+      .join('');
+
+    trajectoryChart.innerHTML = `<svg viewBox="0 0 ${W} ${H}" class="block w-full h-auto" role="img" aria-label="Markov yörünge grafiği">
+        ${yTicks}
+        <line x1="${PL}" y1="${H - PB}" x2="${W - PR}" y2="${H - PB}" class="stroke-slate-300 dark:stroke-slate-700" stroke-width="1"/>
+        <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H - PB}" class="stroke-slate-300 dark:stroke-slate-700" stroke-width="1"/>
+        ${paths}
+        ${xTicks}
+        <text x="${(W + PL) / 2}" y="${H - 4}" text-anchor="middle" class="fill-slate-500 text-[10px] dark:fill-slate-400">Adım t</text>
+        <text x="14" y="${(H - PT - PB) / 2 + PT}" transform="rotate(-90 14 ${(H - PT - PB) / 2 + PT})" text-anchor="middle" class="fill-slate-500 text-[10px] dark:fill-slate-400">πᵢ(t)</text>
+      </svg>
+      <div class="flex flex-wrap gap-3 border-t border-slate-200 px-4 py-3 dark:border-slate-800">${legend}</div>`;
+  }
+
+  function escapeHtml(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function showError(msg: string): void {
+    errorBox.textContent = msg;
+    errorBox.hidden = false;
+    output.hidden = true;
+  }
+  function clearError(): void {
+    errorBox.hidden = true;
+    errorBox.textContent = '';
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clearError();
+    saveState();
+    try {
+      const transition = parseMatrix(matrixInput.value);
+      const n = transition.length;
+      const labelsRaw = parseList(labelsInput.value);
+      const labels = labelsRaw.length > 0 ? labelsRaw : undefined;
+      if (labels && labels.length !== n) {
+        throw new MarkovError(`Etiket sayısı (${labels.length}) durum sayısına (${n}) eşit olmalı. Boş bırakırsan otomatik etiketlenir.`);
+      }
+      const initialRaw = initialInput.value.trim();
+      const initial = initialRaw ? parseNumberList(initialRaw) ?? undefined : undefined;
+      if (initialRaw && !initial) {
+        throw new MarkovError('Başlangıç dağılımını ayrıştıramadım. Virgülle ayrılmış sayılar bekleniyor.');
+      }
+      const steps = Math.max(1, Math.min(200, Number(stepsInput.value) || 30));
+      const r = analyzeMarkov({ transition, labels, initial, steps });
+      warningBox.hidden = !r.reducible;
+      renderStationary(r);
+      renderTrajectory(r);
+      output.hidden = false;
+      output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      const msg = err instanceof MarkovError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
+      showError(msg);
+    }
+  });
+
+  [labelsInput, matrixInput, initialInput, stepsInput].forEach((el) =>
+    el.addEventListener('input', saveState),
+  );
+
+  sampleWeatherBtn.addEventListener('click', () => applySample(SAMPLE_WEATHER));
+  samplePagerankBtn.addEventListener('click', () => applySample(SAMPLE_PAGERANK));
+
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('Form sıfırlanacak. Devam edilsin mi?')) return;
+    form.reset();
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    clearError();
+    output.hidden = true;
+  });
+</script>
