@@ -300,3 +300,21 @@ döngüde nötralize oldu (sırf 🟢 kod + içerik + doc).
 **İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber, mevcut deseni birebir takip).
 
 **Sıradaki:** F-MINCOST (Min-Cost Flow / Maks-Akış — L efor), F-MM_C (M/M/c, M/M/1/K — M efor) ya da Q-AUDIT-YAML (M efor, breaking-change riski).
+
+---
+
+## DÖNGÜ #14 — 2026-06-10
+
+**Yapılan:** Denetim izi (audit trail) onarımı — `CYCLES.md` üzerinde art arda yer alan iki `## DÖNGÜ #13` bloğundan ilki (yanlış satır sayıları) kaldırıldı; `INCIDENTS.md`'ye olay kaydı eklendi. Üretim kodu / araç sayfası / rehber içeriği değişmedi.
+
+**Detay:**
+- `CYCLES.md` (−22) — birinci #13 bloğu (`+213/+207/+551/+275` ile uyumsuz sayılar) silindi; gerçek dosya boyutlarıyla (`265/219/674/351`) eşleşen ikinci #13 bloğu korundu. Tek `DÖNGÜ #13` başlığı kaldı.
+- `INCIDENTS.md` (+14) — `2026-06-10 — Döngü #13 CYCLES.md kaydı çift yazıldı`: kök neden (paralel ajan turları append-only günlüğe iki bağımsız kayıt yazmış), düzeltme (manuel dedup, doğru sayılarla yazılan blok korundu), önlem (her cycle yazımı öncesi `grep -c "DÖNGÜ #${n}" CYCLES.md` ve `git log main..HEAD` boşsa dalın merge edildiğini varsay).
+
+**Kalite kapıları:** check ✓ (0/0/0, 74 dosya) · test ✓ (**306/306**, 16 dosya — değişmedi) · build ✓ (38 sayfa, 4.19s) · Lighthouse — N/A (üretim kodu değişmedi, sadece markdown belgeler).
+
+**Yayın:** PR #34 squash-merge edildi (commit `51a223e`). `Deploy to GitHub Pages` workflow başarıyla tamamlandı (run 27285521549). Canlı içerikte fark yok; yalnızca depo içi denetim izi.
+
+**İşaret:** yok (sırf 🟢 yeşil — sadece denetim izi düzeltmesi, kullanıcıya açılan yüzeyde sıfır değişiklik).
+
+**Sıradaki:** F-MINCOST (Min-Cost Flow / Maks-Akış — L efor), F-MM_C (M/M/c, M/M/1/K — M efor) ya da Q-AUDIT-YAML (M efor, breaking-change riski).
