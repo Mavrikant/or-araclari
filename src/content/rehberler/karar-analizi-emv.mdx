@@ -1,0 +1,351 @@
+---
+title: "Karar Analizi: Belirsizlik ve Risk Altında Doğru Seçim"
+description: "EMV, EVPI, EOL, Maximax, Maximin, Laplace, Hurwicz, Savage Regret — belirsizlik ve risk altında karar verme kriterlerinin Türkçe, sezgisel ve uygulamalı kapsamlı rehberi."
+pubDate: 2026-06-10
+relatedTool: "karar-analizi"
+keywords:
+  - "karar analizi"
+  - "decision analysis"
+  - "EMV"
+  - "EVPI"
+  - "fırsat kaybı"
+  - "Maximax"
+  - "Maximin"
+  - "Wald"
+  - "Hurwicz"
+  - "Savage"
+  - "Laplace"
+  - "belirsizlik altında karar"
+  - "risk altında karar"
+readingMinutes: 11
+faq:
+  - question: "Belirsizlik altında karar ile risk altında karar arasındaki fark nedir?"
+    answer: "Belirsizlik altında karar verirken doğa durumlarının (S₁, S₂, …) olasılıklarını bilmiyoruz; yalnızca getirileri biliyoruz. Risk altında ise her durumun olasılığı p_j bilinir (kaynak: tarihsel veri, uzman görüşü, Bayes güncellemesi). Belirsizlik altında Maximax / Maximin / Laplace / Hurwicz / Savage Regret gibi yapısal kriterler kullanılır; risk altında ise beklenen değer hesabı (EMV, EOL, EVPI) öne çıkar. Pratikte iki yaklaşım aynı problem üzerinde birbirini destekler: olasılıkları kabaca tahmin edip duyarlılık analizi yaparak hangi alternatifin hangi varsayım altında dayanıklı kaldığına bakılır."
+  - question: "EMV (Beklenen Parasal Değer) nasıl hesaplanır?"
+    answer: "EMV (Expected Monetary Value), bir alternatif için her doğa durumundaki getirinin o durumun olasılığıyla çarpılıp toplanmasıdır: EMV(Aᵢ) = Σⱼ p_j · Vᵢⱼ. Risk altında karar verirken kâr maksimize ediliyorsa en yüksek EMV'li, maliyet minimize ediliyorsa en düşük EMV'li alternatif seçilir. EMV, çok kez tekrarlanan benzer kararlar için uzun-dönem ortalama getiriye yakınsar (Büyük Sayılar Yasası); tek seferlik kritik kararlarda ise riskten kaçınma derecesine göre tamamlanması gerekir (örn. fayda fonksiyonu, sertifika eşdeğeri)."
+  - question: "EVPI tam olarak ne demek ve neden önemli?"
+    answer: "EVPI (Expected Value of Perfect Information — Mükemmel Bilginin Beklenen Değeri), eğer karar vermeden önce hangi doğa durumunun gerçekleşeceğini kesin olarak öğrenebilseydik, beklenen getirimizin ne kadar artacağıdır. Formül: EVPI = EVwPI − EMV* (max modu); burada EVwPI = Σⱼ p_j · maxᵢ Vᵢⱼ ve EMV* en iyi alternatifin EMV'si. Pratik anlamı: bir pazar araştırması, test, danışman veya pilot çalışmaya ödeyebileceğin maksimum tutar. Eğer araştırma EVPI'dan pahalıysa, mükemmel sonuç verse bile zarara yol açar."
+  - question: "Maximax, Maximin, Laplace, Hurwicz ve Savage hangisini ne zaman kullanmalı?"
+    answer: "Hiçbiri 'doğru' kriter değil; her biri farklı bir risk tutumunu temsil eder. **Maximax** (iyimser): en iyi senaryoya odaklan, fırsat odaklı girişimciler. **Maximin / Wald** (kötümser): en kötü senaryoya odaklan, kayıp-tolerans düşük (örn. acil servis, nükleer santral). **Laplace**: olasılıkları bilmiyoruz, eşit varsayalım — bilgi yokken makul nötr nokta. **Hurwicz**: α katsayısı ile iyimserlik-kötümserlik dengesi kur (α=1 Maximax, α=0 Maximin). **Savage Regret**: 'sonradan pişman olmamak' istersen — her durumda en iyi yapamamanın bedelini minimize et. Pratikte hepsini hesaplayıp aynı alternatife işaret eden kriter sayısı çoksa o seçim daha dayanıklıdır."
+  - question: "Hurwicz iyimserlik katsayısı (α) nasıl seçilir?"
+    answer: "α ∈ [0,1] aralığında kişisel/kurumsal risk tutumunu yansıtır. α = 0.5 nötr (Laplace'a yakın), α > 0.5 iyimser, α < 0.5 kötümser. Pratik yaklaşım: önce α'yı 0'dan 1'e tarayarak hangi alternatifin hangi α aralığında öne çıktığını görmek (duyarlılık analizi). Eğer bir alternatif geniş bir aralıkta lider çıkıyorsa o seçim sağlamdır; küçük α değişimleriyle lider değişiyorsa karar belirsizdir ve ek bilgi toplamak gerekir."
+  - question: "Savage minimax regret kriteri ne işe yarar?"
+    answer: "Savage kriteri 'sonradan pişman olmama' mantığıdır. Önce her doğa durumu için **regret matrisi** kurulur: Rᵢⱼ = (o durumda en iyi alternatifin getirisi) − Vᵢⱼ. Pozitif R, 'bu alternatifi seçtin ama durum gerçekleşince başka bir alternatif daha iyi olacaktı, bu kadar kaybettin' anlamına gelir. Her alternatifin maksimum regret'i bulunur, sonra bunların en küçüğü seçilir (minimax regret). Bu, hiçbir senaryoda büyük bir pişmanlık yaşamamayı garanti eder; özellikle psikolojik açıdan dayanıklı bir kriterdir."
+  - question: "EOL ile EMV birbirinden farklı sonuç verir mi?"
+    answer: "Hayır — EOL (Expected Opportunity Loss, Beklenen Fırsat Kaybı) minimize edilirken seçilen alternatif EMV maksimize edildiğinde seçilenle her zaman aynıdır. Çünkü her alternatifin EOL'ı, EVwPI'den o alternatifin EMV'sinin çıkarılmasına eşittir: EOL(Aᵢ) = EVwPI − EMV(Aᵢ). EVwPI sabit olduğundan EMV'yi maksimize etmek EOL'ı minimize etmekle birebir eşdeğer. Hatta klasik bir özdeşlik vardır: **min EOL = EVPI**. Bu bağlantı EVPI'nın yorumunu güçlendirir: EVPI, optimum alternatifi seçsek bile katlanmaya devam ettiğimiz beklenen fırsat kaybıdır."
+---
+
+İşlerin yarısı karar vermektir, diğer yarısı kararla yaşamaktır. Yatırım
+yapmak mı, ürünü piyasaya sürmek mi, yeni tedarikçiye geçmek mi, kliniği
+açmak mı? Cevap, geleceğin nasıl şekilleneceğine bağlı — ama gelecek
+belirsiz. **Karar analizi** (decision analysis), bu belirsizliği matematiksel
+olarak modelleyip karar verene yapılandırılmış bir çerçeve sunan disiplindir.
+
+Klasik OR/yönetim bilimi çerçevesinde karar problemi üç temel bileşene
+indirgenir:
+
+- **Alternatifler** (A₁, A₂, …, Aₘ): elimizdeki seçenekler.
+- **Doğa durumları** (S₁, S₂, …, Sₙ): kontrolümüz dışında gerçekleşecek
+  rastgele "dış olaylar" — talep yüksek/düşük, hava açık/kapalı,
+  rakip ucuz/pahalı.
+- **Getiri matrisi** V: her (alternatif, durum) ikilisinde gerçekleşen
+  sayısal sonuç (kâr, maliyet, fayda).
+
+Karar problemini iki kategoriye ayırırız:
+
+| Senaryo | Bildiğimiz | Karar kriterleri |
+| --- | --- | --- |
+| **Belirsizlik altında** | Yalnızca getiri matrisi | Maximax, Maximin, Laplace, Hurwicz, Savage Regret |
+| **Risk altında** | Getiri matrisi + olasılıklar p_j | EMV, EOL, EVPI |
+
+Bu rehberde her kriteri sezgi → formül → küçük örnek üçlüsüyle gezeceğiz
+ve [Karar Analizi aracında](/or-araclari/araclar/karar-analizi) hepsinin
+tek geçişte nasıl hesaplandığını göstereceğiz.
+
+## Çalışma örneği: Thompson Lumber
+
+Render, Stair ve Hanna'nın *Quantitative Analysis for Management*
+kitabındaki klasik örnek üzerinden gidelim. John Thompson kereste
+satıyor ve yeni bir depo açmayı düşünüyor. Üç alternatifi var:
+
+1. **Büyük tesis** kur
+2. **Küçük tesis** kur
+3. **Hiçbir şey yapma**
+
+Geleceğin iki olası doğa durumu var: pazar talebi **yüksek** olur ya da
+**düşük**. Getiri matrisi (yıllık net kâr, $):
+
+| Alternatif \ Durum | Talep yüksek | Talep düşük |
+| --- | ---: | ---: |
+| Büyük tesis | +200 000 | −180 000 |
+| Küçük tesis | +100 000 | −20 000 |
+| Hiçbir şey yapma | 0 | 0 |
+
+İlk başta olasılıkları bilmediğimizi varsayalım (saf belirsizlik). Beş
+klasik kriterin nasıl çalıştığını adım adım uygulayalım.
+
+## Belirsizlik altında kriterler
+
+### Maximax — iyimser
+
+Her alternatifin **en iyi** sonucuna bak, sonra bunların **en iyisini**
+seç. Kâr maksimize ediliyorsa "en iyi"in anlamı **en büyük**.
+
+- Büyük tesis en iyisi: **+200 000**
+- Küçük tesis en iyisi: +100 000
+- Hiçbir şey yapma en iyisi: 0
+
+Maximax → **Büyük tesis** (200 000). Iyimser girişimci ruh: "Talep yüksek
+olacak, gaza basalım."
+
+### Maximin (Wald) — kötümser
+
+Her alternatifin **en kötü** sonucuna bak, sonra bunların **en iyisini**
+seç. Kâr modunda "en kötü"nün anlamı **en küçük**.
+
+- Büyük tesis en kötüsü: −180 000
+- Küçük tesis en kötüsü: −20 000
+- Hiçbir şey yapma en kötüsü: **0** ← en iyi (en az kötü)
+
+Maximin → **Hiçbir şey yapma** (0). Wald kriteri: "Felaket senaryosunda
+ayakta kal." Risk-tolerans çok düşük olan, yıkılma kapasitesi olmayan
+karar vericiler bunu tercih eder (örn. ufak işletme, kişisel finans).
+
+### Laplace — eşit-olası
+
+Olasılıkları bilmiyoruz; **eşit varsayalım** ve aritmetik ortalamayı al.
+Pierre-Simon Laplace'ın "yetersiz neden" prensibi: "Aksini gösteren bilgi
+yoksa, olayları eşit-olası say."
+
+- Büyük tesis ortalaması: (200 000 + (−180 000)) / 2 = **+10 000**
+- Küçük tesis ortalaması: (100 000 + (−20 000)) / 2 = **+40 000** ← en iyi
+- Hiçbir şey yapma ortalaması: 0
+
+Laplace → **Küçük tesis** (40 000). Çoğu zaman EMV ile aynı sonucu verir
+(eşit olasılıklar varsayımı altında EMV ile özdeş).
+
+### Hurwicz — ayarlanabilir iyimserlik
+
+Maximax (saf iyimser) ve Maximin (saf kötümser) arasını **iyimserlik
+katsayısı α ∈ [0, 1]** ile ölç:
+
+`Hurwicz(Aᵢ) = α · best(Aᵢ) + (1 − α) · worst(Aᵢ)`
+
+α = 1 → Maximax; α = 0 → Maximin; α = 0.5 → Laplace'a yakın bir nötr
+nokta.
+
+Thompson örneğinde α = 0.8 (oldukça iyimser):
+
+- Büyük tesis: 0.8 · 200 000 + 0.2 · (−180 000) = 160 000 − 36 000 = **+124 000** ← en iyi
+- Küçük tesis: 0.8 · 100 000 + 0.2 · (−20 000) = 80 000 − 4 000 = +76 000
+- Hiçbir şey yapma: 0
+
+Hurwicz(α=0.8) → **Büyük tesis**. α = 0.2'ye düşürelim:
+
+- Büyük tesis: 0.2 · 200 000 + 0.8 · (−180 000) = −104 000
+- Küçük tesis: 0.2 · 100 000 + 0.8 · (−20 000) = +4 000 ← en iyi
+- Hiçbir şey yapma: 0
+
+Hurwicz(α=0.2) → **Küçük tesis**. Karar verici, kendi α'sı için bir
+duyarlılık analizi yapabilir: α'yı yavaşça 0'dan 1'e arttırarak hangi
+alternatifin hangi aralıkta liderlik ettiğini görsel olarak izleyebilir.
+[Aracın](/or-araclari/araclar/karar-analizi) Hurwicz kaydırma çubuğu tam
+da bunu yapar.
+
+### Savage — minimax regret
+
+Sonradan pişman olmamak istiyorsan, "pişmanlık matrisi" kur. Her
+doğa durumunda **o durumda en iyi olabilecek** alternatife göre fark:
+
+`Rᵢⱼ = (o sütunun en iyi V'si) − Vᵢⱼ` (max modu için)
+
+Thompson örneğinde sütun maksimumları: durum 1 → 200 000, durum 2 → 0.
+
+| Alternatif | Talep yüksek (col max=200 000) | Talep düşük (col max=0) | Maks regret |
+| --- | ---: | ---: | ---: |
+| Büyük tesis | 0 | 180 000 | 180 000 |
+| Küçük tesis | 100 000 | 20 000 | **100 000** ← en düşük |
+| Hiçbir şey yapma | 200 000 | 0 | 200 000 |
+
+Savage → **Küçük tesis** (en yüksek pişmanlığı 100 000 ile sınırlı). En
+yüksek pişmanlığı minimize etmek psikolojik olarak güçlü bir kriterdir:
+sonradan "ah ben bunu yapmasaydım" demek istemeyenler için ideal.
+
+### Kriterler aynı şeyi söylemiyor — şimdi ne yapmalı?
+
+Aynı problemde beş farklı kriter üç farklı alternatife işaret etti:
+Büyük tesis (Maximax), Hiçbir şey yapma (Maximin), Küçük tesis (Laplace,
+Hurwicz α=0.5, Savage). Bu **karar problemi gerçekten zor** demektir —
+olasılıkları öğrenmeden net bir cevap zor. Bu yüzden bir sonraki adım
+çoğunlukla **olasılık tahmini** ve risk altı kriterlere geçiştir.
+
+## Risk altında: EMV, EOL ve EVPI
+
+Diyelim ki Thompson, geçmiş veriler ve pazar araştırmasıyla
+**p(talep yüksek) = 0.5, p(talep düşük) = 0.5** olasılıklarını biçti.
+
+### EMV — Beklenen Parasal Değer
+
+Her alternatifin beklenen getirisi:
+
+`EMV(Aᵢ) = Σⱼ p_j · Vᵢⱼ`
+
+- EMV(Büyük) = 0.5 · 200 000 + 0.5 · (−180 000) = +10 000
+- EMV(Küçük) = 0.5 · 100 000 + 0.5 · (−20 000) = **+40 000** ← en yüksek
+- EMV(Hiçbir şey) = 0
+
+**EMV maksimum → Küçük tesis.** Bu seçim, aynı kararı binlerce kez
+tekrarlasaydık uzun-dönem ortalama kârı maksimize ederdi.
+
+### EVwPI — Mükemmel Bilgi Altında Beklenen Değer
+
+Karar vermeden önce hangi durumun gerçekleşeceğini **kesin** bilebilseydik:
+
+`EVwPI = Σⱼ p_j · maxᵢ Vᵢⱼ`
+
+- Durum 1 gerçekleşirse en iyi: Büyük tesis (200 000)
+- Durum 2 gerçekleşirse en iyi: Hiçbir şey yapma (0)
+- EVwPI = 0.5 · 200 000 + 0.5 · 0 = **+100 000**
+
+### EVPI — Mükemmel Bilginin Değeri
+
+`EVPI = EVwPI − EMV* = 100 000 − 40 000 = +60 000`
+
+Yorum: Geleceği kesin bilen bir bilgi kaynağına (kristal küre, harika
+bir pazar araştırması) **en fazla 60 000 \$** öderim. Bundan pahalı
+araştırma, kusursuz sonuç verse bile zarara yol açar. **EVPI, bilgiye
+ödeme sınırını matematiksel olarak çizer.**
+
+### EOL — Beklenen Fırsat Kaybı
+
+Savage regret matrisini olasılıklarla ağırlıklandır:
+
+`EOL(Aᵢ) = Σⱼ p_j · Rᵢⱼ`
+
+- EOL(Büyük) = 0.5 · 0 + 0.5 · 180 000 = 90 000
+- EOL(Küçük) = 0.5 · 100 000 + 0.5 · 20 000 = **60 000** ← en düşük
+- EOL(Hiçbir şey) = 0.5 · 200 000 + 0.5 · 0 = 100 000
+
+**Min EOL = 60 000 = EVPI.** Bu özdeşlik tesadüf değil: EOL(Aᵢ) =
+EVwPI − EMV(Aᵢ), dolayısıyla **min EOL** = EVwPI − **max EMV** = EVPI.
+Bu, EVPI'nın "optimum alternatif seçsek bile katlanmaya devam ettiğimiz
+beklenen fırsat kaybı" yorumunu çerçeveler.
+
+## EVSI — Mükemmel olmayan bilginin değeri
+
+EVPI mükemmel bilgi varsayar; gerçek hayatta hiçbir araştırma %100
+doğru sonuç vermez. **EVSI** (Expected Value of Sample Information),
+gürültülü bir bilgi kaynağı için aynı mantığı uygular. Tipik akış:
+
+1. Önsel olasılıklar p_j.
+2. Bilgi kaynağı bir "gözlem" (örn. pazar testi olumlu/olumsuz) yapar;
+   doğruluk matrisi (likelihood) `P(gözlem | durum)` bilinir.
+3. Bayes kuralıyla **sonsal olasılıklar** hesaplanır.
+4. Her olası gözlem dalında en iyi alternatifin EMV'si bulunur, her dalın
+   beklenen değeri marjinal `P(gözlem)` ile ağırlıklandırılır.
+5. EVSI = (gözlemden sonra beklenen değer) − EMV*.
+
+EVSI ≤ EVPI her zaman doğrudur (mükemmel olmayan bilgi mükemmel bilgiden
+az değer üretir). EVSI hesabı bu aracın v1 kapsamında değil; Bayes
+ağacını ayrı bir araçla planlıyoruz.
+
+## Min (maliyet) modu nasıl değişir?
+
+Aynı tüm kriterler **maliyet minimize** problemlerinde de geçerli; tek
+fark "en iyi"nin işareti:
+
+- Min modunda **Maximax** (en iyi-en iyi) = her satırın **en düşük**
+  maliyeti, sonra bunların en düşüğü.
+- **Maximin** = her satırın **en yüksek** maliyeti, sonra bunların en
+  düşüğü ("en kötü senaryoda en az zararlı").
+- **Laplace** = ortalama maliyet en düşük olan.
+- **Hurwicz** = α · best + (1 − α) · worst; best = en düşük maliyet.
+- **Savage** = Rᵢⱼ = Vᵢⱼ − (o sütunun en düşüğü); pozitif.
+- **EMV** = beklenen maliyet en düşük olan. EVPI = EMV* − EVwPI.
+
+Aracın "Minimize (maliyet)" radyo düğmesi bu dönüşümü otomatik yapar.
+
+## Tipik karar problemleri ve yorumlar
+
+**Yeni ürün lansmanı.** Alternatifler: lansman / lansmanı 6 ay ertele /
+hiç çıkma. Durumlar: rakip çıkmamış / 1 rakip / 2+ rakip. Olasılıklar
+çoğunlukla 0.5–0.3–0.2 gibi kabaca tahminlerdir; EVPI bir pazar
+araştırmasının üst sınırını söyler.
+
+**Tedarikçi seçimi.** Alternatifler: A / B / C; Durumlar: düşük talep /
+orta / yüksek. Maliyet modunda EMV ile birlikte Maximin kullanılır
+(tedarik krizi senaryosunda iflas etmemek için).
+
+**Sigorta poliçesi seçimi.** Belirsizlik altında klasik örnek. EMV
+genellikle "sigorta yapma"yı önerir (uzun vadede sigorta primi beklenen
+hasarı aşar); ama riskten kaçınma + Wald kriteri bireysel kararı tersine
+çevirir.
+
+**Hisse seçimi / sermaye yatırımı.** Çoklu durum (boğa, ayı, yatay)
+üzerinden EMV ve Sharpe-benzeri risk düzeltmeleri.
+
+## Bayes güncellemesi: olasılıklar nereden gelir?
+
+Olasılıklar çoğu zaman **önsel** (prior) bir tahminden başlar — geçmiş
+veriler, sektör raporları, uzman görüşü. Yeni bilgi (pazar testi,
+müşteri anketi) geldikçe **Bayes kuralı** ile güncellenir:
+
+`P(durum | gözlem) = P(gözlem | durum) · P(durum) / P(gözlem)`
+
+Bu sayede statik bir karar tablosu yerine **dinamik**, kanıtlarla
+güncellenen bir model çıkar. Tipik akış: önsel olasılıklarla EMV/EVPI
+hesapla; eğer EVPI yüksekse bilgi al; gelen kanıtla olasılıkları
+güncelle; tekrar hesapla; karar ver.
+
+## Karar ağaçları ile köprü
+
+Çok-aşamalı kararlar (önce test yap-yapma seçimi, sonra teste göre
+yatırım) için karar tablosu yetmez; **karar ağaçları** devreye girer.
+Karar düğümü (kare) — alternatifler arasından **biz** seçeriz; şans
+düğümü (yuvarlak) — doğa rastgele bir dal seçer (olasılıklarla).
+Karar ağacı geriye-doğru çözülür: yapraktan kök'e, şans düğümlerinde
+beklenen değer, karar düğümlerinde max/min.
+
+Bu rehberdeki *karar tablosu* yaklaşımı, karar ağacının **tek-aşama**
+özel hâlidir. Çok-aşama gerektiğinde aynı kavramlar (EMV, EVPI) ağaç
+üzerinde de geçerlidir.
+
+## Pratik öneriler
+
+1. **Birden fazla kriter hesapla.** Tek bir kriter "doğru" cevap vermez;
+   farklı kriterlerin işaret ettiği alternatiflerin örtüştüğü noktalar
+   sağlam seçimlerdir.
+2. **Olasılık duyarlılığı yap.** EMV liderini olasılıklar küçük oranda
+   değişince hâlâ aynı mı? Eğer kritik kararda EMV ucu ucuna kazanıyorsa
+   daha çok bilgi topla.
+3. **EVPI'yi araştırma bütçesi olarak kullan.** EVPI > araştırma maliyeti
+   ise bilgiye yatırım yap; değilse "yeterince biliyorum, karar ver."
+4. **Riskten kaçınma derecene göre Wald veya Hurwicz seç.** Şirketin
+   yıkılma toleransı düşükse Wald'a doğru kay; rekabetçi sıçrama
+   gerektiren bir konumdaysa Hurwicz'i iyimser ucuna çek.
+5. **Negatif sonuçların boyutuna dikkat.** Çok büyük negatif getiri
+   (örn. iflas) varsa EMV yetmez; **fayda fonksiyonu** ya da Wald gerekir.
+
+## Aracı kullan
+
+[Karar Analizi aracı](/or-araclari/araclar/karar-analizi), bu beş
+belirsizlik altı kriteri ve risk altındaki EMV / EOL / EVPI üçlüsünü tek
+ekranda hesaplar. Hurwicz α değerini canlı kaydırma çubuğuyla deneyimle,
+"Thompson örneği" ve "Tedarikçi (min)" düğmeleriyle yukarıdaki örnekleri
+yükle ve kendi karar tablonu yapıştırarak başla.
+
+Pazar araştırmasından önce **EMV ile EVPI**'yi mutlaka karşılaştır:
+araştırma maliyeti EVPI'dan büyükse en mükemmel sonuç bile parayı
+geri getirmez.
+
+## İlgili kavramlar ve okumalar
+
+- **Beklenen fayda teorisi** (Expected Utility): EMV yerine bireyin/firmanın
+  fayda fonksiyonu üzerinden hesap.
+- **Karar ağaçları** ve **Bayes ağları**: çok-aşama ve koşullu olasılıklı
+  durumlar.
+- **Robust optimization** (Sağlam optimizasyon): kötü durum senaryolarına
+  karşı dayanıklı çözümler — Wald'ın modern, çok değişkenli versiyonu.
+- **Markov karar süreçleri** (MDP): zaman içinde gelişen, hâlihazırda
+  [Markov zincirleri](/or-araclari/araclar/markov-zinciri) ile tanıdık
+  olduğun stokastik kararlar.

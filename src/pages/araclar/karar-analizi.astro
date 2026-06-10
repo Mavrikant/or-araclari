@@ -1,0 +1,674 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import { withBase, SITE } from '../../data/site';
+import { TOOLS } from '../../data/tools';
+
+const tool = TOOLS.find((t) => t.slug === 'karar-analizi')!;
+const guideHref = tool.guideSlug ? withBase(`/rehberler/${tool.guideSlug}`) : null;
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: tool.title,
+  applicationCategory: 'WebApplication',
+  operatingSystem: 'Any',
+  description: tool.description,
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'TRY' },
+  inLanguage: SITE.locale,
+  isAccessibleForFree: true,
+};
+---
+
+<BaseLayout
+  title={tool.title}
+  description={tool.description}
+  image={withBase(`/og/${tool.slug}.png`)}
+  imageAlt={`${tool.title} — OR Araçları`}
+>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+  </Fragment>
+
+  <Container as="section" size="wide" class="pt-12 sm:pt-16">
+    <p class="text-sm font-medium text-brand-600 dark:text-accent-400">
+      <a href={withBase('/araclar')} class="hover:underline">Araçlar</a>
+      <span class="text-slate-400 dark:text-slate-600"> / </span>
+      <span>Olasılık & Kuyruk</span>
+    </p>
+    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">
+      {tool.title}
+    </h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
+      Alternatif × doğa durumu getiri matrisini gir; belirsizlik altında
+      Maximax / Maximin / Laplace / Hurwicz / Savage Regret ve olasılıklar
+      varsa EMV, EOL ve EVPI'yi tek geçişte hesaplayalım.
+      {guideHref && (
+        <a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>
+      )}
+    </p>
+  </Container>
+
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,380px)_1fr] print:block">
+    <form id="decision-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="sample-thompson-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Thompson örneği
+        </button>
+        <button type="button" id="sample-supplier-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Tedarikçi (min)
+        </button>
+        <button type="button" id="reset-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+          Sıfırla
+        </button>
+      </div>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Yön
+        </legend>
+        <div class="flex gap-3 text-sm">
+          <label class="flex items-center gap-2">
+            <input type="radio" name="direction" value="max" checked class="text-brand-600 focus:ring-brand-500 dark:text-accent-400" />
+            <span class="text-slate-700 dark:text-slate-200">Maksimize (kâr)</span>
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="radio" name="direction" value="min" class="text-brand-600 focus:ring-brand-500 dark:text-accent-400" />
+            <span class="text-slate-700 dark:text-slate-200">Minimize (maliyet)</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Alternatif adları
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Her satır bir alternatif
+          </span>
+          <textarea id="alts-input" rows="3" spellcheck="false" autocomplete="off"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            placeholder="Büyük tesis&#10;Küçük tesis&#10;Hiçbir şey yapma"></textarea>
+        </label>
+      </fieldset>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Doğa durumu adları
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Virgülle ayrılmış
+          </span>
+          <input type="text" id="states-input" autocomplete="off" placeholder="Talep yüksek, Talep düşük"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+      </fieldset>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Getiri matrisi V
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Satır = alternatif, sütun = durum; boşluk/virgül/tab ile ayır
+          </span>
+          <textarea id="payoffs-input" rows="6" spellcheck="false" autocomplete="off"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            placeholder="200000  -180000&#10;100000   -20000&#10;     0        0"></textarea>
+        </label>
+      </fieldset>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Olasılıklar <span class="font-normal text-slate-500">(opsiyonel)</span>
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Virgülle ayrılmış, toplam = 1
+          </span>
+          <input type="text" id="probs-input" autocomplete="off" placeholder="0.5, 0.5"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          Verilirse EMV, EOL ve EVPI hesaplanır.
+        </p>
+      </fieldset>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Hurwicz iyimserlik α
+        </legend>
+        <label class="block">
+          <input type="range" id="alpha-input" min="0" max="1" step="0.05" value="0.5"
+            class="block w-full accent-brand-600 dark:accent-accent-400" />
+        </label>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          α = <span id="alpha-readout" class="font-mono text-slate-700 dark:text-slate-200">0.50</span>;
+          0 tam kötümser (Wald'a denk), 1 tam iyimser (Maximax'a denk).
+        </p>
+      </fieldset>
+
+      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">
+        Çöz
+      </button>
+
+      <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
+    </form>
+
+    <section id="output" hidden aria-live="polite" class="space-y-6">
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40">
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Kriter karşılaştırma tablosu
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Her satır, alternatife her kriterin biçtiği değer. Sütundaki en iyi
+          değer vurgulanır; aynı sütunda berabere kalanlar varsa hepsi
+          işaretlenir.
+        </p>
+        <div id="summary-table" class="mt-4 overflow-x-auto"></div>
+      </div>
+
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40">
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Önerilen alternatifler
+        </h2>
+        <div id="picks" class="mt-3 grid gap-3 sm:grid-cols-2"></div>
+      </div>
+
+      <div id="evpi-block" hidden class="rounded-2xl border border-brand-200 bg-brand-50/60 p-5 dark:border-accent-900/40 dark:bg-accent-950/20">
+        <h2 class="font-display text-base font-semibold text-brand-900 dark:text-accent-200">
+          Mükemmel Bilginin Beklenen Değeri (EVPI)
+        </h2>
+        <p class="mt-1 text-xs text-brand-800/80 dark:text-accent-300/80">
+          EVPI = EVwPI − EMV* (max modu) ya da EMV* − EVwPI (min modu). Geleceği
+          kesin bilebileceğin bir bilgi kaynağına ödeyebileceğin maksimum tutar.
+        </p>
+        <dl id="evpi-grid" class="mt-3 grid gap-3 sm:grid-cols-3"></dl>
+      </div>
+
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40">
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Savage fırsat kaybı (regret) matrisi
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Hücre = aynı durumda en iyi alternatifin getirisi ile bu hücrenin
+          farkı. Maksimum regret minimize edilir → Savage seçimi.
+        </p>
+        <div id="regret-table" class="mt-4 overflow-x-auto"></div>
+      </div>
+    </section>
+  </Container>
+
+  {guideHref && (
+    <Container as="section" size="wide" class="py-12 sm:py-16">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900/40">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">
+          Konuyu derinleştir
+        </p>
+        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          Belirsizlik ve risk altında karar verme
+        </h2>
+        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+          Kriterlerin matematiksel anlamı, Wald ve Hurwicz arasındaki fark,
+          Bayes güncellemesi ile EVSI köprüsü ve örnek karar problemleri.
+        </p>
+        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">
+          Rehberi oku →
+        </a>
+      </div>
+    </Container>
+  )}
+</BaseLayout>
+
+<script>
+  import { solveDecision, DecisionError, type DecisionResult, type DecisionDirection } from '../../lib/decision';
+
+  const STORAGE_KEY = 'decision-state-v1';
+
+  const SAMPLE_THOMPSON = {
+    direction: 'max' as DecisionDirection,
+    alts: 'Büyük tesis\nKüçük tesis\nHiçbir şey yapma',
+    states: 'Talep yüksek, Talep düşük',
+    payoffs: '200000  -180000\n100000   -20000\n     0        0',
+    probs: '0.5, 0.5',
+    alpha: 0.5,
+  };
+  const SAMPLE_SUPPLIER = {
+    direction: 'min' as DecisionDirection,
+    alts: 'Tedarikçi A\nTedarikçi B\nTedarikçi C',
+    states: 'Düşük talep, Orta talep, Yüksek talep',
+    payoffs: '12 18 25\n10 22 20\n14 16 19',
+    probs: '0.3, 0.5, 0.2',
+    alpha: 0.5,
+  };
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el as T;
+  };
+
+  const form = $<HTMLFormElement>('decision-form');
+  const altsInput = $<HTMLTextAreaElement>('alts-input');
+  const statesInput = $<HTMLInputElement>('states-input');
+  const payoffsInput = $<HTMLTextAreaElement>('payoffs-input');
+  const probsInput = $<HTMLInputElement>('probs-input');
+  const alphaInput = $<HTMLInputElement>('alpha-input');
+  const alphaReadout = $('alpha-readout');
+  const sampleThompsonBtn = $('sample-thompson-btn');
+  const sampleSupplierBtn = $('sample-supplier-btn');
+  const resetBtn = $('reset-btn');
+  const errorBox = $('error-box');
+  const output = $('output');
+  const summaryTable = $('summary-table');
+  const picksBox = $('picks');
+  const evpiBlock = $('evpi-block');
+  const evpiGrid = $('evpi-grid');
+  const regretTable = $('regret-table');
+
+  function getDirection(): DecisionDirection {
+    const checked = form.querySelector<HTMLInputElement>('input[name="direction"]:checked');
+    return (checked?.value ?? 'max') as DecisionDirection;
+  }
+  function setDirection(d: DecisionDirection): void {
+    const el = form.querySelector<HTMLInputElement>(`input[name="direction"][value="${d}"]`);
+    if (el) el.checked = true;
+  }
+
+  function fmt(n: number, decimals = 2): string {
+    if (!Number.isFinite(n)) return '∞';
+    if (Math.abs(n) < 1e-10) return '0';
+    const abs = Math.abs(n);
+    const d = abs >= 1000 ? Math.min(decimals, 2) : decimals;
+    return n
+      .toFixed(d)
+      .replace(/\.?0+$/, '')
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  }
+  function escapeHtml(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function parseLines(text: string): string[] {
+    return text
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }
+  function parseListCsv(text: string): string[] {
+    return text
+      .split(/[,;]/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }
+  function parseMatrix(text: string): number[][] {
+    const rows = text
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+    if (rows.length === 0) throw new DecisionError('Getiri matrisi boş.');
+    const matrix: number[][] = [];
+    let expectedCols = -1;
+    rows.forEach((line, idx) => {
+      const parts = line.split(/[\s,;\t]+/).filter((s) => s.length > 0);
+      const nums = parts.map((p) => Number(p.replace(',', '.')));
+      if (nums.some((n) => !Number.isFinite(n))) {
+        throw new DecisionError(`Satır ${idx + 1} ayrıştırılamadı: "${line}".`);
+      }
+      if (expectedCols === -1) expectedCols = nums.length;
+      else if (nums.length !== expectedCols) {
+        throw new DecisionError(
+          `Satır ${idx + 1} sütun sayısı diğerleriyle aynı olmalı (${expectedCols} bekleniyor, ${nums.length} verildi).`,
+        );
+      }
+      matrix.push(nums);
+    });
+    return matrix;
+  }
+  function parseProbs(text: string): number[] | undefined {
+    const t = text.trim();
+    if (!t) return undefined;
+    const parts = parseListCsv(t).map((p) => Number(p.replace(',', '.')));
+    if (parts.some((n) => !Number.isFinite(n))) {
+      throw new DecisionError('Olasılıkları ayrıştıramadım. Virgülle ayrılmış sayılar bekleniyor.');
+    }
+    return parts;
+  }
+
+  // --- Storage ---
+  type SavedState = {
+    direction?: DecisionDirection;
+    alts?: string;
+    states?: string;
+    payoffs?: string;
+    probs?: string;
+    alpha?: number;
+  };
+  function loadState(): void {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        applySample(SAMPLE_THOMPSON);
+        return;
+      }
+      const s = JSON.parse(raw) as SavedState;
+      if (s.direction === 'max' || s.direction === 'min') setDirection(s.direction);
+      if (typeof s.alts === 'string') altsInput.value = s.alts;
+      if (typeof s.states === 'string') statesInput.value = s.states;
+      if (typeof s.payoffs === 'string') payoffsInput.value = s.payoffs;
+      if (typeof s.probs === 'string') probsInput.value = s.probs;
+      if (typeof s.alpha === 'number') {
+        alphaInput.value = String(s.alpha);
+        alphaReadout.textContent = s.alpha.toFixed(2);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  function saveState(): void {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          direction: getDirection(),
+          alts: altsInput.value,
+          states: statesInput.value,
+          payoffs: payoffsInput.value,
+          probs: probsInput.value,
+          alpha: Number(alphaInput.value) || 0.5,
+        } satisfies SavedState),
+      );
+    } catch {
+      /* ignore */
+    }
+  }
+  function applySample(s: typeof SAMPLE_THOMPSON): void {
+    setDirection(s.direction);
+    altsInput.value = s.alts;
+    statesInput.value = s.states;
+    payoffsInput.value = s.payoffs;
+    probsInput.value = s.probs;
+    alphaInput.value = String(s.alpha);
+    alphaReadout.textContent = s.alpha.toFixed(2);
+    saveState();
+    clearError();
+  }
+  loadState();
+
+  // --- Rendering ---
+  type ColKey = 'maximax' | 'maximin' | 'laplace' | 'hurwicz' | 'regret' | 'emv' | 'eol';
+
+  function renderSummary(r: DecisionResult, alts: string[]): void {
+    const cols: Array<{ key: ColKey; label: string; tooltip: string }> = [
+      { key: 'maximax', label: 'Maximax', tooltip: 'Her alternatifin en iyi durumu' },
+      { key: 'maximin', label: 'Maximin', tooltip: 'Her alternatifin en kötü durumu (Wald)' },
+      { key: 'laplace', label: 'Laplace', tooltip: 'Eşit-olası durumlar altında ortalama' },
+      { key: 'hurwicz', label: `Hurwicz (α=${r.hurwicz.alpha.toFixed(2)})`, tooltip: 'α·best + (1−α)·worst' },
+      { key: 'regret', label: 'Maks regret', tooltip: 'Satırın en yüksek fırsat kaybı (Savage)' },
+    ];
+    if (r.hasProbabilities) {
+      cols.push({ key: 'emv', label: 'EMV', tooltip: 'Beklenen Parasal Değer Σ p_j V_ij' });
+      cols.push({ key: 'eol', label: 'EOL', tooltip: 'Beklenen Fırsat Kaybı Σ p_j R_ij' });
+    }
+
+    // Per-alternative values per column. solveDecision returns only the picked
+    // alternative for maximax/maximin/laplace/hurwicz, so we use the row-level
+    // cache computed in computePerAlt() alongside the solve call.
+    const tableVals: Record<ColKey, number[]> = {
+      maximax: perAltValues.maximax,
+      maximin: perAltValues.maximin,
+      laplace: perAltValues.laplace,
+      hurwicz: perAltValues.hurwicz,
+      regret: r.regret.regretMatrix.map((row) => Math.max(...row)),
+      emv: r.emv ?? [],
+      eol: r.eol ?? [],
+    };
+
+    // Best-index sets per column for highlighting.
+    const bestSets: Record<ColKey, Set<number>> = {
+      maximax: new Set(r.maximax.tiedIndices),
+      maximin: new Set(r.maximin.tiedIndices),
+      laplace: new Set(r.laplace.tiedIndices),
+      hurwicz: new Set(r.hurwicz.tiedIndices),
+      regret: new Set(r.regret.tiedIndices),
+      emv: new Set(r.emvBest?.tiedIndices ?? []),
+      eol: new Set(r.eolBest?.tiedIndices ?? []),
+    };
+
+    const headerCells = cols
+      .map(
+        (c) => `<th scope="col" title="${escapeHtml(c.tooltip)}" class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">${escapeHtml(c.label)}</th>`,
+      )
+      .join('');
+
+    const rowsHtml = alts
+      .map((name, i) => {
+        const cells = cols
+          .map((c) => {
+            const v = tableVals[c.key][i];
+            const isBest = bestSets[c.key].has(i);
+            const hi = isBest
+              ? 'bg-emerald-50 font-semibold text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200'
+              : 'text-slate-700 dark:text-slate-200';
+            return `<td class="${hi} px-3 py-2 text-right font-mono text-sm tabular-nums">${fmt(v, 2)}</td>`;
+          })
+          .join('');
+        return `<tr class="border-t border-slate-200 dark:border-slate-800">
+          <th scope="row" class="px-3 py-2 text-left text-sm font-medium text-slate-800 dark:text-slate-100">${escapeHtml(name)}</th>
+          ${cells}
+        </tr>`;
+      })
+      .join('');
+
+    summaryTable.innerHTML = `<table class="min-w-full text-left">
+      <thead class="bg-slate-50 dark:bg-slate-900/60">
+        <tr>
+          <th scope="col" class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Alternatif</th>
+          ${headerCells}
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>`;
+  }
+
+  function renderPicks(r: DecisionResult, alts: string[]): void {
+    const items: Array<{ label: string; pick: { index: number; value: number; tiedIndices: number[] }; hint: string }> = [
+      { label: 'Maximax', pick: r.maximax, hint: 'İyimser' },
+      { label: 'Maximin (Wald)', pick: r.maximin, hint: 'Kötümser' },
+      { label: 'Laplace', pick: r.laplace, hint: 'Eşit-olası' },
+      { label: `Hurwicz α=${r.hurwicz.alpha.toFixed(2)}`, pick: r.hurwicz, hint: 'Ayarlanabilir' },
+      { label: 'Savage', pick: r.regret, hint: 'Min-maks regret' },
+    ];
+    if (r.emvBest && r.eolBest) {
+      items.push({ label: 'EMV', pick: r.emvBest, hint: 'Risk altında' });
+      items.push({ label: 'EOL', pick: r.eolBest, hint: 'EMV ile aynı seçim' });
+    }
+    picksBox.innerHTML = items
+      .map((it) => {
+        const tieds = it.pick.tiedIndices;
+        const altLabel = tieds.length > 1
+          ? tieds.map((i) => alts[i]).join(' / ')
+          : alts[it.pick.index];
+        return `<div class="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950/40">
+          <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">${escapeHtml(it.label)} <span class="ml-1 font-normal text-slate-400 dark:text-slate-500">· ${escapeHtml(it.hint)}</span></p>
+          <p class="mt-1 font-display text-base font-semibold text-slate-900 dark:text-white">${escapeHtml(altLabel)}</p>
+          <p class="text-xs font-mono tabular-nums text-slate-600 dark:text-slate-400">${fmt(it.pick.value, 2)}</p>
+        </div>`;
+      })
+      .join('');
+  }
+
+  function renderEvpi(r: DecisionResult, alts: string[]): void {
+    if (!r.hasProbabilities || r.evpi == null || r.evWithPi == null || !r.emvBest) {
+      evpiBlock.hidden = true;
+      return;
+    }
+    const items = [
+      { label: 'EVwPI', value: fmt(r.evWithPi, 2), sub: 'Mükemmel bilgi ile beklenen değer' },
+      { label: 'EMV*', value: fmt(r.emvBest.value, 2), sub: `${alts[r.emvBest.index]}` },
+      { label: 'EVPI', value: fmt(r.evpi, 2), sub: 'Mükemmel bilginin değeri' },
+    ];
+    evpiGrid.innerHTML = items
+      .map(
+        (it) => `<div class="rounded-lg bg-white/70 px-4 py-3 dark:bg-slate-950/40">
+          <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-700 dark:text-accent-300">${escapeHtml(it.label)}</p>
+          <p class="mt-1 font-display text-lg font-bold text-brand-900 dark:text-accent-100">${it.value}</p>
+          <p class="text-xs text-brand-700/70 dark:text-accent-300/70">${escapeHtml(it.sub)}</p>
+        </div>`,
+      )
+      .join('');
+    evpiBlock.hidden = false;
+  }
+
+  function renderRegret(r: DecisionResult, alts: string[], states: string[]): void {
+    const head = `<tr>
+        <th scope="col" class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Alternatif</th>
+        ${states.map((s) => `<th scope="col" class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">${escapeHtml(s)}</th>`).join('')}
+        <th scope="col" class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Maks</th>
+      </tr>`;
+    const bestRow = new Set(r.regret.tiedIndices);
+    const rows = r.regret.regretMatrix
+      .map((row, i) => {
+        const max = Math.max(...row);
+        const cells = row
+          .map((v) => `<td class="px-3 py-2 text-right font-mono text-sm tabular-nums text-slate-700 dark:text-slate-200">${fmt(v, 2)}</td>`)
+          .join('');
+        const maxCellCls = bestRow.has(i)
+          ? 'bg-emerald-50 font-semibold text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200'
+          : 'text-slate-900 dark:text-white';
+        return `<tr class="border-t border-slate-200 dark:border-slate-800">
+            <th scope="row" class="px-3 py-2 text-left text-sm font-medium text-slate-800 dark:text-slate-100">${escapeHtml(alts[i])}</th>
+            ${cells}
+            <td class="${maxCellCls} px-3 py-2 text-right font-mono text-sm tabular-nums">${fmt(max, 2)}</td>
+          </tr>`;
+      })
+      .join('');
+    regretTable.innerHTML = `<table class="min-w-full text-left">
+        <thead class="bg-slate-50 dark:bg-slate-900/60">${head}</thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+  function showError(msg: string): void {
+    errorBox.textContent = msg;
+    errorBox.hidden = false;
+    output.hidden = true;
+  }
+  function clearError(): void {
+    errorBox.hidden = true;
+    errorBox.textContent = '';
+  }
+
+  // Per-alternative row-bests we precompute outside solveDecision (the lib
+  // only returns the picked alternative). Cheap: O(m·n).
+  type PerAltValues = { maximax: number[]; maximin: number[]; laplace: number[]; hurwicz: number[] };
+  let perAltValues: PerAltValues = { maximax: [], maximin: [], laplace: [], hurwicz: [] };
+
+  function computePerAlt(payoffs: number[][], dir: DecisionDirection, alpha: number): PerAltValues {
+    const out: PerAltValues = { maximax: [], maximin: [], laplace: [], hurwicz: [] };
+    for (const row of payoffs) {
+      let mx = row[0];
+      let mn = row[0];
+      let sum = 0;
+      for (const v of row) {
+        if (dir === 'max') {
+          if (v > mx) mx = v;
+          if (v < mn) mn = v;
+        } else {
+          if (v < mx) mx = v; // "best" cost is lowest
+          if (v > mn) mn = v; // "worst" cost is highest
+        }
+        sum += v;
+      }
+      out.maximax.push(mx);
+      out.maximin.push(mn);
+      out.laplace.push(sum / row.length);
+      out.hurwicz.push(alpha * mx + (1 - alpha) * mn);
+    }
+    return out;
+  }
+
+  alphaInput.addEventListener('input', () => {
+    alphaReadout.textContent = (Number(alphaInput.value) || 0).toFixed(2);
+    saveState();
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clearError();
+    saveState();
+    try {
+      const payoffs = parseMatrix(payoffsInput.value);
+      const m = payoffs.length;
+      const n = payoffs[0].length;
+      const altsRaw = parseLines(altsInput.value);
+      const statesRaw = parseListCsv(statesInput.value);
+      const alts = altsRaw.length > 0 ? altsRaw : Array.from({ length: m }, (_, i) => `A${i + 1}`);
+      const states = statesRaw.length > 0 ? statesRaw : Array.from({ length: n }, (_, j) => `S${j + 1}`);
+      if (alts.length !== m) {
+        throw new DecisionError(`Alternatif sayısı (${alts.length}) matris satır sayısına (${m}) eşit olmalı.`);
+      }
+      if (states.length !== n) {
+        throw new DecisionError(`Durum sayısı (${states.length}) matris sütun sayısına (${n}) eşit olmalı.`);
+      }
+      const probs = parseProbs(probsInput.value);
+      if (probs && probs.length !== n) {
+        throw new DecisionError(`Olasılık sayısı (${probs.length}) durum sayısına (${n}) eşit olmalı.`);
+      }
+      const alpha = Math.max(0, Math.min(1, Number(alphaInput.value) || 0.5));
+      const direction = getDirection();
+
+      perAltValues = computePerAlt(payoffs, direction, alpha);
+      const r = solveDecision({
+        payoffs,
+        alternatives: alts,
+        states,
+        probabilities: probs,
+        alpha,
+        direction,
+      });
+      renderSummary(r, alts);
+      renderPicks(r, alts);
+      renderEvpi(r, alts);
+      renderRegret(r, alts, states);
+      output.hidden = false;
+      output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      const msg = err instanceof DecisionError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
+      showError(msg);
+    }
+  });
+
+  [altsInput, statesInput, payoffsInput, probsInput].forEach((el) =>
+    el.addEventListener('input', saveState),
+  );
+  form.querySelectorAll<HTMLInputElement>('input[name="direction"]').forEach((el) =>
+    el.addEventListener('change', saveState),
+  );
+
+  sampleThompsonBtn.addEventListener('click', () => applySample(SAMPLE_THOMPSON));
+  sampleSupplierBtn.addEventListener('click', () => applySample(SAMPLE_SUPPLIER));
+
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('Form sıfırlanacak. Devam edilsin mi?')) return;
+    form.reset();
+    setDirection('max');
+    alphaInput.value = '0.5';
+    alphaReadout.textContent = '0.50';
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    clearError();
+    output.hidden = true;
+  });
+</script>

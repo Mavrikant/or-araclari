@@ -157,6 +157,16 @@ export const TOOLS: readonly Tool[] = [
     status: 'ready',
     guideSlug: 'ulastirma-problemi',
   },
+  {
+    slug: 'karar-analizi',
+    title: 'Karar Analizi (EMV / EVPI)',
+    shortTitle: 'Karar Analizi',
+    description:
+      'Alternatif × doğa durumu getiri matrisini gir; belirsizlik altında Maximax, Maximin, Laplace, Hurwicz ve Savage Regret kriterleri ile olasılıklar varsa EMV, EOL ve EVPI tek geçişte hesaplansın. Hurwicz iyimserlik katsayısı kaydırma çubuğuyla canlı ayarlanır.',
+    category: 'olasilik',
+    status: 'ready',
+    guideSlug: 'karar-analizi-emv',
+  },
 ] as const;
 
 export function getReadyTools(): readonly Tool[] {
