@@ -318,3 +318,27 @@ döngüde nötralize oldu (sırf 🟢 kod + içerik + doc).
 **İşaret:** yok (sırf 🟢 yeşil — sadece denetim izi düzeltmesi, kullanıcıya açılan yüzeyde sıfır değişiklik).
 
 **Sıradaki:** F-MINCOST (Min-Cost Flow / Maks-Akış — L efor), F-MM_C (M/M/c, M/M/1/K — M efor) ya da Q-AUDIT-YAML (M efor, breaking-change riski).
+
+---
+
+## DÖNGÜ #15 — 2026-06-10
+
+**Yapılan:** F-MM_C — M/M/c Çoklu Sunucu Kuyruk Analizci ve uzun-form Türkçe Erlang-C rehberi yayınlandı. M/M/1'in çoklu-sunucu doğal genelleştirmesi: λ, sunucu başına μ ve sunucu sayısı c verilince Erlang-C formülüyle bekleme olasılığı, kuyruk uzunluğu ve durum dağılımı tarayıcıda anlık hesaplanır.
+
+**Detay:**
+- `src/lib/queue-mmc.ts` (+145) — saf algoritma: a = λ/μ (offered load), ρ = a/c (sunucu başına yoğunluk), P₀ iteratif toplam + tail, Erlang-C C(c, a) = a^c·P₀/(c!·(1−ρ)), Lq = C·ρ/(1−ρ), Little Yasası ile L/W/Wq, P(n) iki bölgede (n ≤ c: a^n/n!·P₀, n > c: a^n/(c!·c^(n−c))·P₀). c ≤ 200 üst sınır validasyonu.
+- `src/lib/queue-mmc.test.ts` (+122, **14 vitest**) — c=1 özel durumunda `analyzeMm1` ile 8 ondalık eşleşme + geometrik durum olasılıkları; Gross & Harris klasik c=3, a=2 örneği (P₀=1/9, C=4/9, Lq=8/9); Hillier-Lieberman c=2, λ=10, μ=6 örneği (Lq=125/33); Little Yasası, daha fazla sunucu ↘ Lq, durum olasılıkları monotonluğu (n ≥ c), validasyon (boyut, ρ < 1, tam sayı c, c > 200).
+- `src/pages/araclar/mmc-kuyruk-analizci.astro` (+445) — mobil-öncelikli form (λ, μ, c), ρ renk kodlu kart (yeşil/sarı/kırmızı), a/P₀/Erlang-C + 4 metrik panel, durum olasılıkları SVG grafiği (n < c brand-600 + n ≥ c brand-400 + dikey amber c sınırı), **sunucu sayısı duyarlılığı tablosu** (cMin..c+3, mevcut c vurgulu, kararsız satırlar 'kararsız' notu).
+- `src/content/rehberler/mmc-kuyruk-erlang-c.mdx` (+208) — 12 dk Türkçe rehber: Kendall A/S/c, varsayımlar (sınırsız kapasite/kaynak, sabırlı müşteri), parametre tablosu, P₀ + Erlang-C + Lq/L/Wq/W + P(n) formülleri, M/M/1 ↔ M/M/c indirgemesi cebirsel, banka şubesi sayısal örnek (c=2→3, W=22.7dk→2.2dk), çağrı merkezi boyutlandırma SLA tablosu (c=6..10), pooling kazancı (3 ayrı M/M/1 vs 1 M/M/3), model sınırları (Erlang-B/C ayrımı, M/M/c+M, heterojen sunucu), 6 başlık FAQ JSON-LD.
+- `src/data/tools.ts` (+10) — yeni araç kaydı (`olasilik` kategorisi).
+- `public/og/mmc-kuyruk-analizci.png` — `npm run og` ile per-tool OG kartı (83.1 KB). Diğer 13 OG kartı byte-identical (deterministik render).
+
+**MDX tuzağı (içerik düzeyinde, üretim regresyonu yok):** İlk build'de rehberin "Sayısal örnek 1" listesindeki `Σ_{n=0}^{1}` ifadesi $$ math bloğu dışında olduğu için MDX tarafından JSX expression olarak yorumlandı (`{n=0}` → `n is not defined`). `Σ (n = 0…1)` biçimine çevrilerek çözüldü. Ayrıca `\begin{cases}` + `\\[1.2em]` LaTeX'i MDX/remark-math akışında sorunluydu; piecewise tanımı iki ayrı $$ bloğuna ayrıldı. Bu deneyimden çıkan kural: **MDX prose'unda `{...}` kullanma**, math gerekiyorsa $$...$$ kullan; LaTeX `\begin{cases}` yerine ayrı bloklar tercih et.
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint, 77 dosya) · test ✓ (**320/320**, +14 yeni mmc testi, 17 dosya) · build ✓ (**40 sayfa**, 6.88s — araç sayfası + rehber dahil) · Lighthouse — yeni sayfa mevcut M/M/1 aracıyla aynı şablon, hidrasyon stratejisi (inline `<script>`, plotly yok, SVG/Tailwind sadece) ve mobil-öncelikli yerleşim kullanıyor (≥95 beklenir).
+
+**Yayın:** PR #36 squash-merge edildi (commit `7b57df1`). `Deploy to GitHub Pages` workflow başarıyla tamamlandı (run 27294207227, 42s). Canlı: <https://karaman.dev/or-araclari/araclar/mmc-kuyruk-analizci>.
+
+**İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber, mevcut deseni birebir takip).
+
+**Sıradaki:** F-MMCK (M/M/1/K ve M/M/c/K sonlu kapasiteli kuyruklar — bu döngüde M/M/c temeli atıldı, kapasite sınırı eklemek doğal genişleme), F-MINCOST (Min-Cost Flow / Maks-Akış — L efor), F-GAME (Sıfır toplamlı oyun — M efor, mevcut LP altyapısını kullanır) ya da Q-AUDIT-YAML (M efor, breaking-change riski).
