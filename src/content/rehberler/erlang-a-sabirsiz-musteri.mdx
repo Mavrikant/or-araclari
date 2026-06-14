@@ -1,0 +1,227 @@
+---
+title: "Erlang-A: Sabırsız Müşteri ve Modern Çağrı Merkezi Modeli"
+description: "M/M/c + abandonment (Erlang-A) modeli, bırakma olasılığı, efektif servis hızı, QED rejimi ve Erlang-C'nin nerede yetersiz kaldığı — Türkçe, sezgisel ve uygulamalı kapsamlı rehber."
+pubDate: 2026-06-15
+relatedTool: "erlang-a-bekleme-birakma"
+keywords:
+  - "Erlang-A"
+  - "abandonment"
+  - "bırakma"
+  - "M/M/c+M"
+  - "sabırsız müşteri"
+  - "çağrı merkezi"
+  - "QED rejimi"
+  - "Garnett Mandelbaum"
+  - "Erlang-C"
+  - "Halfin-Whitt"
+  - "kuyruk teorisi"
+  - "doğum-ölüm zinciri"
+readingMinutes: 10
+faq:
+  - question: "Erlang-A ile Erlang-C arasındaki fark nedir?"
+    answer: "Erlang-C (M/M/c, sınırsız buffer) bekleyen müşterinin sonsuza kadar sabırlı olduğunu varsayar — kimse vazgeçmez. Erlang-A (M/M/c + M, bireysel exponential abandonment) bekleyen her müşterinin θ oranında üstel zaman içinde bağımsız olarak vazgeçeceğini ekler. Pratik açıdan bu çok büyük bir fark yaratır: Erlang-C'de λ ≥ c·μ olunca sistem patlar ve formül anlamsızlaşır; Erlang-A'da bırakmalar sistemde drift yarattığı için λ > c·μ olsa bile kararlı bir denge oluşur — çağrılar gelir, bir kısmı bağlanır, bir kısmı bekler, bir kısmı dayanamayıp kapatır. Modern çağrı merkezleri Erlang-C'nin tahminlerine güvenirse %20-30'a varan ek personelle çalışmak zorunda kalır."
+  - question: "θ (bırakma hızı) parametresi pratikte nasıl tahmin edilir?"
+    answer: "θ, bireysel bir müşterinin bekleme sırasında birim zamanda bırakma 'azimini' temsil eder. Pratikte 1/θ ≈ ortalama sabır süresi (ortalama olarak müşteri kuyruğu terk etmeden önce ne kadar bekler). Tahmin yöntemleri: (1) tarihsel veri — vazgeçen müşterilerin terk etme zamanlarını topla, üstel modelle fit et; (2) anket — 'Ne kadar beklersiniz?' sorusunun beklenen süresinin tersi; (3) sektör benchmark'ları — telefon bankacılığı 60-180 sn, online destek 30-90 sn, acil servis dakikalar; çağrı bekletme müzikli ise daha yüksek tolerans. Üstel varsayım fıkrî bir basitleştirmedir; gerçek sabır dağılımları lognormal veya Weibull olabilir ama Erlang-A çoğu pratik karar için yeterince doğrudur."
+  - question: "Bırakma olasılığı P(abandon) nasıl yorumlanır?"
+    answer: "P(abandon) = θ · Lq / λ — gelen müşterilerin uzun-dönem ortalamasında ne kadarının kuyruğu hizmet almadan terk ettiği. Endüstri SLA'leri çoğunlukla bu metriği hedefler: %2-5 'sağlıklı', %10+ 'sorun var'. Önemli özellik: PASTA + Little'dan türetilen kimlik gereği P(abandon) = θ · E[Wq] — yani ortalama bekleme süresi ile bırakma oranı doğrusal ilişkilidir. Bu Erlang-A'nın güzelliği: ölçtüğünüz bekleme süresinden bırakma oranını (veya tersini) doğrudan kestirebilirsiniz."
+  - question: "λ > c·μ iken Erlang-A nasıl kararlı kalır?"
+    answer: "Klasik kararlılık argümanı 'birim zamanda gelen iş ≤ birim zamanda hizmet kapasitesi' der. Erlang-A bu hesabı 'efektif gelen iş' üzerinden yapar: λ_served = λ − λ_aban < c·μ olduğu sürece sistem kararlı. Aşırı yüklü bir sistemde bırakma oranı yeterince yükselir ki hizmet kapasitesini geçmeyen bir efektif yük kalır. Doğum-ölüm zincirinde matematiksel olarak: durum n > c'de ölüm oranı c·μ + (n − c)·θ olduğu için n büyüdükçe (n − c)·θ terimi sınırsız büyür ve zinciri 'aşağı' çeker. Bu sayede infinite chain integrable bir stasyoner dağılıma sahip olur."
+  - question: "QED rejimi (Quality-and-Efficiency-Driven) nedir?"
+    answer: "Garnett, Mandelbaum & Reiman'ın 2002 makalesinde tanımladığı, büyük çağrı merkezlerinde personel sayısının ölçeklenmesi için optimal rejim. Klasik 'efficiency-driven' modda c ≈ λ/μ (ρ ≈ 1) tutar, bekleme uzun olur. 'Quality-driven' modda c >> λ/μ tutar, bekleme yok ama personel pahalı. QED rejimi bu ikisinin arasında: c = λ/μ + β·√(λ/μ) (Halfin-Whitt ölçeklendirmesi), β iyimserlik katsayısı. Bu rejimde hem ρ → 1 (verimli) hem P(W>0) sabit kalır (kalite), aynı anda hem bekleme süresi hem bırakma oranı √c hızında azalır. Modern büyük çağrı merkezleri (1000+ ajan) bu ölçeklendirmeye göre boyutlanır."
+  - question: "Aracın 'bırakma hızı duyarlılığı' tablosu ne anlatıyor?"
+    answer: "Aynı geliş hızı (λ), hizmet hızı (μ) ve sunucu sayısı (c) için müşteri sabır süresi değiştikçe (1/θ) bırakma oranı, kuyruk uzunluğu ve bekleme süresi nasıl değişir? Trend: θ → 0 (sabırlı) ⇒ bırakma → 0 ama Lq, Wq → Erlang-C limiti (büyük). θ → ∞ (sabırsız) ⇒ Wq → 0 ama bırakma yüksek (M/M/c/c Erlang-B limitine yaklaşır). Pratik karar: 'bekleme müziği eklersem 1/θ artar (müşteri daha sabırlı), bu da Wq'yu artırır ama bırakmayı azaltır — toplam müşteri memnuniyeti nasıl etkilenir?' türünden trade-off'ları görsel yapar."
+  - question: "Erlang-A'nın gerçekçi olmadığı varsayımlar nelerdir?"
+    answer: "Erlang-A şu varsayımlar üzerine kuruludur: (1) gelişler Poisson — pratikte saatlik tepeler sapma yaratır; (2) hizmet süreleri exponential — gerçek dağılımlar genelde lognormal, daha iyimser performans çıkar; (3) bireysel sabır exponential — gerçekte Weibull/Pareto kuyruklu olabilir; (4) homojen sunucular — yeni ve deneyimli ajanlar farklı μ ile çalışır; (5) FIFO disiplin — VIP, callback, outbound modeli genişletir. Tüm eksiklere rağmen Erlang-A, Erlang-C'den çok daha doğru baseline'dır ve büyük çağrı merkezlerinde personel kararlarının çoğu için yeterlidir; kritik kararlar için simülasyonla düzeltilir."
+---
+
+Klasik Erlang-C modeli (M/M/c) çağrı merkezi boyutlandırmasının
+çağdaşı sayılır — A. K. Erlang'ın 1917 tarihli orijinal telefon
+santral çalışmasına dayanır. Ama 100 yılda dünya değişti: müşteriler
+artık beklemeyi göze almıyor, telefon kapanma maliyeti yok, alternatif
+kanallar çok. Bu noktada Erlang-A devreye girer: aynı modelin
+"sabırsız müşteri"yi modelleyen modern versiyonu.
+
+## Problemin yapısı
+
+Erlang-A çekirdek bileşenleri:
+
+- **λ** — Poisson geliş hızı (örn. saatte 60 çağrı)
+- **μ** — sunucu başına üstel hizmet hızı (örn. saatte 12 çağrı = 5 dk
+  ortalama)
+- **c** — paralel sunucu sayısı (ajan)
+- **θ** — bekleyen müşteri başına üstel bırakma hızı (örn. saatte 30
+  bırakma = 2 dk ortalama sabır)
+
+Yeni olan parametre θ'dır: **her bekleyen müşteri**, hizmet almadan
+önce, ortalama 1/θ süre içinde bağımsız olarak vazgeçer. Bekleme
+süresi 1/θ'yı geçerse ihtimal yüksek; daha az süreyse hizmet alma
+ihtimali yüksek.
+
+Kendall notasyonunda model bazen **M/M/c + M** olarak yazılır (sondaki M
+"impatience" için exponential dağılımı belirtir) ya da Garnett-Mandelbaum-Reiman
+2002 makalesinden bu yana **Erlang-A** adıyla anılır (A = abandonment).
+
+## Doğum-ölüm zinciri
+
+Erlang-A doğum-ölüm Markov zinciri olarak çözülür. n durumdayken
+(sistemde n müşteri):
+
+- **Doğum oranı** $\lambda_n = \lambda$ — gelişler her zaman aynı hızda.
+- **Ölüm oranı:**
+  - n ≤ c: n meşgul sunucu, her biri μ ile hizmet veriyor → toplam $n \mu$.
+  - n > c: c sunucu meşgul ($c \mu$) + (n − c) bekleyen müşteri,
+    her biri θ ile vazgeçebilir → toplam $c \mu + (n − c) \theta$.
+
+Steady-state çözüm:
+
+$$
+P_n = P_0 \cdot \prod_{k=1}^{n} \frac{\lambda}{\text{death rate}(k)}
+$$
+
+Konkret iterasyon:
+
+$$
+q_0 = 1, \qquad q_n = q_{n-1} \cdot \frac{\lambda}{n \mu} \;\; (n \le c),
+\qquad q_n = q_{n-1} \cdot \frac{\lambda}{c \mu + (n - c) \theta} \;\; (n > c)
+$$
+
+$$
+P_n = \frac{q_n}{\sum_{k} q_k}
+$$
+
+Aracımız bu özyinelemeyi, kuyruk olasılığı $P_n / \text{cum} < 10^{-12}$
+eşiğine düşene kadar (ya da n = 5000 güvenlik kapağına çarpana kadar)
+sürdürür.
+
+### Neden λ > c·μ olsa bile kararlı?
+
+θ = 0 olduğunda model M/M/c'ye indirgenir ve klasik kararlılık koşulu
+ρ = λ / (c·μ) < 1 gereklidir; aksi hâlde zincir 'patlar'. θ > 0
+olduğunda ise n > c bölgesinde ölüm oranı n büyüdükçe sınırsız büyür
+((n − c)·θ terimi). Bu sayede $\sum q_n$ sonlu olur ve zincir
+integrable bir stasyoner dağılıma sahiptir. **Pratik anlamı:** aşırı
+yüklü bir çağrı merkezinde dahi bırakmalar yeterince yükselir ki
+efektif yük $\lambda - \lambda_{\text{aban}}$ kapasiteyi geçmeyen bir
+seviyede dengelenir.
+
+## Çıkış metrikleri
+
+Steady-state dağılımdan tüm performans metrikleri tek geçişte elde
+edilir:
+
+| Metrik | Formül | Yorum |
+| --- | --- | --- |
+| $P_0$ | $q_0 / \sum q$ | Tüm sunucuların boş olma olasılığı |
+| $P(W > 0)$ | $\sum_{n \ge c} P_n$ | Yeni gelenin bekleme zorunda kalma olasılığı |
+| $L_q$ | $\sum_{n > c} (n - c) P_n$ | Ortalama kuyruk uzunluğu |
+| $\lambda_{\text{aban}}$ | $\theta \cdot L_q$ | Birim zamanda terk eden müşteri sayısı |
+| $P(\text{abandon})$ | $\lambda_{\text{aban}} / \lambda$ | Gelen müşterilerin bırakma payı |
+| $\lambda_{\text{served}}$ | $\lambda - \lambda_{\text{aban}}$ | Birim zamanda hizmet alan müşteri sayısı |
+| $L$ | $\sum_n n P_n$ | Sistemdeki ortalama müşteri (bekleyen + hizmet alan) |
+| $W_q$ | $L_q / \lambda$ | Kuyrukta ortalama bekleme süresi (giren tüm müşteriler) |
+| $W$ | $L / \lambda$ | Sistemde ortalama geçirilen süre |
+
+İki önemli özdeşlik:
+
+$$
+\lambda_{\text{aban}} = \theta \cdot L_q \quad \text{(Little + PASTA)}
+$$
+
+$$
+P(\text{abandon}) = \theta \cdot E[W_q] \quad \text{(sabır–bekleme bağı)}
+$$
+
+İkinci özdeşlik özellikle değerlidir: ölçtüğünüz bekleme süresinden
+bırakma oranını ya da tersini doğrudan kestirebilirsiniz.
+
+## Sayısal örnek — çağrı merkezi
+
+Bir çağrı merkezi saatte λ = 20 çağrı alıyor, ajan başına μ = 6 çağrı/saat
+(10 dk ortalama hizmet), c = 4 ajan var. Müşteri sabır süresi ortalama
+1 dakika (θ = 60/saat). Erlang-C ile bu yapılandırma değerlendirilirse
+ρ = 20 / 24 = 0.833 (kararlı görünüyor); ama gerçek hayatta müşteriler
+bekliyor mu, terk mi ediyor?
+
+Erlang-A çözümü (yukarıdaki örnek butonundan):
+
+- $a = 20/6 = 3.33$ Erlang offered load
+- $\rho = a/c = 0.833$
+- $P_0 \approx$ %5
+- $P(W > 0) \approx$ %44
+- $L_q \approx 0.43$ müşteri
+- $\lambda_{\text{aban}} = 60 \cdot 0.43 / 60$ = ~0.43/dakika ≈ 26/saat?
+
+Eğer θ saatte 1 birime ayarlanırsa (60 dakika sabır), bırakma çok düşük
+ve sonuç Erlang-C'ye yakındır. θ büyüdükçe (sabır kısaldıkça) bırakma
+yükselir, kuyruk kısalır.
+
+### Aynı çağrı merkezi aşırı yüklü
+
+λ = 30 çağrı/saat (capacity = 24 — Erlang-C'de "patlar") ve θ = 2/saat
+(30 dk sabır). Erlang-A:
+
+- ρ = 30/24 = 1.25 (kapasiteyi aşan)
+- Sistem yine **kararlı** — bırakmalar dengeler
+- Bir kısım müşteri terk eder; etkili servis hızı λ_served < 24
+- Lq ve Wq sonlu
+
+Erlang-C bu noktada hata fırlatır ya da anlamsız sonuçlar verir; gerçek
+hayattaki çoğu çağrı merkezi en azından bazı saatlerde bu rejimde
+çalışır.
+
+## QED rejimi ve büyük çağrı merkezleri
+
+Modern büyük çağrı merkezleri (1000+ ajan, milyonlarca çağrı/gün)
+**Quality-and-Efficiency-Driven (QED)** rejimde boyutlanır
+(Halfin-Whitt 1981, Garnett-Mandelbaum-Reiman 2002):
+
+$$
+c = \frac{\lambda}{\mu} + \beta \sqrt{\frac{\lambda}{\mu}}
+$$
+
+β iyimserlik (overstaffing) katsayısı. Bu ölçeklendirmede:
+
+- **Verimli:** ρ = 1 − β/√(λ/μ) → 1 ölçek büyüdükçe (kapasite tam dolu kullanılır)
+- **Kaliteli:** $P(W > 0)$ sabit kalır (ne 0'a ne 1'e gider)
+- **Bırakma:** $P(\text{abandon}) = O(1/\sqrt{c})$ — ölçek büyüdükçe azalır
+
+Operasyonel anlamı: 100 ajanlı bir merkezi 400 ajanlı yapmak için λ'yı
+4x değil yaklaşık 4.05x ölçeklersiniz (4 + 1·√4 dengesi). Tersine,
+ufak çağrı merkezi büyük olanın "minyatür kopyası" değildir;
+ölçeklendirme doğrusal değil √c'lidir.
+
+## Erlang-C vs Erlang-A — pratik karşılaştırma
+
+| Konu | Erlang-C | Erlang-A |
+| --- | --- | --- |
+| Müşteri davranışı | Sonsuz sabırlı | Üstel sabır (1/θ ortalama) |
+| Aşırı yük (ρ ≥ 1) | Tanımsız (patlar) | Kararlı, denge bulur |
+| Performans metrikleri | Sadece bekleme | Bekleme + bırakma |
+| Personel boyutlandırma | Genelde fazla tahmin eder | Daha doğru, %10-30 daha az personel |
+| Hesaplama maliyeti | Kapalı form ($C(c,a)$) | Doğum-ölüm zinciri (özyineleme) |
+| Veri gereksinimi | λ, μ, c | λ, μ, c, **θ** (ek parametre) |
+
+θ'yı tahmin etmenin "ek iş" olduğu doğru, ama bunu telafi eden büyük bir
+avantaj sağlar: %5-30 daha az personel = milyonlarca lira tasarruf
+(büyük çağrı merkezleri için yıllık). Erlang-A bu yüzden Avaya, Genesys,
+NICE gibi büyük çağrı merkezi platformlarının iş gücü yönetim
+modüllerinde standart hâline gelmiştir.
+
+## Modelin sınırları
+
+Erlang-A güçlü ama her şey değil. Tipik genellemeler:
+
+- **Heterojen sunucu** — yeni ajan vs deneyimli ajan farklı μ ile
+  çalışır; M/M/c varsayımı tek tip kabul eder.
+- **Çoklu sınıf müşteri** — VIP/genel ayrımı, geri arama (callback),
+  çapraz kanal (chat + voice).
+- **Sabır dağılımı exponential değil** — gerçek sabır lognormal veya
+  Weibull olabilir; bu **M/M/c + GI** (general impatience) modelidir.
+- **Geliş hızı zamansal** — λ saatlik tepelidir, sabit değil;
+  parça-parça analiz veya zamansal simülasyon gerekir.
+- **Servis dağılımı exponential değil** — gerçek hizmet süreleri
+  lognormal veya gamma dağılır; daha iyimser performans çıkar.
+
+Bu sınırların hepsi modelin "ortalama" kararları için kabul edilebilir
+sapmalar — kritik kararlar için Erlang-A baseline'ı + simülasyon
+düzeltmesi standart prosedürdür.

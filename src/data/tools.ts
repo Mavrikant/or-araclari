@@ -197,6 +197,16 @@ export const TOOLS: readonly Tool[] = [
     status: 'ready',
     guideSlug: 'sifir-toplamli-oyun',
   },
+  {
+    slug: 'erlang-a-bekleme-birakma',
+    title: 'Erlang-A Bekleme & Bırakma Analizci (M/M/c + abandonment)',
+    shortTitle: 'Erlang-A (M/M/c+M)',
+    description:
+      'Bekleyen müşterinin sabırsızlandığı modern çağrı merkezi modeli — λ, μ, sunucu sayısı c ve bireysel bırakma hızı θ ver; bırakma olasılığı P(abandon), efektif servis hızı, ortalama bekleme süresi ve durum dağılımı tarayıcıda anlık hesaplansın. θ > 0 olduğunda λ ≥ c·μ olsa bile sistem kararlıdır.',
+    category: 'olasilik',
+    status: 'ready',
+    guideSlug: 'erlang-a-sabirsiz-musteri',
+  },
 ] as const;
 
 export function getReadyTools(): readonly Tool[] {
