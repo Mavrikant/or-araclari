@@ -1,0 +1,258 @@
+---
+title: "İki Kişilik Sıfır Toplamlı Oyunlar: Saddle Point, Minimax ve LP"
+description: "Saf strateji, karışık strateji, minimax teoremi, von Neumann çözümü ve oyunu lineer programa dönüştürme — iki kişilik sıfır toplamlı oyunların Türkçe, sezgisel ve uygulamalı kapsamlı rehberi."
+pubDate: 2026-06-14
+relatedTool: "oyun-teorisi-cozucu"
+keywords:
+  - "oyun teorisi"
+  - "sıfır toplamlı oyun"
+  - "zero-sum game"
+  - "saddle point"
+  - "minimax"
+  - "maximin"
+  - "karışık strateji"
+  - "mixed strategy"
+  - "von Neumann"
+  - "dominant strateji"
+  - "Nash dengesi"
+  - "lineer programlama oyun"
+readingMinutes: 11
+faq:
+  - question: "Sıfır toplamlı oyun nedir ve neden 'sıfır toplam'?"
+    answer: "İki oyuncu (R ve C) arasında oynanan bir matris oyununda, bir oyuncunun kazandığı her birim diğerinin tam olarak kaybettiği birimdir; yani her hücrede R'ın kazancı + C'nin kazancı = 0. Bu varsayım analitik açıdan çok güçlüdür: tek bir payoff matrisi V[i][j] hem R'ın kazancını hem C'nin kaybını kodlar; iki oyuncunun çıkarları taban tabana karşıttır (strictly competitive). Klasik OR örnekleri: rekabetçi fiyatlandırma, askeri pozisyon seçimi, oyunlar (taş-kağıt-makas, matching pennies), parametrik finansal hedge'ler."
+  - question: "Saddle point (denge noktası) ile maximin/minimax arasındaki bağlantı nedir?"
+    answer: "maximin v_ = max_i (min_j V[i][j]) — R'ın 'en kötü durumda bile garanti edebileceği' kazanç tabanı. minimax v⁻ = min_j (max_i V[i][j]) — C'nin 'R en iyi yanıtı verse bile geçit vermek zorunda kalacağı' kazanç tavanı. Genelde v_ ≤ v⁻; eşitse (v_ = v⁻ = v*) oyunda saddle point vardır ve her iki oyuncu da deterministik (saf) strateji oynar — kararlı bir denge. Bir saddle hücresi (i*, j*) hem o satırın minimumu hem o sütunun maksimumudur; ne R satırını değiştirmek ister (azalır), ne C sütununu (artar). Bu yapı tam olarak Nash dengesinin saf strateji muadilidir."
+  - question: "Karışık strateji ne zaman gereklidir?"
+    answer: "Saddle point yoksa (v_ < v⁻) hiçbir saf strateji çifti kararlı değildir — biri sabit kalırsa diğeri kazancını artıracak şekilde sapar. Çözüm: en az bir oyuncu stratejilerini olasılıklarla rastgeleleştirsin. Karışık strateji p = (p_1, ..., p_m), R'ın i. stratejisini p_i olasılıkla oynayacağı bir dağılımdır (Σ p_i = 1, p_i ≥ 0). Von Neumann'ın 1928 minimax teoremi şunu söyler: her sonlu sıfır toplamlı oyun için biricik bir karışık denge ve oyun değeri v* vardır; v* = max_p min_q p^T V q = min_q max_p p^T V q. Pratikte karışık strateji 'tahmin edilemez' olma özelliğiyle stratejik avantaj sağlar — rakip sizi okuyamaz."
+  - question: "2×2 bir oyunun kapalı form çözümü nedir?"
+    answer: "Payoff V = [[a,b],[c,d]] ve saddle yoksa (yani D = a − b − c + d ≠ 0 ve closed form negatif olasılık üretmiyorsa): R'ın strateji = (p, 1−p) ile p = (d − c) / D; C'nin strateji = (q, 1−q) ile q = (d − b) / D; oyunun değeri v* = (a·d − b·c) / D. Matching pennies örneği: V = [[1,−1],[−1,1]], D = 4, p = q = 0.5, v* = 0 (adil oyun, kimse uzun vadede kazanamaz). Bu kapalı form, 2×2 oyunlarda LP çağırmadan anında sonuç verir; daha büyük matrisler için aynı mantık LP'ye genelleşir."
+  - question: "Oyun bir lineer programa nasıl çevrilir?"
+    answer: "R'ın LP'si: max v, s.t. Σ_i p_i · V[i][j] ≥ v  ∀j; Σ p_i = 1; p_i ≥ 0. Pratik hile: v'nin işareti belirsiz olduğu için tüm payoff'a sabit k eklenir (V'[i][j] = V[i][j] + k, k = max(0, 1 − min V)); böylece v > 0 garanti olur. Sonra x_i = p_i / v dönüşümü ile LP standart forma iner: min Σ x_i, s.t. Σ_i V'[i][j] · x_i ≥ 1 ∀j; x_i ≥ 0. Çözüm: v_shift = 1 / Σ x_i, p_i = x_i · v_shift ve orijinal değer v* = v_shift − k. C'nin LP'si simetrik dualdir (max Σ y_j, ≤ 1) — strong duality gereği aynı v_shift'i verir. Aracımız bu dönüşümü otomatik yapar ve glpk.js WASM çözücüsüne gönderir."
+  - question: "Dominant strateji elemesi LP'yi nasıl küçültür?"
+    answer: "Bir strateji başka bir strateji tarafından strictly dominate ediliyorsa, optimum karışık çözümde olasılığı 0'dır; matristen güvenle silinebilir. R için: satır i, satır k tarafından dominate olur ⇔ V[i][j] ≤ V[k][j] ∀j ve en az birinde sıkı küçük. C için: sütun j, sütun l tarafından dominate olur ⇔ V[i][j] ≥ V[i][l] ∀i ve en az birinde sıkı büyük (C için büyük R-kazancı kötü). Eleme iteratiftir: yeni elemeler önceki silmelerden sonra ortaya çıkabilir. Avantaj: LP değişken/kısıt sayısı düşer (özellikle büyük matrislerde önemli) ve manuel çözümde işlem azalır; oyunun değeri ve elenmeyen stratejilerin olasılıkları değişmez."
+  - question: "Maximin ve minimax aynı çıkmıyorsa hangisi 'oyunun değeri'?"
+    answer: "Saf strateji altında değiller; her ikisi de oyunun değerine yaklaşımdır: v_ alt sınır (R'ın garanti edebileceği), v⁻ üst sınır (C'nin müsaade edeceği). Karışık strateji devreye girince von Neumann'ın minimax teoremi gereği bu boşluk kapanır: max_p min_q E[V(p,q)] = min_q max_p E[V(p,q)] = v*. Yani karışık stratejilere izin verildiğinde maximin = minimax = oyun değeri v*; v_ ≤ v* ≤ v⁻. Pratik yorum: 'karar verme sırasını öğrenmek' karışık strateji oynayan rakibe karşı avantaj sağlamaz — bilgi simetrisi sağlanır."
+---
+
+Sıfır toplamlı oyun, iki rakibin tam tersi çıkarlara sahip olduğu en saf
+stratejik etkileşim modelidir. **Bir oyuncunun kazandığı her birim,
+diğerinin tam olarak kaybettiğidir.** Bu basit varsayım — von Neumann ve
+Morgenstern'in 1944'te modern oyun teorisini başlatan kitabının çekirdeği
+— rekabetçi karar problemlerini şaşırtıcı derecede güçlü matematiksel
+araçlarla çözer.
+
+## Problemin yapısı
+
+Oyunu **payoff matrisi** $V$ ile temsil ederiz. Satır oyuncusu R'ın
+seçenekleri $i = 1, \dots, m$; sütun oyuncusu C'nin seçenekleri
+$j = 1, \dots, n$. Hücre $V[i,j]$ = R'ın aynı zamanda C'nin kaybı olan
+kazancı:
+
+| R \ C | C₁ | C₂ |
+| --- | --- | --- |
+| R₁ | 1 | −1 |
+| R₂ | −1 | 1 |
+
+Yukarıdaki klasik **matching pennies** oyununda R yazı/tura seçer, C
+tahmin eder; tahmin doğruysa C kazanır (R kaybeder). Hücredeki +1, R'ın
+kazancı; aynı zamanda C'nin −1 kaybı.
+
+## Saf strateji: saddle point arama
+
+İlk adım her zaman aynı: **saddle point** var mı?
+
+- R, her satırın garanti edebileceği en az kazancı düşünür: satır
+  minimumları $r_i = \min_j V[i,j]$. R, kendine en güzel alt sınırı
+  veren satırı seçer: $v_{-} = \max_i r_i$ (**maximin** — "alt değer").
+- C, her sütunun zorunlu kalacağı en yüksek R-kazancını düşünür: sütun
+  maksimumları $c_j = \max_i V[i,j]$. C, en düşük tavanı tercih eder:
+  $v^{-} = \min_j c_j$ (**minimax** — "üst değer").
+
+Her zaman $v_{-} \le v^{-}$. Eşitse oyunun **saddle point**'i vardır:
+
+$$
+v_{-} = v^{-} = v^* \implies \exists\,(i^*, j^*):\ V[i^*, j^*] = v^*
+$$
+
+Saddle hücresi hem o satırın minimumu hem o sütunun maksimumudur. İki
+oyuncu da deterministik oynar; ne R satırını değiştirmek ister (azalır),
+ne C sütununu (artar). Klasik bir saddle örneği:
+
+| R \ C | C₁ | C₂ | C₃ | C₄ | min |
+| --- | --- | --- | --- | --- | --- |
+| R₁ | 8 | 2 | 9 | 5 | 2 |
+| **R₂** | 6 | **5** | 7 | 18 | **5** |
+| R₃ | 7 | 3 | −4 | 10 | −4 |
+| R₄ | 7 | 4 | 0 | 11 | 0 |
+| **max** | 8 | **5** | 9 | 18 | |
+
+$v_{-} = 5$ (R₂'nin min'i), $v^{-} = 5$ (C₂'nin max'ı), saddle = (R₂, C₂)
+= 5. Oyunun değeri 5'tir; R hep R₂'yi, C hep C₂'yi oynar.
+
+## Saddle yoksa: karışık strateji
+
+Matching pennies'e dönelim: $r = (-1, -1)$, $c = (1, 1)$,
+$v_{-} = -1 < 1 = v^{-}$. Saddle yok. Hiçbir saf strateji çifti kararlı
+değil — R yazı oynarsa C tura tahmin eder; R bunu fark eder, turaya
+geçer; C de tura tahminden vazgeçer, ad infinitum.
+
+Çözüm: **rastgeleleştir.** R, stratejilerini olasılıklarla seçsin —
+$p = (p_1, \dots, p_m)$ dağılımı. Aynı şekilde C: $q = (q_1, \dots, q_n)$.
+**von Neumann minimax teoremi** (1928), sonlu her sıfır toplamlı oyun
+için biricik bir karışık denge ve oyun değeri $v^*$ olduğunu garanti
+eder:
+
+$$
+v^* = \max_{p} \min_{q} p^\top V q = \min_{q} \max_{p} p^\top V q
+$$
+
+Bu eşitliğin kendisi şaşırtıcıdır: "önce kim taahhüt ederse o kaybeder"
+sezgisi karışık stratejilere geçince yıkılır. Her iki oyuncu da
+optimum karışık stratejisini "açıkça" duyurabilir; rakip yine de oyun
+değerini iyileştiremez.
+
+## 2×2 kapalı form
+
+Payoff $V = \begin{pmatrix} a & b \\ c & d \end{pmatrix}$ ve saddle
+yoksa, denge stratejilerinin kapalı formu vardır:
+
+$$
+D = a - b - c + d
+$$
+
+$$
+p_1 = \frac{d - c}{D}, \qquad q_1 = \frac{d - b}{D}, \qquad
+v^* = \frac{a d - b c}{D}
+$$
+
+Matching pennies: $a = d = 1$, $b = c = -1$, $D = 4$, $p_1 = q_1 = 0.5$,
+$v^* = 0$. Tamamen adil bir oyun; hiçbir oyuncu beklenen değerde
+kazanmaz.
+
+Daha ilginç bir örnek — Winston'ın klasik problemi
+$V = \begin{pmatrix} 2 & 5 \\ 4 & 1 \end{pmatrix}$:
+
+- $D = 2 - 5 - 4 + 1 = -6$
+- $p_1 = (1 - 4)/(-6) = 0.5$, $q_1 = (1 - 5)/(-6) = 2/3$
+- $v^* = (2 \cdot 1 - 5 \cdot 4)/(-6) = 18/6 = 3$
+
+R adil para atarak iki stratejisini eşit oynar; C üçte iki olasılıkla
+C₁'i, üçte bir olasılıkla C₂'yi seçer. Oyun değeri 3 (R'ın lehine).
+
+## Genel m×n: LP'ye dönüştürme
+
+İki strateji sayısı arttıkça kapalı form kaybolur; karışık denge
+**lineer program** olarak formüle edilir. R'ın LP'si:
+
+$$
+\max v \quad \text{s.t.} \quad \sum_i p_i \cdot V[i,j] \ge v \;\;\forall j,
+\quad \sum_i p_i = 1, \quad p_i \ge 0
+$$
+
+Yorumu: R, "C ne yaparsa yapsın" kendi beklenen kazancının taban olarak
+$v$'nin altına düşmemesini garanti edecek $p$ ve maksimum $v$'yi arıyor.
+
+LP'yi standart hâle getirmek için iki numara:
+
+1. **Pozitiflik kaydırması.** $v$ negatif olabilir; standart LP
+   değişkenleri $\ge 0$ varsayar. Tüm matrise sabit $k$ ekle —
+   $V'[i,j] = V[i,j] + k$, $k = \max(0, 1 - \min V)$ — böylece
+   $v_{\text{shift}} = v + k \ge 1 > 0$. Sonunda $v^* = v_{\text{shift}} - k$.
+2. **Değişken dönüşümü.** $x_i = p_i / v_{\text{shift}}$ tanımla. Toplam
+   kısıtı $\sum p_i = 1$ şuna dönüşür: $\sum x_i = 1 / v_{\text{shift}}$.
+   $v_{\text{shift}}$'i maksimize etmek $\sum x_i$'yi minimize etmekle
+   eşdeğer.
+
+Sonuç — temiz, standart LP:
+
+$$
+\min \sum_i x_i \quad \text{s.t.} \quad \sum_i V'[i,j] \cdot x_i \ge 1 \;\;\forall j,
+\quad x_i \ge 0
+$$
+
+Çözümde $v_{\text{shift}} = 1 / \sum x_i^*$, $p_i = x_i^* \cdot v_{\text{shift}}$,
+$v^* = v_{\text{shift}} - k$. C'nin LP'si **simetrik dual**dir:
+
+$$
+\max \sum_j y_j \quad \text{s.t.} \quad \sum_j V'[i,j] \cdot y_j \le 1 \;\;\forall i,
+\quad y_j \ge 0
+$$
+
+LP **strong duality** gereği her iki LP aynı $v_{\text{shift}}$'i verir.
+Aracımız bu dönüşümü otomatik kurar ve hem R hem C için LP'yi glpk.js
+WASM çözücüsüne gönderir.
+
+## Dominant strateji elemesi
+
+LP'yi büyütmeden önce **strictly dominated** stratejileri eleyebiliriz —
+optimum karışık çözümde olasılığı sıfır olduğu için silinmeleri sonucu
+değiştirmez:
+
+- Satır $i$, satır $k$ tarafından dominate olur ⇔ $V[i,j] \le V[k,j]$
+  her $j$ için ve en az birinde sıkı küçük. (R, hiçbir durumda daha iyi
+  veya en azından eşit olamayan stratejiyi atar.)
+- Sütun $j$, sütun $l$ tarafından dominate olur ⇔ $V[i,j] \ge V[i,l]$
+  her $i$ için ve en az birinde sıkı büyük. (C, hiçbir durumda R'a daha
+  az veremeyen stratejiyi atar.)
+
+Eleme iteratif uygulanır — yeni elemeler önceki silmelerden sonra ortaya
+çıkar. Aracımız 'Dominant strateji elemesi uygula' kutucuğu işaretliyse
+bu adımı LP öncesi otomatik yapar ve hangi satır/sütunun hangi tarafından
+elendiğini raporlar.
+
+### Sayısal örnek — taş-kağıt-makas
+
+$$
+V = \begin{pmatrix}
+0 & -1 & 1 \\
+1 & 0 & -1 \\
+-1 & 1 & 0
+\end{pmatrix}
+$$
+
+Tüm satırların minimumu −1, tüm sütunların maksimumu +1; $v_{-} = -1 \ne 1 = v^{-}$,
+saddle yok. Simetri gereği denge stratejisi
+$p = q = (1/3, 1/3, 1/3)$, $v^* = 0$. Hiçbir satır/sütun dominate
+edilmiyor (simetri); LP doğrudan çözer.
+
+## Saf vs karışık — pratikte hangisi?
+
+| Oyun yapısı | Çözüm | Yorum |
+| --- | --- | --- |
+| Saddle var ($v_{-} = v^{-}$) | Saf strateji | Her iki oyuncu sabit oynar; saddle hücresi denge. |
+| Saddle yok, 2×2 | Kapalı form | $p, q, v^*$ doğrudan formülle. |
+| Saddle yok, $m \times n$ büyük | LP | glpk.js (WASM, tarayıcıda); strong duality ile her iki strateji birlikte. |
+| Yarı-saddle (zayıf dominasyon) | Eleme + LP | Önce baskınlığı temizle, kalan oyunu LP çöz. |
+
+## Sıfır toplamlı vs genel toplam (Nash)
+
+Sıfır toplamlı oyunlar oyun teorisinin en "iyi davranan" sınıfıdır:
+denge biriciktir (değer biricik, stratejiler genelde biricik), kolayca
+LP ile çözülür, hesaplamalı karmaşıklık polinomdur. Genel toplam
+oyunlar (Nash dengesi) çok daha zordur: birden fazla denge olabilir,
+denge bulmak PPAD-tam (polinom değil), kazançlar simetrik dengeli
+değildir, koordinasyon ve sinyalleşme devreye girer.
+
+Pratikte sıfır toplam varsayımı sadece tam-rekabetçi durumlarda (oyun,
+askeri/güvenlik, sıfır toplamlı finansal hedge) tam doğrudur; iş
+dünyasındaki çoğu rekabet kazan-kazan ya da kaybet-kaybet hücreler
+içerir ve genel toplam modeli gerektirir. Yine de sıfır toplam, en
+kötü senaryo analizi olarak değerlidir: "rakip benim aleyhime
+çalışmaya kararlıysa elimden gelen en iyi nedir?"
+
+## Modelin sınırları
+
+- **İki oyuncu.** Üç ve fazlası "koalisyon teorisi"ne girer (kooperatif
+  oyunlar, Shapley değeri). Aracımız iki oyuncuyla sınırlı.
+- **Sıfır toplam.** Genel toplam oyunlarda LP çalışmaz; bimatris
+  oyunları, Nash dengesi için Lemke-Howson gibi tamamlayıcılık
+  algoritmaları gerekir.
+- **Tamamlanmış bilgi.** Her iki oyuncu payoff matrisini bilir
+  varsayılır. Eksik bilgi (Bayesian games) farklı bir modeldir.
+- **Tek dönem.** Tekrarlanan oyunlarda strateji uzayı çok genişler
+  (folk teoremi, trigger stratejileri).
+
+Bu sınırlar içinde sıfır toplamlı oyun çözümü hâlâ en sezgisel ve en
+güçlü stratejik analiz aracıdır — von Neumann'ın 100 yıl önce
+keşfettiği denge günümüzde finans, güvenlik, ağ tasarımı ve makine
+öğrenmesi (adversarial robustness) gibi alanlarda canlıdır.

@@ -187,6 +187,16 @@ export const TOOLS: readonly Tool[] = [
     status: 'ready',
     guideSlug: 'sonlu-kapasite-kuyruk',
   },
+  {
+    slug: 'oyun-teorisi-cozucu',
+    title: 'İki Kişilik Sıfır Toplamlı Oyun Çözücü',
+    shortTitle: 'Oyun Teorisi',
+    description:
+      'Satır oyuncusunun getiri matrisini gir; saddle point varsa saf strateji denge noktasını, yoksa karışık stratejiyi LP üzerinden (glpk.js WASM) tarayıcıda anlık çöz. Maximin / minimax sınırları, dominant strateji elemesi ve oyunun değeri v* tek geçişte.',
+    category: 'optimizasyon',
+    status: 'ready',
+    guideSlug: 'sifir-toplamli-oyun',
+  },
 ] as const;
 
 export function getReadyTools(): readonly Tool[] {
