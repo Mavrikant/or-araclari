@@ -1,0 +1,684 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import { withBase, SITE } from '../../data/site';
+import { TOOLS } from '../../data/tools';
+
+const tool = TOOLS.find((t) => t.slug === 'oyun-teorisi-cozucu')!;
+const guideHref = tool.guideSlug ? withBase(`/rehberler/${tool.guideSlug}`) : null;
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: tool.title,
+  applicationCategory: 'WebApplication',
+  operatingSystem: 'Any',
+  description: tool.description,
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'TRY' },
+  inLanguage: SITE.locale,
+  isAccessibleForFree: true,
+};
+---
+
+<BaseLayout
+  title={tool.title}
+  description={tool.description}
+  image={withBase(`/og/${tool.slug}.png`)}
+  imageAlt={`${tool.title} — OR Araçları`}
+>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+  </Fragment>
+
+  <Container as="section" size="wide" class="pt-12 sm:pt-16">
+    <p class="text-sm font-medium text-brand-600 dark:text-accent-400">
+      <a href={withBase('/araclar')} class="hover:underline">Araçlar</a>
+      <span class="text-slate-400 dark:text-slate-600"> / </span>
+      <span>Optimizasyon</span>
+    </p>
+    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">
+      {tool.title}
+    </h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
+      Satır oyuncusunun (R) getiri matrisini gir; saddle point varsa saf
+      strateji, yoksa karışık strateji (LP üzerinden) ile oyunun değerini
+      v*, her oyuncunun optimum strateji olasılıklarını anlık olarak
+      hesaplayalım. Sıfır toplamlı varsayımı: sütun oyuncusunun (C)
+      kazancı her hücrede satır oyuncusunun kaybıdır.
+      {guideHref && (
+        <a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>
+      )}
+    </p>
+  </Container>
+
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,380px)_1fr] print:block">
+    <form id="game-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="sample-pennies-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Matching pennies
+        </button>
+        <button type="button" id="sample-rps-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Taş-Kağıt-Makas
+        </button>
+        <button type="button" id="sample-saddle-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Saddle (Taha)
+        </button>
+        <button type="button" id="reset-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+          Sıfırla
+        </button>
+      </div>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Strateji adları <span class="font-normal text-slate-500">(opsiyonel)</span>
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Satır oyuncusu (R) — satır = strateji
+          </span>
+          <textarea id="rows-input" rows="3" spellcheck="false" autocomplete="off"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            placeholder="R1&#10;R2"></textarea>
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Sütun oyuncusu (C) — virgülle ayrılmış
+          </span>
+          <input type="text" id="cols-input" autocomplete="off" placeholder="C1, C2"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+      </fieldset>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Getiri matrisi (R'ın kazancı)
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Satır = R'ın stratejisi, sütun = C'nin stratejisi. Boşluk, virgül veya tab ile ayır.
+          </span>
+          <textarea id="payoff-input" rows="6" spellcheck="false" autocomplete="off" required
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            placeholder=" 1  -1&#10;-1   1"></textarea>
+        </label>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          Sıfır toplam: hücredeki değer R'ın kazancı = C'nin kaybı.
+          Negatif değerler de geçerli.
+        </p>
+      </fieldset>
+
+      <fieldset class="space-y-2">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Seçenekler
+        </legend>
+        <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+          <input type="checkbox" id="dominance-toggle" checked class="rounded text-brand-600 focus:ring-brand-500" />
+          <span>Dominant strateji elemesi uygula (varsa LP'yi küçült)</span>
+        </label>
+      </fieldset>
+
+      <button type="submit" id="solve-btn" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">
+        <span id="solve-btn-label">Çöz</span>
+      </button>
+
+      <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
+    </form>
+
+    <section id="output" hidden aria-live="polite" class="space-y-6">
+      <div id="value-card" class="rounded-2xl border border-emerald-300 bg-emerald-50/60 p-5 dark:border-emerald-900/40 dark:bg-emerald-950/30">
+        <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+          Oyunun değeri v*
+        </p>
+        <p id="value-readout" class="mt-1 font-display text-3xl font-bold tabular-nums text-emerald-900 dark:text-emerald-100">—</p>
+        <p id="value-sub" class="mt-1 text-xs text-emerald-700/80 dark:text-emerald-200/70">—</p>
+      </div>
+
+      <div id="saddle-block" hidden class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40">
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Saf strateji (saddle point)
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          maximin = minimax olduğu için her iki oyuncu da deterministik
+          oynar. Saddle hücresi kararlı bir denge noktasıdır — hiçbir
+          oyuncunun tek başına stratejisini değiştirmesi kendisine
+          yaramaz.
+        </p>
+        <dl id="saddle-grid" class="mt-4 grid gap-3 sm:grid-cols-3"></dl>
+        <div id="saddle-cells" class="mt-4 text-xs text-slate-600 dark:text-slate-400"></div>
+      </div>
+
+      <div id="mixed-block" hidden class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40">
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Karışık strateji
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Saddle yok (maximin &lt; minimax). En az bir oyuncu
+          rastgeleleştirmeli. LP formülasyonu glpk.js WASM çözücüsüne
+          gönderildi.
+        </p>
+        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Satır oyuncusu (R)
+            </p>
+            <div id="row-strategy-table" class="mt-2 overflow-x-auto"></div>
+          </div>
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Sütun oyuncusu (C)
+            </p>
+            <div id="col-strategy-table" class="mt-2 overflow-x-auto"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40">
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Maximin / minimax çözümlemesi
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Her satırın minimumu (R'ın garanti edebileceği en az) ve her
+          sütunun maksimumu (C'nin geçit vermek zorunda kalacağı en çok).
+        </p>
+        <div id="bounds-table" class="mt-4 overflow-x-auto"></div>
+      </div>
+
+      <div id="dominance-block" hidden class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40">
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Dominant strateji elemesi
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Strictly dominated satır/sütunlar aşağıdaki sırayla elendi —
+          oyunun değeri değişmedi, sadece LP küçüldü.
+        </p>
+        <ol id="dominance-steps" class="mt-3 space-y-1 text-sm text-slate-700 dark:text-slate-200"></ol>
+      </div>
+    </section>
+  </Container>
+
+  {guideHref && (
+    <Container as="section" size="wide" class="py-12 sm:py-16">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900/40">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">
+          Konuyu derinleştir
+        </p>
+        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          İki kişilik sıfır toplamlı oyunlar ve minimax teoremi
+        </h2>
+        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+          Von Neumann'ın minimax teoremi, saddle point ve karışık denge
+          arasındaki köprü, 2×2 kapalı form, baskınlık elemesi, oyunu
+          LP'ye dönüştürme tekniği ve klasik örnekler.
+        </p>
+        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">
+          Rehberi oku →
+        </a>
+      </div>
+    </Container>
+  )}
+</BaseLayout>
+
+<script>
+  import {
+    analyzePureStrategy,
+    reduceByDominance,
+    prepareMixedLp,
+    decodeLpSolution,
+    GameError,
+  } from '../../lib/game';
+  import { parseLp, solveLp, LpParseError, LpSolveError } from '../../lib/lp';
+
+  interface Sample {
+    rows: string;
+    cols: string;
+    payoff: string;
+  }
+  const SAMPLE_PENNIES: Sample = {
+    rows: 'Yazı\nTura',
+    cols: 'Yazı, Tura',
+    payoff: ' 1  -1\n-1   1',
+  };
+  const SAMPLE_RPS: Sample = {
+    rows: 'Taş\nKağıt\nMakas',
+    cols: 'Taş, Kağıt, Makas',
+    payoff: ' 0  -1   1\n 1   0  -1\n-1   1   0',
+  };
+  const SAMPLE_SADDLE: Sample = {
+    rows: 'R1\nR2\nR3\nR4',
+    cols: 'C1, C2, C3, C4',
+    payoff: ' 8   2   9   5\n 6   5   7  18\n 7   3  -4  10\n 7   4   0  11',
+  };
+
+  const STORAGE_KEY = 'game-state-v1';
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el as T;
+  };
+
+  const form = $<HTMLFormElement>('game-form');
+  const rowsInput = $<HTMLTextAreaElement>('rows-input');
+  const colsInput = $<HTMLInputElement>('cols-input');
+  const payoffInput = $<HTMLTextAreaElement>('payoff-input');
+  const dominanceToggle = $<HTMLInputElement>('dominance-toggle');
+  const samplePenniesBtn = $('sample-pennies-btn');
+  const sampleRpsBtn = $('sample-rps-btn');
+  const sampleSaddleBtn = $('sample-saddle-btn');
+  const resetBtn = $('reset-btn');
+  const solveBtn = $<HTMLButtonElement>('solve-btn');
+  const solveBtnLabel = $('solve-btn-label');
+  const errorBox = $('error-box');
+  const output = $('output');
+  const valueReadout = $('value-readout');
+  const valueSub = $('value-sub');
+  const saddleBlock = $('saddle-block');
+  const saddleGrid = $('saddle-grid');
+  const saddleCells = $('saddle-cells');
+  const mixedBlock = $('mixed-block');
+  const rowStrategyTable = $('row-strategy-table');
+  const colStrategyTable = $('col-strategy-table');
+  const boundsTable = $('bounds-table');
+  const dominanceBlock = $('dominance-block');
+  const dominanceSteps = $('dominance-steps');
+
+  function escapeHtml(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+  function fmt(n: number, decimals = 4): string {
+    if (!Number.isFinite(n)) return '∞';
+    if (Math.abs(n) < 1e-10) return '0';
+    return n
+      .toFixed(decimals)
+      .replace(/\.?0+$/, '')
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  }
+  function parseLines(text: string): string[] {
+    return text
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }
+  function parseListCsv(text: string): string[] {
+    return text
+      .split(/[,;]/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }
+  function parseMatrix(text: string): number[][] {
+    const rows = text
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+    if (rows.length === 0) throw new GameError('Getiri matrisi boş.');
+    const matrix: number[][] = [];
+    let expectedCols = -1;
+    rows.forEach((line, idx) => {
+      const parts = line.split(/[\s,;\t]+/).filter((s) => s.length > 0);
+      const nums = parts.map((p) => Number(p.replace(',', '.')));
+      if (nums.some((n) => !Number.isFinite(n))) {
+        throw new GameError(`Satır ${idx + 1} ayrıştırılamadı: "${line}".`);
+      }
+      if (expectedCols === -1) expectedCols = nums.length;
+      else if (nums.length !== expectedCols) {
+        throw new GameError(
+          `Satır ${idx + 1} sütun sayısı diğerleriyle aynı olmalı (${expectedCols} bekleniyor, ${nums.length} verildi).`,
+        );
+      }
+      matrix.push(nums);
+    });
+    return matrix;
+  }
+
+  type SavedState = { rows?: string; cols?: string; payoff?: string; dominance?: boolean };
+  function loadState(): void {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        applySample(SAMPLE_PENNIES);
+        return;
+      }
+      const s = JSON.parse(raw) as SavedState;
+      if (typeof s.rows === 'string') rowsInput.value = s.rows;
+      if (typeof s.cols === 'string') colsInput.value = s.cols;
+      if (typeof s.payoff === 'string') payoffInput.value = s.payoff;
+      if (typeof s.dominance === 'boolean') dominanceToggle.checked = s.dominance;
+    } catch {
+      /* yoksa örneği uygula. */
+    }
+  }
+  function saveState(): void {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          rows: rowsInput.value,
+          cols: colsInput.value,
+          payoff: payoffInput.value,
+          dominance: dominanceToggle.checked,
+        } satisfies SavedState),
+      );
+    } catch {
+      /* sessage. */
+    }
+  }
+  function applySample(s: Sample): void {
+    rowsInput.value = s.rows;
+    colsInput.value = s.cols;
+    payoffInput.value = s.payoff;
+    saveState();
+    clearError();
+  }
+
+  function showError(msg: string): void {
+    errorBox.textContent = msg;
+    errorBox.hidden = false;
+    output.hidden = true;
+  }
+  function clearError(): void {
+    errorBox.hidden = true;
+    errorBox.textContent = '';
+  }
+
+  function defaultNames(prefix: string, count: number): string[] {
+    return Array.from({ length: count }, (_, i) => `${prefix}${i + 1}`);
+  }
+
+  function renderBounds(
+    payoff: number[][],
+    rowNames: string[],
+    colNames: string[],
+    rowMinima: number[],
+    colMaxima: number[],
+    maximin: number,
+    minimax: number,
+    saddleSet: Set<string>,
+  ): void {
+    const headerCells = colNames
+      .map(
+        (c, j) => `<th scope="col" class="px-2 py-1.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">${escapeHtml(c)}<br><span class="font-mono text-[10px] text-amber-700 dark:text-amber-300">max=${fmt(colMaxima[j])}</span></th>`,
+      )
+      .join('');
+    const rows = payoff
+      .map((row, i) => {
+        const cells = row
+          .map((v, j) => {
+            const isSaddle = saddleSet.has(`${i},${j}`);
+            const cellCls = isSaddle
+              ? 'bg-emerald-100 font-semibold text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-100'
+              : 'text-slate-700 dark:text-slate-200';
+            return `<td class="${cellCls} px-2 py-1.5 text-right font-mono text-sm tabular-nums">${fmt(v)}</td>`;
+          })
+          .join('');
+        const rowMinCls =
+          Math.abs(rowMinima[i] - maximin) < 1e-10
+            ? 'bg-brand-50 font-semibold text-brand-900 dark:bg-brand-900/40 dark:text-brand-100'
+            : 'text-slate-700 dark:text-slate-300';
+        return `<tr class="border-t border-slate-200 dark:border-slate-800">
+            <th scope="row" class="px-2 py-1.5 text-left text-sm font-medium text-slate-800 dark:text-slate-100">${escapeHtml(rowNames[i])}</th>
+            ${cells}
+            <td class="${rowMinCls} px-2 py-1.5 text-right font-mono text-sm tabular-nums">${fmt(rowMinima[i])}</td>
+          </tr>`;
+      })
+      .join('');
+
+    const colMaxRow = colMaxima
+      .map((v) => {
+        const cls =
+          Math.abs(v - minimax) < 1e-10
+            ? 'bg-brand-50 font-semibold text-brand-900 dark:bg-brand-900/40 dark:text-brand-100'
+            : 'text-slate-700 dark:text-slate-300';
+        return `<td class="${cls} px-2 py-1.5 text-right font-mono text-sm tabular-nums">${fmt(v)}</td>`;
+      })
+      .join('');
+
+    boundsTable.innerHTML = `<table class="min-w-full text-left">
+        <thead class="bg-slate-50 dark:bg-slate-900/60">
+          <tr>
+            <th scope="col" class="px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">R \\ C</th>
+            ${headerCells}
+            <th scope="col" class="px-2 py-1.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">min<sub>j</sub></th>
+          </tr>
+        </thead>
+        <tbody>${rows}
+          <tr class="border-t-2 border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/60">
+            <th scope="row" class="px-2 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">max<sub>i</sub></th>
+            ${colMaxRow}
+            <td class="px-2 py-1.5"></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">
+        Vurgulu hücreler: yeşil = saddle, mavi = maximin/minimax bağlayıcı satır/sütun.
+        v<sub>−</sub> (maximin) = <span class="font-mono">${fmt(maximin)}</span>,
+        v<sup>−</sup> (minimax) = <span class="font-mono">${fmt(minimax)}</span>.
+      </p>`;
+  }
+
+  function renderStrategy(
+    el: HTMLElement,
+    names: string[],
+    probs: number[],
+  ): void {
+    const rows = names
+      .map((name, i) => {
+        const p = probs[i];
+        const active = p > 1e-6;
+        const pillCls = active
+          ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100'
+          : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400';
+        const barCls = active ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-slate-300 dark:bg-slate-700';
+        const barWidth = Math.max(0, Math.min(100, p * 100));
+        return `<tr class="border-t border-slate-200 dark:border-slate-800">
+            <th scope="row" class="px-2 py-1.5 text-left text-sm font-medium text-slate-800 dark:text-slate-100">${escapeHtml(name)}</th>
+            <td class="px-2 py-1.5 text-right font-mono text-sm tabular-nums">
+              <span class="inline-block rounded px-1.5 py-0.5 text-xs ${pillCls}">${fmt(p, 4)}</span>
+            </td>
+            <td class="px-2 py-1.5">
+              <div class="h-2 w-full overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
+                <div class="h-full ${barCls}" style="width:${barWidth.toFixed(2)}%"></div>
+              </div>
+            </td>
+          </tr>`;
+      })
+      .join('');
+    el.innerHTML = `<table class="min-w-full text-left">
+        <thead class="bg-slate-50 dark:bg-slate-900/60">
+          <tr>
+            <th scope="col" class="px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Strateji</th>
+            <th scope="col" class="px-2 py-1.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Olasılık</th>
+            <th scope="col" class="w-full px-2 py-1.5"></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+  function renderSaddle(
+    rowNames: string[],
+    colNames: string[],
+    maximin: number,
+    minimax: number,
+    saddles: Array<{ row: number; col: number; value: number }>,
+  ): void {
+    saddleGrid.innerHTML = `
+      <div class="rounded-lg bg-white/70 px-4 py-3 dark:bg-slate-950/40">
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">v<sub>−</sub> (alt değer)</p>
+        <p class="mt-1 font-display text-lg font-bold text-emerald-900 dark:text-emerald-100">${fmt(maximin)}</p>
+        <p class="text-xs text-emerald-700/70 dark:text-emerald-300/70">maximin — R'ın garantisi</p>
+      </div>
+      <div class="rounded-lg bg-white/70 px-4 py-3 dark:bg-slate-950/40">
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">v<sup>−</sup> (üst değer)</p>
+        <p class="mt-1 font-display text-lg font-bold text-emerald-900 dark:text-emerald-100">${fmt(minimax)}</p>
+        <p class="text-xs text-emerald-700/70 dark:text-emerald-300/70">minimax — C'nin tavanı</p>
+      </div>
+      <div class="rounded-lg bg-white/70 px-4 py-3 dark:bg-slate-950/40">
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Saddle sayısı</p>
+        <p class="mt-1 font-display text-lg font-bold text-emerald-900 dark:text-emerald-100">${saddles.length}</p>
+        <p class="text-xs text-emerald-700/70 dark:text-emerald-300/70">${saddles.length === 1 ? 'Tekil denge' : 'Çoklu denge'}</p>
+      </div>`;
+    const cellList = saddles
+      .map((s) => `<li><span class="font-mono">(${escapeHtml(rowNames[s.row])}, ${escapeHtml(colNames[s.col])})</span> = <span class="font-mono">${fmt(s.value)}</span></li>`)
+      .join('');
+    saddleCells.innerHTML = `<p class="mb-1 font-medium">Saddle hücreleri:</p><ul class="ml-4 list-disc space-y-0.5">${cellList}</ul>`;
+  }
+
+  function renderDominanceSteps(
+    steps: Array<{ kind: 'row' | 'col'; removedIndex: number; dominatorIndex: number }>,
+    rowNames: string[],
+    colNames: string[],
+  ): void {
+    if (steps.length === 0) {
+      dominanceBlock.hidden = true;
+      return;
+    }
+    dominanceSteps.innerHTML = steps
+      .map((s) => {
+        const names = s.kind === 'row' ? rowNames : colNames;
+        const label = s.kind === 'row' ? 'Satır' : 'Sütun';
+        return `<li><span class="font-mono">${label} «${escapeHtml(names[s.removedIndex])}»</span> elendi — <span class="font-mono">«${escapeHtml(names[s.dominatorIndex])}»</span> tarafından dominate edildi.</li>`;
+      })
+      .join('');
+    dominanceBlock.hidden = false;
+  }
+
+  async function solveAndRender(): Promise<void> {
+    clearError();
+    let payoff: number[][];
+    try {
+      payoff = parseMatrix(payoffInput.value);
+    } catch (err) {
+      showError(err instanceof Error ? err.message : String(err));
+      return;
+    }
+
+    const m = payoff.length;
+    const n = payoff[0].length;
+    const rowNamesRaw = parseLines(rowsInput.value);
+    const colNamesRaw = parseListCsv(colsInput.value);
+    const rowNames =
+      rowNamesRaw.length === m ? rowNamesRaw : defaultNames('R', m);
+    const colNames =
+      colNamesRaw.length === n ? colNamesRaw : defaultNames('C', n);
+
+    /* Saf strateji analizi tüm matriste; karışık LP için (toggle açıksa)
+     * dominance elemesi sonrası küçültülmüş matrisle çalış. */
+    let pure;
+    try {
+      pure = analyzePureStrategy(payoff);
+    } catch (err) {
+      showError(err instanceof Error ? err.message : String(err));
+      return;
+    }
+
+    const saddleSet = new Set(pure.saddlePoints.map((s) => `${s.row},${s.col}`));
+    renderBounds(payoff, rowNames, colNames, pure.rowMinima, pure.colMaxima, pure.maximin, pure.minimax, saddleSet);
+
+    output.hidden = false;
+
+    if (pure.hasSaddlePoint) {
+      valueReadout.textContent = fmt(pure.maximin);
+      valueSub.textContent = `Saf strateji — saddle (${rowNames[pure.saddlePoints[0].row]}, ${colNames[pure.saddlePoints[0].col]})${pure.saddlePoints.length > 1 ? ' + diğerleri' : ''}.`;
+      saddleBlock.hidden = false;
+      mixedBlock.hidden = true;
+      renderSaddle(rowNames, colNames, pure.maximin, pure.minimax, pure.saddlePoints);
+      dominanceBlock.hidden = true;
+      saveState();
+      return;
+    }
+
+    /* Karışık strateji yolu: opsiyonel dominance, sonra LP. */
+    saddleBlock.hidden = true;
+    let reduced = payoff;
+    let rowMap = payoff.map((_, i) => i);
+    let colMap = payoff[0].map((_, j) => j);
+    let dominanceSteps: ReturnType<typeof reduceByDominance>['steps'] = [];
+    if (dominanceToggle.checked) {
+      const dr = reduceByDominance(payoff);
+      reduced = dr.reduced;
+      rowMap = dr.rowMap;
+      colMap = dr.colMap;
+      dominanceSteps = dr.steps;
+    }
+    renderDominanceSteps(dominanceSteps, rowNames, colNames);
+
+    /* Edge: dominance reduction saddle'a kadar düşürdüyse (örneğin
+     * indirgeme sonrası 1×1) tek hücre çözümü. */
+    if (reduced.length === 1 && reduced[0].length === 1) {
+      const v = reduced[0][0];
+      valueReadout.textContent = fmt(v);
+      valueSub.textContent = `Dominance sonrası 1×1 kaldı — pür strateji (${rowNames[rowMap[0]]}, ${colNames[colMap[0]]}).`;
+      mixedBlock.hidden = true;
+      saveState();
+      return;
+    }
+
+    solveBtn.disabled = true;
+    solveBtnLabel.textContent = 'Çözülüyor...';
+    try {
+      const { shift, rowLp, colLp } = prepareMixedLp(reduced);
+      const xRes = await solveLp(parseLp(rowLp));
+      const yRes = await solveLp(parseLp(colLp));
+      if (xRes.status !== 'optimal' || yRes.status !== 'optimal') {
+        throw new GameError(
+          `LP optimal değil (satır: ${xRes.status}, sütun: ${yRes.status}). Lütfen matrisi kontrol edin.`,
+        );
+      }
+      const xs = xRes.variables.map((v) => v.value);
+      const ys = yRes.variables.map((v) => v.value);
+      const sol = decodeLpSolution(xs, ys, shift);
+
+      /* Strateji vektörlerini orijinal m × n boyutuna geri haritala (elenenler 0). */
+      const rowProb = new Array<number>(m).fill(0);
+      const colProb = new Array<number>(n).fill(0);
+      rowMap.forEach((origIdx, k) => (rowProb[origIdx] = sol.rowStrategy[k]));
+      colMap.forEach((origIdx, k) => (colProb[origIdx] = sol.colStrategy[k]));
+
+      valueReadout.textContent = fmt(sol.value);
+      valueSub.textContent = `Karışık strateji — minimax teoremi gereği v* = ${fmt(pure.maximin)} ≤ v ≤ ${fmt(pure.minimax)} aralığında.`;
+      mixedBlock.hidden = false;
+      renderStrategy(rowStrategyTable, rowNames, rowProb);
+      renderStrategy(colStrategyTable, colNames, colProb);
+      saveState();
+    } catch (err) {
+      if (err instanceof GameError || err instanceof LpParseError || err instanceof LpSolveError) {
+        showError(err.message);
+      } else {
+        showError(err instanceof Error ? err.message : String(err));
+      }
+    } finally {
+      solveBtn.disabled = false;
+      solveBtnLabel.textContent = 'Çöz';
+    }
+  }
+
+  /* --- Wiring --- */
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    void solveAndRender();
+  });
+  samplePenniesBtn.addEventListener('click', () => applySample(SAMPLE_PENNIES));
+  sampleRpsBtn.addEventListener('click', () => applySample(SAMPLE_RPS));
+  sampleSaddleBtn.addEventListener('click', () => applySample(SAMPLE_SADDLE));
+  resetBtn.addEventListener('click', () => {
+    rowsInput.value = '';
+    colsInput.value = '';
+    payoffInput.value = '';
+    dominanceToggle.checked = true;
+    output.hidden = true;
+    clearError();
+    saveState();
+  });
+  [rowsInput, colsInput, payoffInput].forEach((el) =>
+    el.addEventListener('input', () => saveState()),
+  );
+  dominanceToggle.addEventListener('change', () => saveState());
+
+  loadState();
+</script>
