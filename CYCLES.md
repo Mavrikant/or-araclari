@@ -392,3 +392,27 @@ döngüde nötralize oldu (sırf 🟢 kod + içerik + doc).
 **İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber, mevcut deseni birebir takip).
 
 **Sıradaki:** F-MINCOST (Min-Cost Flow / Maks-Akış — L efor, ulaştırma probleminin genelleştirilmesi), F-ERLANG_A (Erlang-A — M efor, abandonment'lı çoklu sunucu) ya da Q-AUDIT-YAML (M efor, breaking-change riski). Esbuild high-severity advisory (Astro 2.4.5 downgrade ister, 🔴 KIRMIZI) Dependabot tarafından açılan PR'ı kapatamıyor; insan kararı gerekiyor — backlog'a yeni satır.
+
+---
+
+## DÖNGÜ #18 — 2026-06-15
+
+**Yapılan:** F-ERLANG_A — Erlang-A Bekleme & Bırakma Analizci (M/M/c + abandonment) ve uzun-form Türkçe sabırsız müşteri rehberi yayınlandı. Erlang-C'nin sınırsız sabırlı müşteri varsayımını gevşetir; bekleyen her müşterinin θ oranında üstel bırakacağı varsayımıyla sistem λ > c·μ olsa bile kararlı.
+
+**Detay:**
+- `src/lib/queue-erlang-a.ts` (+170) — saf algoritma: doğum-ölüm zinciri özyinelemesi (`q_0 = 1`, `q_n = q_{n-1} · a / (n ≤ c ? n : c + (n−c)·θ/μ)`), `n > c` bölgesinde tail < 1e-12 ya da n > 5000 güvenlik kapağıyla truncate, P_n normalize. 8 metrik tek geçişte: P₀, P(W>0) = Σ_{n≥c} P_n, Lq = Σ_{n>c} (n−c) P_n, L = Σ n P_n, Wq = Lq/λ, W = L/λ, λ_aban = θ·Lq, P(abandon) = λ_aban/λ, λ_served = λ − λ_aban.
+- `src/lib/queue-erlang-a.test.ts` (+140, **17 vitest**) — θ=0 c=1 ile M/M/1 birebir (6 ondalık), θ=0 c=2 ile Erlang-C birebir (6 ondalık), overloaded λ>c·μ kararlılığı (P(abandon) ∈ (0,1), finite Lq), λ_aban = θ·Lq özdeşliği, mass balance λ_aban + λ_served = λ, Little Yasası (Lq = λ·Wq, L = λ·W), θ monotonluğu (0.1, 1, 10 → bırakma ↑, Lq ↓, Wq ↓), state probabilities sum ≈ 1 (8 ondalık), P(W>0) tail kimliği, θ→∞ "loss limit" (Lq < 0.01), θ→0 "Erlang-C limit" eşleşmesi, M/M/1 indirgemesi, θ=0 + ρ≥1 validation hatası, c > 200 + negative θ validation.
+- `src/pages/araclar/erlang-a-bekleme-birakma.astro` (+395) — mobil-öncelikli form (λ, μ, c, θ), bırakma olasılığı renk-kodlu öne çıkan kart (yeşil ≤ %2, sarı ≤ %10, kırmızı > %10), 8 metrik paneli (offered load, ρ, P₀, P(W>0), L, Lq, W, Wq), iki vurgulu satır (λ_aban amber + λ_served emerald), durum olasılıkları SVG bar grafiği (n<c brand + n≥c amber + c sınır çizgisi + 30+ tail kesimi notu), θ duyarlılığı tablosu (mevcut θ vurgulu, 0.25x..4x tarama, ρ<1 ise θ=0 satırı dahil), 2 örnek butonu (çağrı merkezi, ρ=1.5 aşırı yüklü).
+- `src/content/rehberler/erlang-a-sabirsiz-musteri.mdx` (+200) — 10 dk Türkçe rehber: Erlang-C ile fark, θ tahmin metodolojisi (1/θ ortalama sabır + sektör benchmark'ları), doğum-ölüm zinciri çözümü cebirsel, λ > c·μ kararlılık argümanı ((n−c)·θ sınırsız büyür ⇒ integrable), metrik tablosu + iki kimlik (λ_aban=θ·Lq + P(abandon)=θ·E[Wq] PASTA türetmesi), sayısal örnek (çağrı merkezi + aşırı yüklü), **QED rejimi** (Halfin-Whitt 1981 + Garnett-Mandelbaum-Reiman 2002, c = λ/μ + β√(λ/μ), modern büyük çağrı merkezi ölçeklendirmesi), Erlang-C vs Erlang-A pratik karşılaştırma tablosu, modelin sınırları (heterojen sunucu, çoklu sınıf, GI sabır, zamansal λ), 7 başlık FAQ JSON-LD.
+- `src/data/tools.ts` (+10) — yeni araç kaydı (`olasilik` kategorisi, guideSlug=`erlang-a-sabirsiz-musteri`).
+- `public/og/erlang-a-bekleme-birakma.png` — `npm run og` ile per-tool OG kartı (83.5 KB). Diğer 17 OG kartı byte-identical (deterministik render).
+
+**Tasarım notu:** İlk denemede sayfa dosyası `erlang-a-bekleme-bırakma.astro` (Türkçe `ı` ile) oluşturuldu — URL slug'larda ASCII güvenliği için `erlang-a-bekleme-birakma.astro` olarak rename edildi (tools.ts slug'ı zaten ASCII'di). MDX FAQ schema'sında 800-char limit 7. soruyu aştı; uzun yanıt kısaltılarak çözüldü (içerik öz kalmaya devam eder). Bu döngü #15/#16'da yaşanan MDX `{...}` tuzağına benzer bir içerik şema disiplini hatırlatıcısı.
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint, **86 dosya**) · test ✓ (**374/374**, +17 yeni Erlang-A testi, 20 dosya) · build ✓ (**46 sayfa**, 4.82s — araç sayfası + rehber dahil) · Lighthouse — yeni sayfa mevcut M/M/c aracıyla aynı şablon, hidrasyon stratejisi (inline `<script>`, plotly yok, SVG/Tailwind sadece) ve mobil-öncelikli yerleşim kullanıyor (≥95 beklenir).
+
+**Yayın:** PR #42 squash-merge edildi (commit `805ff76`). `Deploy to GitHub Pages` workflow başarıyla tamamlandı (run 27514226793, 52s). Canlı: <https://karaman.dev/or-araclari/araclar/erlang-a-bekleme-birakma>.
+
+**İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber, kuyruk serisinin doğal modern uzantısı, mevcut M/M/c deseni birebir takip edildi).
+
+**Sıradaki:** F-MINCOST (Min-Cost Flow / Maks-Akış — L efor, ulaştırma probleminin tek-kaynak/tek-hedef genelleştirmesi, "graf" kategorisinde sadece TSP var — bu boşluk büyük) ya da F-GAME-NASH (sıfır toplamlı oyun çözücüden bimatris/Nash dengesi'ne genişletme — Lemke-Howson). Q-AUDIT-YAML hâlâ open (M efor, breaking-change riski) ama yeni Q-AUDIT-ESBUILD'le birlikte iki ayrı bağımlılık zinciri var.

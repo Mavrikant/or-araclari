@@ -24,7 +24,7 @@ Durum: open · in-progress · blocked · done
 | id | başlık | tür | değer | efor | durum |
 |---|---|---|---|---|---|
 | F-MINCOST | Min-Cost Flow / Maks-Akış Çözücü (Ford-Fulkerson, Edmonds-Karp) | feature | M | L | open |
-| F-ERLANG_A | Erlang-A (M/M/c + abandonment) — sabırsız müşteri modeli, modern çağrı merkezi standardı | feature | M | M | open |
+| F-GAME-NASH | Bimatris (genel toplam) Nash dengesi çözücü — Lemke-Howson algoritması, F-GAME'in non-zero-sum uzantısı | feature | M | L | open |
 
 ---
 
@@ -47,3 +47,4 @@ Durum: open · in-progress · blocked · done
 | F-MM_C (M/M/c kısmı) | M/M/c Çoklu Sunucu Kuyruk Analizci — Erlang-C C(c,a), P₀, L/Lq/W/Wq, durum olasılıkları (n ≤ c ve n > c bölgeleri ayrı renkte), sunucu sayısı duyarlılığı tablosu; c=1'de M/M/1'e indirgenir; +14 vitest (PR #36). Kalan M/M/1/K ve M/M/c/K satırı yukarıda open. | #15 |
 | F-MM_C (M/M/1/K + M/M/c/K kısmı) | Sonlu Kapasiteli Kuyruk Analizci — birth/death zinciri özyinelemesi (faktoriyel taşması yok), bloklama P_K + λ_eff, Erlang-B kapalı formu (`erlangB()` özyineli); +13 vitest (PR #38) | #16 |
 | F-GAME | İki Kişilik Sıfır Toplamlı Oyun Çözücü — saddle/maximin/minimax analizi + dominant strateji elemesi + 2×2 kapalı form + m×n karışık strateji için LP dönüşümü (pozitiflik shift + x_i = p_i / v); +24 vitest (PR #40) | #17 |
+| F-ERLANG_A | Erlang-A Bekleme & Bırakma Analizci (M/M/c + abandonment) — doğum-ölüm zinciri özyinelemesi + tail truncation, λ > c·μ kararlılığı (θ > 0), P(abandon), λ_aban = θ·Lq, λ_served, QED rejimi rehberi; +17 vitest (PR #42) | #18 |
