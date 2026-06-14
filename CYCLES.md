@@ -368,3 +368,27 @@ döngüde nötralize oldu (sırf 🟢 kod + içerik + doc).
 **İşaret:** 🟡 SARI — paralel ajan oturumu. Bu döngünün ilk denemesi 13:00 dolaylarında `cycle/mmck-queue` dalında başlatıldı; aynı anda başka bir otonom oturum F-DECISION ve sonra F-MM_C'yi sürdü ve `git checkout` + working-tree temizlikleri sırasında ilk denemenin yeni dosyaları silindi (bkz. INCIDENTS). Snapshot `/tmp/cycle-13-mmck/`'de saklandı; ikinci denemede M/M/c bölümü PR #36 olarak yayınlanmış olduğu için kapsam yeniden çerçevelendi (sadece sonlu-K) ve `cycle/sonlu-kapasite-kuyruk` dalında temiz çalıştırıldı. Eş zamanlı çalışmayı seri hâle getiren bir kilit/koordinasyon yokken iki oturum aynı repo'da çakışıyor — gelecek döngüde aşılması gereken bir mimari kısıt.
 
 **Sıradaki:** F-MINCOST (Min-Cost Flow / Maks-Akış — L efor, ulaştırma probleminin genelleştirilmesi), F-GAME (İki kişilik sıfır toplamlı oyun — M efor, mevcut LP altyapısını kullanır) ya da Q-AUDIT-YAML (M efor, breaking-change riski). Paralel-ajan koordinasyonu da insan kararı bekleyen 🔴 backlog item'ı.
+
+---
+
+## DÖNGÜ #17 — 2026-06-14
+
+**Yapılan:** F-GAME — İki Kişilik Sıfır Toplamlı Oyun Çözücü ve uzun-form Türkçe minimax/LP rehberi yayınlandı. Saddle point algılama + dominant strateji elemesi + 2×2 kapalı form + m×n karışık strateji LP'ye dönüştürme; mevcut glpk.js LP altyapısını yeniden kullanır.
+
+**Detay:**
+- `src/lib/game.ts` (+423) — saf algoritma: `analyzePureStrategy` (rowMinima, colMaxima, maximin, minimax, saddlePoints), `reduceByDominance` (iteratif satır+sütun strictly-dominated eleme, originalIndex map), `solve2x2NoSaddle` (kapalı form D = a−b−c+d, p₁ = (d−c)/D, v* = (ad−bc)/D), `payoffShift` (k = max(0, 1−min) ile v > 0 garantisi), `buildRowLpText` / `buildColLpText` (pozitiflik kaydırması + x_i = p_i / v dönüşümü → standart `min Σ x_i s.t. Σ V'_{ij} x_i ≥ 1`), `decodeLpSolution` (v_shift = 1/Σ x, p_i = x_i · v_shift, v* = v_shift − k).
+- `src/lib/game.test.ts` (+355, **24 vitest**) — Taha 4×4 saddle (1,1)=5, matching pennies + Winston [[2,5],[4,1]] 2×2 kapalı form, RPS simetrik denge decode, dominance iteratif eleme (3×3 → 1×1, sütun-yalnız), payoffShift köşe durumları, LP metin parseLp round-trip, GameError validation (boş/ragged/non-finite/mismatched names).
+- `src/pages/araclar/oyun-teorisi-cozucu.astro` (+684) — mobil-öncelikli form (strateji adları opsiyonel + payoff textarea + dominance toggle), 3 örnek (matching pennies, taş-kağıt-makas, Taha 4×4), saddle paneli (maximin/minimax kartları + saddle hücre listesi) ya da karışık strateji bar tabloları (R ve C ayrı, aktif olasılıklar yeşil pill), maximin/minimax tablosu (saddle yeşil + maximin/minimax bağlayıcı satır/sütun mavi vurgu), dominance adım listesi (hangi satır/sütun hangisi tarafından elendi), LP `solveLp` async çağrısı + button-disable + reduced→original index remap.
+- `src/content/rehberler/sifir-toplamli-oyun.mdx` (+200) — 11 dk Türkçe rehber: problem yapısı, saddle/maximin/minimax bağlantısı, 2×2 kapalı form (matching pennies + Winston sayısal), m×n LP dönüşümü (shift + değişken dönüşümü + simetrik dual), dominance iteratif eleme, RPS 3×3 sayısal örnek, saf/karışık karşılaştırma tablosu, sıfır toplam vs Nash genel toplam, modelin sınırları (iki oyuncu, sıfır toplam, tam bilgi, tek dönem), 7 başlık FAQ JSON-LD (sıfır toplam tanımı, saddle/minimax bağı, karışık strateji ne zaman, 2×2 closed form, LP'ye çevirme, dominance, maximin/minimax birleşimi).
+- `src/data/tools.ts` (+10) — yeni araç kaydı (`optimizasyon` kategorisi, guideSlug=`sifir-toplamli-oyun`).
+- `public/og/oyun-teorisi-cozucu.png` — `npm run og` ile per-tool OG kartı (77.4 KB). Diğer 16 OG kartı byte-identical (deterministik render).
+
+**Tasarım notu:** Saf algoritma ve LP yolu kesin olarak ayrıldı — `game.ts` glpk'ya bağımlı değil (vitest Worker yok sınırını aşar), UI katmanı `prepareMixedLp` → `parseLp` → `solveLp` → `decodeLpSolution` zincirini kurar. LP testi vitest'te Worker is not defined hatası verdiği için end-to-end LP testleri çıkarıldı; bunun yerine RPS simetrik çözümü sentetik x/y ile decode edildi (matematiksel doğrulama korundu, runtime bağımlılığı düştü).
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint, **83 dosya**) · test ✓ (**357/357**, +24 yeni game testi, 19 dosya) · build ✓ (**44 sayfa**, 5.21s — araç sayfası + rehber dahil) · Lighthouse — yeni sayfa mevcut LP/karar analizi araçlarıyla aynı şablon, hidrasyon stratejisi (inline `<script>`, plotly yok, SVG/Tailwind sadece) ve mobil-öncelikli yerleşim kullanıyor (≥95 beklenir).
+
+**Yayın:** PR #40 squash-merge edildi (commit `2fdcf8a`). `Deploy to GitHub Pages` workflow başarıyla tamamlandı (run 27506472846, 49s). Canlı: <https://karaman.dev/or-araclari/araclar/oyun-teorisi-cozucu>.
+
+**İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber, mevcut deseni birebir takip).
+
+**Sıradaki:** F-MINCOST (Min-Cost Flow / Maks-Akış — L efor, ulaştırma probleminin genelleştirilmesi), F-ERLANG_A (Erlang-A — M efor, abandonment'lı çoklu sunucu) ya da Q-AUDIT-YAML (M efor, breaking-change riski). Esbuild high-severity advisory (Astro 2.4.5 downgrade ister, 🔴 KIRMIZI) Dependabot tarafından açılan PR'ı kapatamıyor; insan kararı gerekiyor — backlog'a yeni satır.
