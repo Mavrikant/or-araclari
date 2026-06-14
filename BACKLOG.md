@@ -17,13 +17,13 @@ Durum: open · in-progress · blocked · done
 |---|---|---|---|---|---|
 | Q-CI-CHECK | CI workflow'una `npm run check` + `npm run test` adımları ekle (şu an sadece `astro build` çalışıyor) — 🔴 KIRMIZI: workflow değişikliği insan onayı ister | infra | H | S | blocked |
 | Q-AUDIT-YAML | `npm audit` kalan 5 moderate zafiyet `yaml-language-server → volar-service-yaml → @astrojs/language-server → @astrojs/check` zincirinde; fix `--force` (breaking) ister — Astro/check uyumluluğunu doğrulayarak yükselt | chore | M | M | open |
+| Q-AUDIT-ESBUILD | `npm audit` 4 high `esbuild ≤ 0.28.0` zincirinde (esbuild → vite → astro → @astrojs/mdx); fix `--force` Astro 2.4.5'e downgrade ister, breaking-change. Astro 7.x'e yükselterek esbuild ≥ 0.28.1 ile uyumluluğu kontrol et — 🔴 KIRMIZI: major Astro upgrade insan onayı ister | chore | H | L | blocked |
 
 ## Yeni Araç Fikirleri (sıra dışı, fırsat olursa)
 
 | id | başlık | tür | değer | efor | durum |
 |---|---|---|---|---|---|
 | F-MINCOST | Min-Cost Flow / Maks-Akış Çözücü (Ford-Fulkerson, Edmonds-Karp) | feature | M | L | open |
-| F-GAME | İki Kişilik Sıfır Toplamlı Oyun (saddle point + karışık strateji LP) | feature | M | M | open |
 | F-ERLANG_A | Erlang-A (M/M/c + abandonment) — sabırsız müşteri modeli, modern çağrı merkezi standardı | feature | M | M | open |
 
 ---
@@ -46,3 +46,4 @@ Durum: open · in-progress · blocked · done
 | F-DECISION | Karar Analizi aracı — Maximax / Maximin (Wald) / Laplace / Hurwicz (α∈[0,1]) / Savage Regret + risk altında EMV / EOL / EVwPI / EVPI; min/max yön; pure JS; +21 vitest (PR #30) | #13 |
 | F-MM_C (M/M/c kısmı) | M/M/c Çoklu Sunucu Kuyruk Analizci — Erlang-C C(c,a), P₀, L/Lq/W/Wq, durum olasılıkları (n ≤ c ve n > c bölgeleri ayrı renkte), sunucu sayısı duyarlılığı tablosu; c=1'de M/M/1'e indirgenir; +14 vitest (PR #36). Kalan M/M/1/K ve M/M/c/K satırı yukarıda open. | #15 |
 | F-MM_C (M/M/1/K + M/M/c/K kısmı) | Sonlu Kapasiteli Kuyruk Analizci — birth/death zinciri özyinelemesi (faktoriyel taşması yok), bloklama P_K + λ_eff, Erlang-B kapalı formu (`erlangB()` özyineli); +13 vitest (PR #38) | #16 |
+| F-GAME | İki Kişilik Sıfır Toplamlı Oyun Çözücü — saddle/maximin/minimax analizi + dominant strateji elemesi + 2×2 kapalı form + m×n karışık strateji için LP dönüşümü (pozitiflik shift + x_i = p_i / v); +24 vitest (PR #40) | #17 |
