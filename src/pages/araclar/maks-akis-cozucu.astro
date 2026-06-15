@@ -1,0 +1,400 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import { withBase, SITE } from '../../data/site';
+import { TOOLS } from '../../data/tools';
+
+const tool = TOOLS.find((t) => t.slug === 'maks-akis-cozucu')!;
+const guideHref = tool.guideSlug ? withBase(`/rehberler/${tool.guideSlug}`) : null;
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: tool.title,
+  applicationCategory: 'WebApplication',
+  operatingSystem: 'Any',
+  description: tool.description,
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'TRY' },
+  inLanguage: SITE.locale,
+  isAccessibleForFree: true,
+};
+---
+
+<BaseLayout
+  title={tool.title}
+  description={tool.description}
+  image={withBase(`/og/${tool.slug}.png`)}
+  imageAlt={`${tool.title} — OR Araçları`}
+>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+  </Fragment>
+
+  <Container as="section" size="wide" class="pt-12 sm:pt-16">
+    <p class="text-sm font-medium text-brand-600 dark:text-accent-400">
+      <a href={withBase('/araclar')} class="hover:underline">Araçlar</a>
+      <span class="text-slate-400 dark:text-slate-600"> / </span>
+      <span>Graf & Rota</span>
+    </p>
+    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">
+      {tool.title}
+    </h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
+      Yönlü kapasiteli bir ağda kenarları gir, kaynak (s) ve hedef (t)
+      düğümlerini seç; <strong>Edmonds-Karp</strong> algoritması (BFS ile
+      en kısa artıran yol) maksimum akışı, her kenardaki akış değerini
+      ve <strong>min-cut</strong>'ı tarayıcıda anlık hesaplasın.
+      Ford-Fulkerson min-cut max-flow teoremi gereği bu iki değer eşittir.
+      {guideHref && (
+        <a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>
+      )}
+    </p>
+  </Container>
+
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,380px)_1fr] print:block">
+    <form id="maxflow-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="sample-clrs-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          CLRS örneği
+        </button>
+        <button type="button" id="sample-pipe-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Boru şebekesi
+        </button>
+        <button type="button" id="reset-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+          Sıfırla
+        </button>
+      </div>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Kenarlar
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Her satır: <span class="font-mono">kaynak hedef kapasite</span> (boşluk, virgül veya tab ile ayır)
+          </span>
+          <textarea id="edges-input" rows="9" spellcheck="false" autocomplete="off" required
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            placeholder="s v1 16&#10;s v2 13&#10;v1 v3 12&#10;v3 t 20"></textarea>
+        </label>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          Düğüm adları otomatik keşfedilir. Yönlü graf — her satır u → v
+          yönünde kapasiteli bir kenardır. Aynı (u, v) çiftinde paralel
+          kenarlar toplanır.
+        </p>
+      </fieldset>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Kaynak & hedef
+        </legend>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Kaynak (s)</span>
+            <input type="text" id="source-input" autocomplete="off" required value="s"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Hedef (t)</span>
+            <input type="text" id="sink-input" autocomplete="off" required value="t"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+        </div>
+      </fieldset>
+
+      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">
+        Maks akışı bul
+      </button>
+
+      <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
+    </form>
+
+    <section id="output" hidden aria-live="polite" class="space-y-6">
+      <div class="rounded-2xl border border-emerald-300 bg-emerald-50/60 p-5 dark:border-emerald-800/60 dark:bg-emerald-950/30">
+        <p class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+          Maksimum akış s → t
+        </p>
+        <p id="maxflow-value" class="mt-1 font-display text-4xl font-bold tabular-nums text-emerald-900 dark:text-emerald-100"></p>
+        <p id="maxflow-meta" class="mt-1 text-xs text-emerald-700/80 dark:text-emerald-300/80"></p>
+      </div>
+
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Kenar akışları
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Her kenarda akıtılan miktar / kapasite. Doygun (saturated)
+          kenarlar amber vurguludur — bunlar genelde min-cut'ın
+          adaylarıdır.
+        </p>
+        <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40">
+          <table class="w-full min-w-[460px] text-sm">
+            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
+              <tr>
+                <th class="px-3 py-2 text-left">Kenar</th>
+                <th class="px-3 py-2 text-right">Kapasite</th>
+                <th class="px-3 py-2 text-right">Akış</th>
+                <th class="px-3 py-2 text-right">Kullanım</th>
+                <th class="px-3 py-2 text-left">Durum</th>
+              </tr>
+            </thead>
+            <tbody id="edges-body" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40">
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Min-cut (min kapasiteli kesim)
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Ford-Fulkerson teoremi: max-flow = min-cut. Düğümler iki tarafa
+          bölünür; S→T yönünde geçen orijinal kenarların kapasiteleri
+          toplamı maks akışa eşittir.
+        </p>
+        <dl class="mt-4 grid gap-3 sm:grid-cols-2">
+          <div class="rounded-lg border border-brand-200 bg-brand-50/60 p-3 dark:border-brand-900/40 dark:bg-brand-950/20">
+            <dt class="text-xs font-medium uppercase tracking-wide text-brand-800 dark:text-brand-200">S — kaynak tarafı</dt>
+            <dd id="cut-source-side" class="mt-1 font-mono text-sm text-brand-900 dark:text-brand-100"></dd>
+          </div>
+          <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40">
+            <dt class="text-xs font-medium uppercase tracking-wide text-slate-700 dark:text-slate-300">T — hedef tarafı</dt>
+            <dd id="cut-sink-side" class="mt-1 font-mono text-sm text-slate-800 dark:text-slate-100"></dd>
+          </div>
+        </dl>
+        <div class="mt-4">
+          <p class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Min-cut kenarları (S → T)</p>
+          <ul id="cut-edges-list" class="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200"></ul>
+          <p id="cut-total" class="mt-3 text-xs text-slate-500 dark:text-slate-400"></p>
+        </div>
+      </div>
+    </section>
+  </Container>
+
+  {guideHref && (
+    <Container as="section" size="wide" class="py-12 sm:py-16">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900/40">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">
+          Konuyu derinleştir
+        </p>
+        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          Maks-akış, min-cut ve ağ optimizasyonu
+        </h2>
+        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+          Ford-Fulkerson iskeleti, Edmonds-Karp BFS varyantı, min-cut
+          max-flow dualitesi, klasik uygulamalar (boru şebekesi, çift
+          eşleştirme, görüntü segmentasyonu) ve örnek çözümler.
+        </p>
+        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">
+          Rehberi oku →
+        </a>
+      </div>
+    </Container>
+  )}
+</BaseLayout>
+
+<script>
+  import { solveMaxFlow, MaxFlowError, type MaxFlowEdge, type MaxFlowResult } from '../../lib/max-flow';
+
+  const STORAGE_KEY = 'maxflow-state-v1';
+
+  interface Sample {
+    edges: string;
+    source: string;
+    sink: string;
+  }
+  const SAMPLE_CLRS: Sample = {
+    edges:
+      's v1 16\ns v2 13\nv1 v3 12\nv2 v1 4\nv2 v4 14\nv3 v2 9\nv3 t 20\nv4 v3 7\nv4 t 4',
+    source: 's',
+    sink: 't',
+  };
+  const SAMPLE_PIPE: Sample = {
+    edges:
+      's A 10\ns B 8\nA C 5\nA D 8\nB C 6\nB D 4\nC t 9\nD t 10',
+    source: 's',
+    sink: 't',
+  };
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el as T;
+  };
+  function fmt(n: number, d = 4): string {
+    if (!Number.isFinite(n)) return '—';
+    if (Math.abs(n) < 1e-9) return '0';
+    return n.toFixed(d).replace(/\.?0+$/, '');
+  }
+  function escapeHtml(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  const form = $<HTMLFormElement>('maxflow-form');
+  const edgesInput = $<HTMLTextAreaElement>('edges-input');
+  const sourceInput = $<HTMLInputElement>('source-input');
+  const sinkInput = $<HTMLInputElement>('sink-input');
+  const sampleClrsBtn = $('sample-clrs-btn');
+  const samplePipeBtn = $('sample-pipe-btn');
+  const resetBtn = $('reset-btn');
+  const errorBox = $('error-box');
+  const output = $('output');
+  const maxflowValue = $('maxflow-value');
+  const maxflowMeta = $('maxflow-meta');
+  const edgesBody = $('edges-body');
+  const cutSourceSide = $('cut-source-side');
+  const cutSinkSide = $('cut-sink-side');
+  const cutEdgesList = $('cut-edges-list');
+  const cutTotal = $('cut-total');
+
+  type SavedState = { edges?: string; source?: string; sink?: string };
+  function loadState(): void {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        applySample(SAMPLE_CLRS);
+        return;
+      }
+      const s = JSON.parse(raw) as SavedState;
+      if (typeof s.edges === 'string') edgesInput.value = s.edges;
+      if (typeof s.source === 'string') sourceInput.value = s.source;
+      if (typeof s.sink === 'string') sinkInput.value = s.sink;
+    } catch {
+      /* önemsiz. */
+    }
+  }
+  function saveState(): void {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          edges: edgesInput.value,
+          source: sourceInput.value,
+          sink: sinkInput.value,
+        } satisfies SavedState),
+      );
+    } catch {
+      /* önemsiz. */
+    }
+  }
+  function applySample(s: Sample): void {
+    edgesInput.value = s.edges;
+    sourceInput.value = s.source;
+    sinkInput.value = s.sink;
+    saveState();
+    clearError();
+  }
+
+  function parseEdges(text: string): MaxFlowEdge[] {
+    const lines = text
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0 && !l.startsWith('#'));
+    const out: MaxFlowEdge[] = [];
+    lines.forEach((line, idx) => {
+      const parts = line.split(/[\s,;\t]+/).filter((p) => p.length > 0);
+      if (parts.length !== 3) {
+        throw new MaxFlowError(
+          `Satır ${idx + 1}: 3 alan bekleniyor (kaynak hedef kapasite); ${parts.length} alan bulundu: "${line}".`,
+        );
+      }
+      const [from, to, capRaw] = parts;
+      const capacity = Number(capRaw.replace(',', '.'));
+      if (!Number.isFinite(capacity)) {
+        throw new MaxFlowError(`Satır ${idx + 1}: kapasite sayı olmalı ("${capRaw}").`);
+      }
+      out.push({ from, to, capacity });
+    });
+    return out;
+  }
+
+  function renderEdges(result: MaxFlowResult): void {
+    const rows = result.edges.map((e) => {
+      const utilPct = e.capacity > 0 ? (e.flow / e.capacity) * 100 : 0;
+      const stateLabel = e.saturated
+        ? '<span class="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">doygun</span>'
+        : e.flow > 1e-9
+          ? '<span class="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200">akış var</span>'
+          : '<span class="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">boş</span>';
+      const rowCls = e.saturated ? 'bg-amber-50/40 dark:bg-amber-950/10' : '';
+      return `<tr class="${rowCls}">
+        <td class="px-3 py-2 font-mono tabular-nums text-slate-900 dark:text-white">${escapeHtml(e.from)} → ${escapeHtml(e.to)}</td>
+        <td class="px-3 py-2 text-right tabular-nums">${fmt(e.capacity, 3)}</td>
+        <td class="px-3 py-2 text-right font-mono tabular-nums">${fmt(e.flow, 3)}</td>
+        <td class="px-3 py-2 text-right tabular-nums text-slate-500 dark:text-slate-400">${fmt(utilPct, 1)}%</td>
+        <td class="px-3 py-2">${stateLabel}</td>
+      </tr>`;
+    });
+    edgesBody.innerHTML = rows.join('');
+  }
+
+  function renderCut(result: MaxFlowResult): void {
+    cutSourceSide.textContent = result.cutSourceSide.join(', ') || '(boş)';
+    cutSinkSide.textContent = result.cutSinkSide.join(', ') || '(boş)';
+    if (result.cutEdges.length === 0) {
+      cutEdgesList.innerHTML = '<li class="text-slate-500 dark:text-slate-400">Hiç min-cut kenarı yok — s ile t bağlantısız ya da akış 0.</li>';
+      cutTotal.textContent = '';
+    } else {
+      cutEdgesList.innerHTML = result.cutEdges
+        .map(
+          (e) => `<li><span class="font-mono">${escapeHtml(e.from)} → ${escapeHtml(e.to)}</span> kapasite <span class="font-mono">${fmt(e.capacity, 3)}</span></li>`,
+        )
+        .join('');
+      const total = result.cutEdges.reduce((s, e) => s + e.capacity, 0);
+      cutTotal.textContent = `Toplam cut kapasitesi = ${fmt(total, 3)} (max-flow ile eşit olmalı).`;
+    }
+  }
+
+  function showError(msg: string): void {
+    errorBox.textContent = msg;
+    errorBox.hidden = false;
+    output.hidden = true;
+  }
+  function clearError(): void {
+    errorBox.hidden = true;
+    errorBox.textContent = '';
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clearError();
+    saveState();
+    try {
+      const edges = parseEdges(edgesInput.value);
+      const result = solveMaxFlow({
+        edges,
+        source: sourceInput.value.trim(),
+        sink: sinkInput.value.trim(),
+      });
+      maxflowValue.textContent = fmt(result.maxFlow, 4);
+      maxflowMeta.textContent = `Edmonds-Karp ${result.iterations} BFS iterasyonunda yakınsadı. ${result.nodes.length} düğüm, ${result.edges.length} kenar.`;
+      renderEdges(result);
+      renderCut(result);
+      output.hidden = false;
+      output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      const msg = err instanceof MaxFlowError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
+      showError(msg);
+    }
+  });
+
+  [edgesInput, sourceInput, sinkInput].forEach((el) => el.addEventListener('input', saveState));
+  sampleClrsBtn.addEventListener('click', () => applySample(SAMPLE_CLRS));
+  samplePipeBtn.addEventListener('click', () => applySample(SAMPLE_PIPE));
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('Form sıfırlanacak. Devam edilsin mi?')) return;
+    edgesInput.value = '';
+    sourceInput.value = '';
+    sinkInput.value = '';
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* önemsiz. */
+    }
+    clearError();
+    output.hidden = true;
+  });
+
+  loadState();
+</script>

@@ -1,0 +1,211 @@
+---
+title: "Maks-Akış / Min-Cut: Ford-Fulkerson ve Edmonds-Karp"
+description: "Yönlü ağlarda maksimum akış, min-cut max-flow teoremi, Ford-Fulkerson iskeleti, Edmonds-Karp BFS varyantı, klasik uygulamalar ve sayısal örnekler — Türkçe, sezgisel kapsamlı rehber."
+pubDate: 2026-06-15
+relatedTool: "maks-akis-cozucu"
+keywords:
+  - "max-flow"
+  - "maksimum akış"
+  - "min-cut"
+  - "Ford-Fulkerson"
+  - "Edmonds-Karp"
+  - "augmenting path"
+  - "residüel graf"
+  - "ağ akışı"
+  - "bipartite matching"
+  - "Menger teoremi"
+  - "ağ optimizasyonu"
+readingMinutes: 10
+faq:
+  - question: "Maks-akış (max-flow) problemi nedir?"
+    answer: "Yönlü kapasiteli bir ağda (kaynak s, hedef t, her kenarda c(u,v) ≥ 0 kapasite), s'den t'ye akıtılabilecek toplam akışın maksimumunu bulmak. Akış iki kurala uymalı: (1) her kenarda f(u,v) ≤ c(u,v) — kapasite sınırlaması; (2) her ara düğümde Σ giren = Σ çıkan — akış korunumu (Kirchhoff yasası). Pratik karşılıkları: boru şebekesinde maksimum su debisi, yol ağında maksimum trafik, çift eşleştirmede maksimum eşleşme, görüntü segmentasyonunda optimum bölme. Karmaşıklık polinom — Edmonds-Karp O(V·E²) ile pratikte 100-1000 düğümlü ağlar saniyenin altında çözülür."
+  - question: "Ford-Fulkerson algoritması nasıl çalışır?"
+    answer: "Genel iskelet: (1) tüm akışları 0 başlat. (2) Residüel graf kur — orijinal her (u,v) kenarına ek olarak ters yönde (v,u) kenarı ekle, residüel kapasiteler r(u,v) = c(u,v) − f(u,v) ve r(v,u) = f(u,v). (3) Residüel grafiğde s→t artıran yol (augmenting path) bul — yoldaki minimum residüel kapasite kadar akıt. (4) Artıran yol kalmayana kadar tekrarla. Algoritma sonlanması integer kapasitelerde garanti; tamsayı olmayan kapasitelerde sonsuz döngüye girebilir, bu yüzden artıran yol seçim stratejisi önemli. Edmonds-Karp varyantı BFS ile en kısa (kenar sayısına göre) yolu seçerek polinom karmaşıklığı garanti eder."
+  - question: "Min-cut max-flow teoremi tam olarak ne der?"
+    answer: "Ford-Fulkerson 1956 teoremi: bir ağda s'den t'ye maksimum akış değeri, s ile t'yi ayıran (s ∈ S, t ∈ T) bir kesimin (S, T) kapasitesinin minimumuna eşittir. Kesimin kapasitesi cap(S, T) = Σ c(u,v) for u ∈ S, v ∈ T (yalnızca S→T yönündeki kenarlar, T→S sayılmaz). Bu LP dualite örneklerinden biridir: max-flow primal LP'sinin duali tam olarak min-cut LP'sidir; strong duality nedeniyle değerler eşit. Pratik anlam: bir ağda 'darboğaz' nerede sorusunun tam matematiksel cevabı — Edmonds-Karp bittiğinde s'den residüelde erişilebilen küme S, kalanı T'dir ve S→T orijinal kenarları doygunduğu için min-cut'ı oluştururlar."
+  - question: "Edmonds-Karp neden BFS kullanır, DFS değil?"
+    answer: "Ford-Fulkerson iskeleti hangi artıran yolun seçileceğini söylemez — DFS ile derin bir yol, BFS ile en kısa yol seçebilirsiniz. Bu seçim hem doğruluk hem karmaşıklık için kritik. Klasik bir patolojik örnek: dört kenarlı küçük bir ağda DFS ile artıran yol seçimi 2·10⁶ iterasyon alabilir (kapasiteler binlikse), BFS ile sadece 2. Edmonds-Karp 1972 makalesinde gösterildi: BFS (en kısa yol seçimi) ile yol uzunluğu monoton artar ve toplam iterasyon sayısı O(V·E)'dir. Her BFS O(E) — toplam O(V·E²). Pratik avantaj: tamsayı olmayan kapasitelerde de polinom, terminasyon garantisi. Dinic algoritması (1970) bu kavramı 'blocking flow' ile daha da hızlandırır: O(V²·E)."
+  - question: "Maks-akış pratik olarak hangi problemlere uygulanır?"
+    answer: "Çok geniş bir aile: (1) **Çift eşleştirme (bipartite matching)** — sol/sağ düğüm grupları arasında en fazla eşleşme; iş atama, randevu eşleştirme, eşli mübadele. (2) **Görüntü segmentasyonu** — Markov rastgele alanı + s/t enerji; foreground/background ayırma. (3) **Ağ tasarımı** — telekomünikasyon ya da boru şebekesinde maksimum debinin nereden sınırlandığını bulma. (4) **Proje seçimi** — pozitif/negatif kazançlı projelerden bağımlılık kısıtlı maksimum kâr (Karzanov 1974). (5) **Süreç çizelgelemesi** — paralel makine + ön gereklilikler. (6) **Menger teoremi uygulamaları** — kenar/düğüm bağlantılılığı. (7) **Ağ güvenilirliği** — k-bağlantılı yolların sayımı. Hatta tehdit modeli analizinde 'saldırgan en az kaç kritik bileşeni devre dışı bırakmalı?' sorusu da min-cut'a indirgenir."
+  - question: "Aracın 'doygun (saturated) kenar' işareti ne anlama gelir?"
+    answer: "Bir kenar doygundur eğer atanan akış kapasiteye eşitse — f(u,v) = c(u,v). Doygun kenarlar genelde 'darboğaz' demektir: bu kenarın kapasitesini artırmak (örneğin daha kalın boru, daha fazla bant genişliği) toplam akışı artırabilir. Önemli not: her doygun kenar min-cut'ta değildir; min-cut'ta olmak için kenarın kaynak tarafından erişilemez bir düğüme gitmesi gerekir (S→T yönünde). Tersine, min-cut'taki her kenar doygundur. Aracımız doygun kenarları amber vurgular; min-cut kenarlarını ayrıca aşağıdaki cut bloğunda gösterir. Birden fazla minimum kesim olabilir (ties) — algoritma deterministik olarak BFS sırasına göre birini bulur."
+  - question: "Negatif kapasite veya negatif akış olabilir mi?"
+    answer: "Klasik max-flow tanımında kapasiteler ≥ 0 — negatif kapasite anlamsızdır (negatif borulamak yok). Akış değerleri 0 ≤ f(u,v) ≤ c(u,v) tanımlı; ancak residüel grafikte ters kenarda r(v,u) = f(u,v) > 0 olur (gönderdiğimiz akışı 'geri çağırabilme' kapasitesi). Eğer probleminizde kâr/maliyet veya talep/arz dengesi varsa Min-Cost Flow modelini kullanırsınız (her kenara kapasite + birim maliyet, hedef: min toplam maliyetle d birim akıt) — bu farklı bir problemdir ve Bellman-Ford tabanlı SSP algoritması veya network simplex çözer. Min-Cost Flow araç olarak ayrı bir backlog item'ı."
+---
+
+Maks-akış problemi, ağ optimizasyonunun en zarif sonuçlarından birini
+barındırır: Ford-Fulkerson'un 1956 tarihli **min-cut max-flow teoremi**.
+Bir ağda en fazla ne kadar akış sığar sorusunun cevabı, aynı ağda en az
+kaç birimle akışı tamamen kesebileceğinizin cevabıyla aynıdır.
+
+## Problemin tanımı
+
+Yönlü kapasiteli ağ $G = (V, E, c)$:
+
+- **V** düğüm kümesi, iki özel düğüm: kaynak $s$ ve hedef $t$
+- **E** yönlü kenar kümesi
+- **c : E → ℝ⁺** kapasite fonksiyonu (her kenarda $c(u, v) \ge 0$)
+
+**Akış** $f : E → \mathbb{R}^+$ iki kurala uyar:
+
+1. **Kapasite sınırı:** $0 \le f(u, v) \le c(u, v)$ her kenarda
+2. **Akış korunumu:** her ara düğüm $v \notin \{s, t\}$ için
+   $\sum_{u} f(u, v) = \sum_{w} f(v, w)$ (giren = çıkan)
+
+Akışın **değeri** $|f| = \sum_{v} f(s, v) - \sum_{u} f(u, s)$ — kaynaktan
+net çıkan akış. **Maks-akış problemi:** $|f|$'yi maksimize et.
+
+## Ford-Fulkerson iskeleti
+
+Genel fikir basit ama derin: "var olan akışı geçici olarak geri alabilen"
+bir residüel ağ üzerinde **artıran yol** ara.
+
+Algoritma:
+
+1. Başlangıçta $f(u, v) = 0$ her kenarda.
+2. **Residüel ağ** $G_f$ kur:
+   - Her orijinal $(u, v)$ kenarı için ileri residüel kapasite
+     $r_f(u, v) = c(u, v) - f(u, v)$
+   - Aynı zamanda **ters** $(v, u)$ kenarı oluştur, $r_f(v, u) = f(u, v)$
+     (gönderdiğimiz akışı geri çağırabilme imkânı)
+3. $G_f$'de $s$'den $t$'ye yol ara — bulamazsan algoritma bitti, mevcut
+   $f$ optimum.
+4. Yolu bulduysan: yoldaki minimum residüel kapasite $\delta$ kadar
+   "akıt" — ileri kenarlardan $\delta$ çıkar, geri kenarlara $\delta$
+   ekle. Toplam akışa $\delta$ ekle.
+5. 2'ye dön.
+
+Algoritmanın **doğruluğu** Max-Flow Min-Cut teoreminin sonucudur:
+artıran yol kalmadığında akış maksimumudur ve ulaştığınız değer aynı
+zamanda bir min-cut'ın kapasitesidir. **Sonlanması** integer
+kapasitelerde garantilidir — her iterasyonda akış en az 1 artar.
+
+Patolojik durum: artıran yol seçim stratejisi kötüyse (örn. her zaman
+en az kapasiteli yolu seç), iterasyon sayısı kapasite değerlerine bağlı
+hâle gelir — tamsayı olmayan kapasitelerde sonsuz döngüye bile girebilir.
+
+## Edmonds-Karp varyantı
+
+Edmonds & Karp 1972: "her zaman BFS ile en kısa (kenar sayısına göre)
+artıran yolu seç." Bu basit kuralın iki güçlü sonucu vardır:
+
+- **Karmaşıklık:** O(V · E²) — kapasite değerlerinden bağımsız polinom
+- **Terminasyon:** her augmenting yolun uzunluğu monoton artar ve toplam
+  yol sayısı O(V · E)'yi geçmez
+
+Tek BFS O(E), toplam O(V · E²). Pratikte 100-500 düğümlü ağlar için
+saniyenin altında, 1000+ için Dinic ya da push-relabel daha hızlıdır
+ama biz bu rehberde Edmonds-Karp ile çalışıyoruz.
+
+### Pseudocode
+
+```
+function EdmondsKarp(G, s, t):
+    f ← 0 her kenarda
+    while True:
+        parent ← BFS(G_f, s)
+        if parent[t] yoksa: return f
+        δ ← min residüel kapasite (parent tarafından izlenen s→t yolunda)
+        her kenar (u,v) yolda:
+            f[u,v] += δ
+            f[v,u] -= δ   # ters yön
+        toplam_akış += δ
+```
+
+## Min-Cut Max-Flow teoremi
+
+**Tanım — kesim (cut):** $V$'yi iki ayrık kümeye bölme $(S, T)$,
+$s \in S, t \in T$. Kesimin **kapasitesi:**
+
+$$
+\mathrm{cap}(S, T) = \sum_{u \in S, v \in T} c(u, v)
+$$
+
+(Yalnızca S→T yönündeki kenarlar; T→S yönündekiler sayılmaz.)
+
+**Teorem (Ford-Fulkerson 1956):**
+
+$$
+\max_{f} |f| = \min_{(S, T)} \mathrm{cap}(S, T)
+$$
+
+Yani **maksimum akış = minimum kesim kapasitesi**.
+
+Sezgisel kanıt: Her akış bir kesimin kapasitesini aşamaz (zayıf
+dualite); Edmonds-Karp algoritması bittiğinde kaynaktan residüelde
+erişilebilen düğümler kümesi $S^*$, kalanı $T^*$; $S^* → T^*$ yönündeki
+orijinal kenarlar doygundur ve $T^* → S^*$ yönündekiler boştur — bu
+özel kesimin kapasitesi tam olarak elde edilen akışa eşittir (güçlü
+dualite).
+
+### Sayısal örnek — CLRS 26.1
+
+Cormen et al. "Introduction to Algorithms" ders kitabının klasik örneği:
+
+| Kenar | Kapasite |
+| --- | --- |
+| s → v₁ | 16 |
+| s → v₂ | 13 |
+| v₁ → v₃ | 12 |
+| v₂ → v₁ | 4 |
+| v₂ → v₄ | 14 |
+| v₃ → v₂ | 9 |
+| v₃ → t | 20 |
+| v₄ → v₃ | 7 |
+| v₄ → t | 4 |
+
+Edmonds-Karp ile çözüm:
+
+- Maks-akış = **23** birim
+- Min-cut: $S = \{s, v_1, v_2, v_4\}$, $T = \{v_3, t\}$
+- Cut kenarları: $v_1 \to v_3$ (12) + $v_4 \to v_3$ (7) + $v_4 \to t$ (4) = 23 ✓
+
+Akış s'den 23 birim çıkar, t'ye 23 birim girer; cut da tam olarak 23
+kapasiteyi sınırlandırır. İki değer aynı (max-flow = min-cut).
+
+## Klasik uygulamalar
+
+Maks-akış birçok problemin "altyapısı" — direkt çözümü olmayan birçok
+problem max-flow'a indirgenir:
+
+| Problem | Max-flow indirgemesi |
+| --- | --- |
+| **Bipartite matching** | Kaynak → sol grup → sağ grup → hedef; tüm kapasiteler 1 |
+| **Görüntü segmentasyonu** | Pixel'ler düğüm; foreground/background = s/t; kenar kapasiteleri benzerlik enerjisi |
+| **Proje seçimi** | Pozitif/negatif kazançlı projeler + ön gereklilik kenarları |
+| **Kritik altyapı** | "Düşman en az kaç kenarı/düğümü devre dışı bırakırsa s-t bağı kopar?" = min-cut |
+| **Çoklu kaynak/hedef** | Tek bir süper-kaynak ve süper-hedef ekle, sonsuz kapasite kenarlarla bağla |
+| **Düğüm kapasitesi** | Her düğümü iki kopyaya böl, aralarında kapasite-c kenarı koy |
+
+## Algoritmaların karşılaştırması
+
+| Algoritma | Karmaşıklık | Tarih | Pratik kullanım |
+| --- | --- | --- | --- |
+| Ford-Fulkerson (DFS) | O(E · max-flow) | 1956 | Eğitim; integer kapasitelerde basit |
+| Edmonds-Karp (BFS) | O(V · E²) | 1972 | Bu aracın çekirdeği — küçük/orta ağlar |
+| Dinic | O(V² · E) | 1970 | Orta/büyük ağlar; blocking flow |
+| Push-Relabel | O(V² · √E) | 1988 | Büyük yoğun ağlar; standart üretim çözümü |
+| Bipartite matching özel | O(E · √V) (Hopcroft-Karp) | 1973 | Sadece bipartite eşleştirme |
+
+Bizim Edmonds-Karp tercihimiz: küçük ağlarda anlık, kodu okunabilir,
+min-cut çıkarımı doğal olarak BFS'in son durumundan gelir.
+
+## Sınırlar ve genellemeler
+
+Maks-akış çok güçlü ama her şey değil. Genellikler:
+
+- **Min-Cost Flow** — her kenara kapasite + birim maliyet; hedef:
+  belirlenmiş $d$ birimi minimum toplam maliyetle akıt. SSP, network
+  simplex veya cost-scaling algoritmaları çözer. Ulaştırma probleminin
+  ağ-üstüne genellemesidir.
+- **Multi-commodity flow** — birden fazla emtia (s_i → t_i) aynı ağı
+  paylaşır; LP'ye indirgenir, NP-hard varyantları var.
+- **Integer flow** — kapasiteler integer olsa bile akışın integer
+  olması garantili (max-flow min-cut teoreminin entegre versiyonu);
+  ama integer min-cost flow daha incelikli.
+- **Online / dinamik** — kenarlar zaman içinde değişiyorsa farklı
+  algoritmalar (incremental, decremental).
+
+Bu aracımız klasik tek-emtia integer/real-valued max-flow çözer ve
+min-cut'ı raporlar — endüstri standardı kütüphanelerle (NetworkX,
+LEMON, OR-Tools) aynı çekirdek.

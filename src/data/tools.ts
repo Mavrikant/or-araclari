@@ -207,6 +207,16 @@ export const TOOLS: readonly Tool[] = [
     status: 'ready',
     guideSlug: 'erlang-a-sabirsiz-musteri',
   },
+  {
+    slug: 'maks-akis-cozucu',
+    title: 'Maksimum Akış (Max-Flow) Çözücü',
+    shortTitle: 'Maks-Akış',
+    description:
+      'Yönlü kapasiteli ağda kaynak (s) ile hedef (t) arasındaki maksimum akışı Edmonds-Karp algoritmasıyla (BFS ile en kısa artıran yol) tarayıcıda anlık çöz. Her kenardaki akış, doygun kenarlar ve min-cut (Ford-Fulkerson teoremi: max-flow = min-cut) görselleştirilir.',
+    category: 'graf',
+    status: 'ready',
+    guideSlug: 'maks-akis-min-cut',
+  },
 ] as const;
 
 export function getReadyTools(): readonly Tool[] {
