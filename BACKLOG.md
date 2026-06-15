@@ -23,7 +23,7 @@ Durum: open · in-progress · blocked · done
 
 | id | başlık | tür | değer | efor | durum |
 |---|---|---|---|---|---|
-| F-MINCOST | Min-Cost Flow / Maks-Akış Çözücü (Ford-Fulkerson, Edmonds-Karp) | feature | M | L | open |
+| F-MINCOST2 | Min-Cost Flow Çözücü (SSP — Successive Shortest Path veya network simplex) — F-MINCOST'un ikinci yarısı, max-flow yapıldı; kapasite + birim maliyet birlikte | feature | M | M | open |
 | F-GAME-NASH | Bimatris (genel toplam) Nash dengesi çözücü — Lemke-Howson algoritması, F-GAME'in non-zero-sum uzantısı | feature | M | L | open |
 
 ---
@@ -48,3 +48,4 @@ Durum: open · in-progress · blocked · done
 | F-MM_C (M/M/1/K + M/M/c/K kısmı) | Sonlu Kapasiteli Kuyruk Analizci — birth/death zinciri özyinelemesi (faktoriyel taşması yok), bloklama P_K + λ_eff, Erlang-B kapalı formu (`erlangB()` özyineli); +13 vitest (PR #38) | #16 |
 | F-GAME | İki Kişilik Sıfır Toplamlı Oyun Çözücü — saddle/maximin/minimax analizi + dominant strateji elemesi + 2×2 kapalı form + m×n karışık strateji için LP dönüşümü (pozitiflik shift + x_i = p_i / v); +24 vitest (PR #40) | #17 |
 | F-ERLANG_A | Erlang-A Bekleme & Bırakma Analizci (M/M/c + abandonment) — doğum-ölüm zinciri özyinelemesi + tail truncation, λ > c·μ kararlılığı (θ > 0), P(abandon), λ_aban = θ·Lq, λ_served, QED rejimi rehberi; +17 vitest (PR #42) | #18 |
+| F-MINCOST (max-flow yarısı) | Maks-Akış (Max-Flow) Çözücü — Edmonds-Karp BFS, augmenting-path, min-cut çıkarımı (S→T orijinal kenarlar), CLRS örneği + boru şebekesi; +16 vitest (PR #44). Min-Cost Flow ayrı backlog F-MINCOST2 olarak kaldı | #19 |

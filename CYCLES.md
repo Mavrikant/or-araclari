@@ -416,3 +416,29 @@ döngüde nötralize oldu (sırf 🟢 kod + içerik + doc).
 **İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber, kuyruk serisinin doğal modern uzantısı, mevcut M/M/c deseni birebir takip edildi).
 
 **Sıradaki:** F-MINCOST (Min-Cost Flow / Maks-Akış — L efor, ulaştırma probleminin tek-kaynak/tek-hedef genelleştirmesi, "graf" kategorisinde sadece TSP var — bu boşluk büyük) ya da F-GAME-NASH (sıfır toplamlı oyun çözücüden bimatris/Nash dengesi'ne genişletme — Lemke-Howson). Q-AUDIT-YAML hâlâ open (M efor, breaking-change riski) ama yeni Q-AUDIT-ESBUILD'le birlikte iki ayrı bağımlılık zinciri var.
+
+---
+
+## DÖNGÜ #19 — 2026-06-15
+
+**Yapılan:** F-MINCOST'un **ilk yarısı** — Maksimum Akış (Max-Flow) Çözücü + Ford-Fulkerson/min-cut rehberi yayınlandı. Edmonds-Karp (BFS ile en kısa artıran yol) ve min-cut max-flow teoremi. Min-Cost Flow ayrı bir cycle'a bırakıldı (kapsam disiplini — en küçük anlamlı artış). Graf kategorisinde TSP'den sonra ikinci araç.
+
+**Detay:**
+- `src/lib/max-flow.ts` (+213) — saf algoritma: kapasite matrisi (paralel kenarlar (u,v) hücresine toplanır), BFS ile en kısa artıran yol, augmenting-path döngüsü (max 50k iter güvenlik), bottleneck δ kadar akıt (ileri −, geri +), residüel grafikte s'den erişilebilen kümeyle min-cut çıkarımı (S→T yönündeki orijinal kenarlar cut). Flow geri çözümünde paralel kenarlara kapasiteyle orantılı paylaştırma. Düğüm/kenar/iter limitleri (200/1000/50000).
+- `src/lib/max-flow.test.ts` (+178, **16 vitest**) — CLRS 26.1 örneği max-flow=23 + s'den çıkan = t'ye giren = 23, basit 2-kenar bottleneck, bağlantısız s-t (max-flow=0, iter=0), paralel kenarlar toplam kapasitesiyle çalışır, min-cut max-flow özdeşliği (cut cap = max-flow), s∈S/t∈T konumu, cut sadece S→T yönünde, akış korunumu (Kirchhoff) tüm ara düğümlerde, flow ≤ capacity, validation (boş kenar, source=sink, negatif cap, self-loop, boş source adı), deterministic, düğüm sırası (source önce, sink ikinci).
+- `src/pages/araclar/maks-akis-cozucu.astro` (+330) — mobil-öncelikli form (textarea "kaynak hedef kapasite" satırları + source/sink input), max-flow vurgulu emerald kart + iter sayısı/düğüm/kenar metadata, kenar akış tablosu (Akış/Kapasite/Kullanım% kolonları + doygun amber satır vurgu + 3 durum etiketi: doygun/akış var/boş), min-cut paneli (S/T düğüm listeleri + cut kenarları + cut total = max-flow doğrulama mesajı), 2 örnek (CLRS klasik 9 kenar, boru şebekesi 8 kenar).
+- `src/content/rehberler/maks-akis-min-cut.mdx` (+170) — 10 dk Türkçe rehber: problem tanımı (kapasite + korunum), Ford-Fulkerson iskeleti (residüel ağ + augmenting path), Edmonds-Karp BFS varyantı (neden BFS — DFS patolojik patlaması), min-cut max-flow teoremi (kesim tanımı + zayıf/güçlü dualite), CLRS sayısal örnek tam çözüm (23 + cut S/T), klasik uygulamalar tablosu (bipartite matching, görüntü segmentasyonu, proje seçimi, kritik altyapı, çoklu kaynak/hedef, düğüm kapasitesi), algoritma karşılaştırma tablosu (FF/EK/Dinic/Push-Relabel/Hopcroft-Karp), sınırlar ve genellemeler (Min-Cost Flow, multi-commodity, integer flow), 7 başlık FAQ JSON-LD.
+- `src/data/tools.ts` (+10) — yeni araç kaydı (`graf` kategorisi, guideSlug=`maks-akis-min-cut`).
+- `public/og/maks-akis-cozucu.png` — `npm run og` ile per-tool OG kartı (82.2 KB). Diğer 18 OG kartı byte-identical.
+
+**Bootstrap notu (working tree temizliği):** Otonom döngü tick'i başlangıcında `cycle/15-log` ve `cycle/maks-akis` adında iki stale lokal branch keşfedildi — `cycle/15-log` döngü 15 squash-merge sonrası tip ayrışması (içerik main'de), `cycle/maks-akis` ise bu döngünün önceden başlatıldığı varsayılan boş bir branch (main'le aynı commit'te). Her ikisi de force-delete edildi ve `cycle/maks-akis` temiz olarak yeniden oluşturuldu. Push edilmemiş veri kaybı yok.
+
+**Kapsam disiplini:** F-MINCOST orijinal backlog item'ı "Min-Cost Flow / Maks-Akış Çözücü" başlığıyla L efor ile sıralanmıştı. Autonomous tick içinde L efor riskli olduğundan ikiye ayrıldı: **(1)** Maks-Akış + min-cut (bu döngü, ≈ M efor) **(2)** Min-Cost Flow (gelecek döngü, ayrı algoritma — SSP veya network simplex). Bu, scheduled-task SKILL'inin "en küçük anlamlı artış" kuralına uygun.
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint, **89 dosya**) · test ✓ (**390/390**, +16 yeni max-flow testi, 21 dosya) · build ✓ (**48 sayfa**, 5.39s — araç sayfası + rehber dahil) · Lighthouse — yeni sayfa mevcut araç desenine uygun (inline `<script>`, plotly yok, SVG/Tailwind sadece) ve mobil-öncelikli yerleşim (≥95 beklenir).
+
+**Yayın:** PR #44 squash-merge edildi. `Deploy to GitHub Pages` workflow başarıyla tamamlandı (run 27516237232, 1m10s). Canlı: <https://karaman.dev/or-araclari/araclar/maks-akis-cozucu>.
+
+**İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber, mevcut deseni birebir takip; kapsam disiplini için L efor M efor'a bölündü — bu da denetim notu).
+
+**Sıradaki:** F-MINCOST'un ikinci yarısı: Min-Cost Flow Çözücü — SSP (Successive Shortest Path) algoritması ya da network simplex. Ulaştırma probleminin ağ-üstüne genelleştirmesi, kapasite + birim maliyet birlikte. F-GAME-NASH (Lemke-Howson, L efor) ve Q-AUDIT-YAML (M efor) hâlâ açık.
