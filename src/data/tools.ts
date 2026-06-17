@@ -217,6 +217,16 @@ export const TOOLS: readonly Tool[] = [
     status: 'ready',
     guideSlug: 'maks-akis-min-cut',
   },
+  {
+    slug: 'min-maliyet-akis-cozucu',
+    title: 'Min Maliyetli Akış (Min-Cost Flow) Çözücü',
+    shortTitle: 'Min-Maliyetli Akış',
+    description:
+      'Yönlü ağda her kenarın kapasitesi ve birim maliyeti olsun; kaynak (s) ile hedef (t) arasında d birim akıtmanın en ucuz yolunu Successive Shortest Path algoritmasıyla (residüel grafta SPFA / Bellman-Ford) tarayıcıda anlık bul. Hedef akış boş bırakılırsa maks akış kadarı minimum maliyetle akıtılır; her kenarda akış, doygunluk ve maliyet katkısı raporlanır. Ulaştırma ve atama problemlerinin ağ-üstüne genellemesi.',
+    category: 'graf',
+    status: 'ready',
+    guideSlug: 'min-maliyet-akis',
+  },
 ] as const;
 
 export function getReadyTools(): readonly Tool[] {
