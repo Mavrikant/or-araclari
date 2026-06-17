@@ -5,6 +5,32 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 
 ---
 
+## DÖNGÜ #22 — 2026-06-17
+
+**Yapılan:** F-SHORTEST-PATH — En Kısa Yol Çözücü (Dijkstra + Bellman-Ford) ve uzun-form Türkçe rehber yayınlandı. Yönlü ağırlıklı ağda kaynaktan (s) tüm düğümlere ya da seçilen hedefe (t) minimum toplam ağırlıklı yolu çözer; "auto" mode'da negatif kenar varsa otomatik olarak Bellman-Ford'a düşer. Graf kategorisinin dördüncü aracı (TSP, max-flow, min-cost-flow'dan sonra); Min-Cost Flow'un SSP iç motorunu eğitsel olarak açar.
+
+**Detay:**
+- `src/lib/shortest-path.ts` (+486) — saf algoritma: binary min-heap (lazy delete — settled küme yerine pop sonrası stale dist kontrolü), Dijkstra `O((V+E) log V)`, Bellman-Ford V−1 pass + erken çıkış + V'inci pass'te değişim olursa erişilebilir negatif çevrim raporu (cycleSeed'in çevrim üzerine garantili düşmesi için predecessor zincirini V kez geri izleme + Set tabanlı çevrim toparlama). Auto modu (`hasNegativeEdge` → BF, yoksa Dijkstra); Dijkstra negatif ağırlıkla zorlanırsa `ShortestPathError`. PathStep[] yol rekonstrüksiyonu (paralel kenarlarda min ağırlık). `MAX_NODES = 500`, `MAX_EDGES = 2000` eğitim/orta ölçek için.
+- `src/lib/shortest-path.test.ts` (+314, **20 vitest**) — CLRS 24.3 (Dijkstra: A=0, B=8, C=9, D=5, E=7), CLRS 24.1 (Bellman-Ford: s=0, t=2, x=4, y=7, z=−2), basit 3-kenar zincir, alternatif kısa yol seçimi, paralel kenar min seçimi, ulaşılamayan düğüm (Infinity + reachable=false), auto-mode BF'e düşme, negatif çevrim tespiti + çevrim düğümleri, erişilemez çevrim filtresi (raporlanmaz), Dijkstra-negatif-hata, yol rekonstrüksiyonu monotonluk + kümülatif son = targetDistance, hedef yoksa null + kaynak dist=0 + predecessor=null, validation (boş/self-loop/Infinity/NaN/source=target), determinizm, 50-düğüm/100-kenar orta ölçek.
+- `src/pages/araclar/en-kisa-yol-cozucu.astro` (+477) — mobil-öncelikli form (kenar textarea + s/t input + 3 algoritma radyo: auto/Dijkstra/Bellman-Ford), kırmızı negatif çevrim banner'ı (Çevrim düğümleri liste), emerald hedef-uzaklık kartı (∞ erişilemez gösterimi), adım-adım yol tablosu (Adım/Kenar/Ağırlık/Toplam kolonları + emerald kümülatif vurgu), tüm-düğüm uzaklık tablosu (Düğüm/Uzaklık/Önceki/Durum kolonları + durum etiketi: kaynak brand / erişilebilir emerald / erişilemez slate), 3 örnek (CLRS Dijkstra, CLRS Bellman-Ford, negatif çevrim), localStorage ile durum persistance.
+- `src/content/rehberler/en-kisa-yol-dijkstra-bellman-ford.mdx` (+280) — 11 dk Türkçe rehber: problem tanımı (V, E, w), gevşetme atomik adımı + üçgen eşitsizliği, Dijkstra greedy mantık + neden ≥ 0 (somut karşı örnek: A → C =1, A → B =4, B → C =−10 ile yanlış cevap 1 vs doğru −6), CLRS 24.3 adım adım pop tablosu, Bellman-Ford induction kanıt eskizi (k. pass'ten sonra ≤ k kenar yollar bulunur), CLRS 24.1 sayısal örnek, negatif çevrim örneği (`a→b→a = −2`), iki algoritma karşılaştırma tablosu (karmaşıklık + pratik 10K süre), uzantılar (A*, SPFA, Floyd-Warshall, bidirectional, contraction hierarchies), 8 klasik uygulama tablosu (GPS, OSPF, arbitraj, MODI iç motor, SSP iç motor, Levenshtein), kullandığımız çözüm + sınırlar; 7 başlık FAQ JSON-LD (problem, Dijkstra mekaniği, Bellman-Ford ne zaman, gevşetme tanımı, negatif çevrim semantiği, Dijkstra-negatif karşı örnek, A* hızlanması).
+- `src/data/tools.ts` (+10) — yeni araç kaydı (`graf` kategorisi, guideSlug=`en-kisa-yol-dijkstra-bellman-ford`).
+- `public/og/en-kisa-yol-cozucu.png` — `npm run og` ile per-tool OG kartı (82.3 KB). Diğer 21 OG kartı byte-identical (deterministik render).
+
+**İçerik şeması tuzağı:** İlk yazılan MDX `description` 220+ karaktere ulaşıyordu (`max(200)` zod kısıtını aşar). Astro check `Too big: expected string to have <=200 characters` hatasıyla yakaladı; metin "Yönlü ağırlıklı ağlarda en kısa yolu bulmak: Dijkstra (≥ 0 ağırlık, binary heap) ve Bellman-Ford (negatif ağırlık + çevrim tespiti). Sayısal örnekler ve karmaşıklık karşılaştırması." (181 karakter) hâline kısaltıldı. #15/#16/#18'de görülen MDX disiplin tuzaklarından farklı bir ama benzer "şema sınırı" hatırlatıcısı — frontmatter'ın content.config.ts'teki zod kısıtlarına uyması gerek.
+
+**Tasarım notu:** Dijkstra'da klasik decrease-key yerine "lazy delete" tercih edildi (basitlik + tipik girdilerde aynı asymptotic). Bellman-Ford negatif çevrim çıkarımı için seed düğümün çevrim üstünde olduğunu garanti etmek üzere predecessor zincirini V kez geri izleme tekniği uygulandı (CLRS'in standart kanıtından). Bir kez çevrim üstünde garanti bir düğüme ulaşıldıktan sonra Set-takipli predecessor walk ile çevrim toparlandı. Math notasyonu (`δ(s, v)`, `≤`) MDX prose'unda doğrudan kullanıldı; #15/#16'da yaşanan `{...}` JSX expression tuzağına düşmedi çünkü süslü parantez yok.
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint, **98 dosya**) · test ✓ (**451/451**, +20 yeni shortest-path testi, 24 dosya) · build ✓ (**54 sayfa**, 5.58s — araç sayfası + rehber dahil) · Lighthouse — yeni sayfa mevcut graf araçlarıyla aynı şablon, hidrasyon stratejisi (inline `<script>`, plotly yok, SVG/Tailwind sadece) ve mobil-öncelikli yerleşim kullanıyor (≥95 beklenir).
+
+**Yayın:** PR #50 squash-merge edildi (commit `b1b8004`). `Deploy to GitHub Pages` workflow tetiklendi (run 27710956462). Canlı: <https://karaman.dev/or-araclari/araclar/en-kisa-yol-cozucu>, rehber: <https://karaman.dev/or-araclari/rehberler/en-kisa-yol-dijkstra-bellman-ford>.
+
+**İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber, mevcut graf deseni birebir takip edildi; MDX description schema sınırı tek kalite kapısı yakalaması, root-cause düzeltildi).
+
+**Sıradaki:** F-MST (Prim/Kruskal — graf kategorisinin dördüncü ayağı için doğal devam, network design + clustering bağlamı), F-ASTAR (F-SHORTEST-PATH'in koordinatlı heuristic uzantısı, oyun yapay zekâsı), F-LEMKE (bimatris Nash'in m+n ≤ 12 sınırını aşan pivot algoritması). Q-AUDIT-YAML (M efor, breaking-change riski) hâlâ açık.
+
+---
+
 ## DÖNGÜ #21 — 2026-06-17
 
 **Yapılan:** F-GAME-NASH — Bimatris (Genel Toplam) Nash Dengesi Çözücü ve uzun-form Türkçe Nash teoremi + koordinasyon oyunları rehberi yayınlandı. Support enumeration algoritması; Shapley lemma ile |S₁|=|S₂| varsayımı; saf + karışık tüm Nash dengelerini liste hâlinde döker. F-GAME (sıfır toplam) çözücünün non-zero-sum uzantısı, optimizasyon kategorisinde.
