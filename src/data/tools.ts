@@ -237,6 +237,16 @@ export const TOOLS: readonly Tool[] = [
     status: 'ready',
     guideSlug: 'nash-dengesi-bimatris',
   },
+  {
+    slug: 'en-kisa-yol-cozucu',
+    title: 'En Kısa Yol Çözücü (Dijkstra · Bellman-Ford)',
+    shortTitle: 'En Kısa Yol',
+    description:
+      'Yönlü ağırlıklı ağda kaynaktan (s) tüm düğümlere ya da seçilen hedefe (t) minimum toplam ağırlıklı yolu Dijkstra (binary heap, ≥ 0 ağırlık) ya da Bellman-Ford (negatif ağırlık + negatif çevrim tespiti) ile tarayıcıda anlık bul. Algoritma seçimi otomatik: negatif kenar varsa Bellman-Ford. Her düğüm için uzaklık + predecessor; hedef verilirse adım adım yol rekonstrüksiyonu.',
+    category: 'graf',
+    status: 'ready',
+    guideSlug: 'en-kisa-yol-dijkstra-bellman-ford',
+  },
 ] as const;
 
 export function getReadyTools(): readonly Tool[] {
