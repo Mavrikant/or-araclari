@@ -1,0 +1,614 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import { withBase, SITE } from '../../data/site';
+import { TOOLS } from '../../data/tools';
+
+const tool = TOOLS.find((t) => t.slug === 'bimatris-nash-cozucu')!;
+const guideHref = tool.guideSlug ? withBase(`/rehberler/${tool.guideSlug}`) : null;
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: tool.title,
+  applicationCategory: 'WebApplication',
+  operatingSystem: 'Any',
+  description: tool.description,
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'TRY' },
+  inLanguage: SITE.locale,
+  isAccessibleForFree: true,
+};
+---
+
+<BaseLayout
+  title={tool.title}
+  description={tool.description}
+  image={withBase(`/og/${tool.slug}.png`)}
+  imageAlt={`${tool.title} — OR Araçları`}
+>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+  </Fragment>
+
+  <Container as="section" size="wide" class="pt-12 sm:pt-16">
+    <p class="text-sm font-medium text-brand-600 dark:text-accent-400">
+      <a href={withBase('/araclar')} class="hover:underline">Araçlar</a>
+      <span class="text-slate-400 dark:text-slate-600"> / </span>
+      <span>Optimizasyon</span>
+    </p>
+    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">
+      {tool.title}
+    </h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
+      İki oyuncunun ayrı payoff matrislerini (A: satır oyuncusu R, B: sütun
+      oyuncusu C) gir; oyunun tüm Nash denge noktalarını — saf ve karışık —
+      destek sayımı (support enumeration) ile tarayıcıda anlık çıkaralım.
+      Sıfır toplam varsayımı yoktur; B = −A gerek değil.
+      {guideHref && (
+        <a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>
+      )}
+    </p>
+  </Container>
+
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,420px)_1fr] print:block">
+    <form id="nash-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" data-sample="pd" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Tutuklu Açmazı
+        </button>
+        <button type="button" data-sample="bos" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Cinsiyet Savaşı
+        </button>
+        <button type="button" data-sample="stag" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Stag Hunt
+        </button>
+        <button type="button" data-sample="chicken" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Tavuk Oyunu
+        </button>
+        <button type="button" id="reset-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+          Sıfırla
+        </button>
+      </div>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Strateji adları <span class="font-normal text-slate-500">(opsiyonel)</span>
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            R'ın stratejileri (satır başına bir)
+          </span>
+          <textarea id="rows-input" rows="3" spellcheck="false" autocomplete="off"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            placeholder="R1&#10;R2"></textarea>
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            C'nin stratejileri (virgülle ayrılmış)
+          </span>
+          <input type="text" id="cols-input" autocomplete="off" placeholder="C1, C2"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+      </fieldset>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          A — Satır oyuncusu R'ın getiri matrisi
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Satır = R'ın stratejisi, sütun = C'nin stratejisi. Boşluk, virgül veya tab ile ayır.
+          </span>
+          <textarea id="payoffA-input" rows="5" spellcheck="false" autocomplete="off" required
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            placeholder=" 3   0&#10; 5   1"></textarea>
+        </label>
+      </fieldset>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          B — Sütun oyuncusu C'nin getiri matrisi
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Aynı boyutta. Sıfır toplamlı oyunda B = −A; genel toplamda serbest.
+          </span>
+          <textarea id="payoffB-input" rows="5" spellcheck="false" autocomplete="off" required
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            placeholder=" 3   5&#10; 0   1"></textarea>
+        </label>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          Boyut sınırı: m + n ≤ 12 (2<sup>m</sup>·2<sup>n</sup> desteklerin sayımı için).
+        </p>
+      </fieldset>
+
+      <button type="submit" id="solve-btn" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">
+        <span id="solve-btn-label">Tüm dengeleri bul</span>
+      </button>
+
+      <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
+    </form>
+
+    <section id="output" hidden aria-live="polite" class="space-y-6">
+      <div id="summary-card" class="rounded-2xl border border-emerald-300 bg-emerald-50/60 p-5 dark:border-emerald-900/40 dark:bg-emerald-950/30">
+        <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+          Bulunan denge sayısı
+        </p>
+        <p id="count-readout" class="mt-1 font-display text-3xl font-bold tabular-nums text-emerald-900 dark:text-emerald-100">—</p>
+        <p id="count-sub" class="mt-1 text-xs text-emerald-700/80 dark:text-emerald-200/70">—</p>
+      </div>
+
+      <div id="payoff-block" class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40">
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Birleşik getiri matrisi (A, B)
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Her hücrede (R'ın kazancı, C'nin kazancı). Saf Nash hücreleri yeşil ile vurgulanır.
+        </p>
+        <div id="payoff-table" class="mt-4 overflow-x-auto"></div>
+      </div>
+
+      <div id="equilibria-block" class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/40">
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Denge noktaları
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Her dengede her iki oyuncunun stratejisi, beklenen kazançları ve
+          destek (pozitif olasılıkla oynanan strateji indeksleri) listelenir.
+        </p>
+        <div id="equilibria-list" class="mt-4 space-y-4"></div>
+      </div>
+
+      <div id="empty-block" hidden class="rounded-2xl border border-amber-300 bg-amber-50/60 p-5 dark:border-amber-900/40 dark:bg-amber-950/30">
+        <p class="font-display text-sm font-semibold text-amber-900 dark:text-amber-100">
+          Hiç Nash dengesi bulunamadı
+        </p>
+        <p class="mt-2 text-xs text-amber-800/80 dark:text-amber-200/80">
+          Sonlu bimatris oyunlar için karışık strateji Nash dengesinin
+          varlığı Nash teoremiyle garantilidir. Boş sonuç tipik olarak
+          dejenere bir oyun (payoff'larda eşitlikler) ya da numeric
+          tolerans dışı bir uç durum gösterir. Lütfen matris değerlerini
+          küçük bir perturbasyon ile (örn. 0.001 ekleyerek) deneyin.
+        </p>
+      </div>
+    </section>
+  </Container>
+
+  {guideHref && (
+    <Container as="section" size="wide" class="py-12 sm:py-16">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900/40">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">
+          Konuyu derinleştir
+        </p>
+        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          Bimatris Nash dengesi: support enumeration ve klasik oyunlar
+        </h2>
+        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+          Saf ve karışık Nash dengesi, Tutuklu Açmazı/Cinsiyet Savaşı/Stag
+          Hunt karşılaştırması, destek sayımı algoritması, Shapley lemma
+          ile destek boyutu eşitliği, Lemke-Howson alternatifi.
+        </p>
+        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">
+          Rehberi oku →
+        </a>
+      </div>
+    </Container>
+  )}
+</BaseLayout>
+
+<script>
+  import {
+    findNashEquilibria,
+    BimatrixError,
+    MAX_DIM_SUM,
+    type Equilibrium,
+  } from '../../lib/bimatrix';
+
+  interface Sample {
+    rows: string;
+    cols: string;
+    A: string;
+    B: string;
+  }
+  const SAMPLES: Record<string, Sample> = {
+    pd: {
+      rows: 'İşbirliği\nİhanet',
+      cols: 'İşbirliği, İhanet',
+      A: ' 3   0\n 5   1',
+      B: ' 3   5\n 0   1',
+    },
+    bos: {
+      rows: 'Bach\nStravinsky',
+      cols: 'Bach, Stravinsky',
+      A: ' 3   0\n 0   2',
+      B: ' 2   0\n 0   3',
+    },
+    stag: {
+      rows: 'Geyik\nTavşan',
+      cols: 'Geyik, Tavşan',
+      A: ' 4   0\n 3   3',
+      B: ' 4   3\n 0   3',
+    },
+    chicken: {
+      rows: 'Sap\nDüz git',
+      cols: 'Sap, Düz git',
+      A: ' 0  -1\n 1 -10',
+      B: ' 0   1\n-1 -10',
+    },
+  };
+
+  const STORAGE_KEY = 'bimatrix-nash-state-v1';
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el as T;
+  };
+
+  const form = $<HTMLFormElement>('nash-form');
+  const rowsInput = $<HTMLTextAreaElement>('rows-input');
+  const colsInput = $<HTMLInputElement>('cols-input');
+  const payoffAInput = $<HTMLTextAreaElement>('payoffA-input');
+  const payoffBInput = $<HTMLTextAreaElement>('payoffB-input');
+  const resetBtn = $('reset-btn');
+  const solveBtn = $<HTMLButtonElement>('solve-btn');
+  const solveBtnLabel = $('solve-btn-label');
+  const errorBox = $('error-box');
+  const output = $('output');
+  const countReadout = $('count-readout');
+  const countSub = $('count-sub');
+  const payoffTable = $('payoff-table');
+  const equilibriaList = $('equilibria-list');
+  const emptyBlock = $('empty-block');
+  const equilibriaBlock = $('equilibria-block');
+  const sampleBtns = Array.from(
+    document.querySelectorAll<HTMLButtonElement>('[data-sample]'),
+  );
+
+  function escapeHtml(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+  function fmt(n: number, decimals = 4): string {
+    if (!Number.isFinite(n)) return '∞';
+    if (Math.abs(n) < 1e-10) return '0';
+    return n
+      .toFixed(decimals)
+      .replace(/\.?0+$/, '')
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  }
+  function parseLines(text: string): string[] {
+    return text
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }
+  function parseListCsv(text: string): string[] {
+    return text
+      .split(/[,;]/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }
+  function parseMatrix(text: string, label: string): number[][] {
+    const rows = text
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+    if (rows.length === 0) throw new BimatrixError(`${label} matrisi boş.`);
+    const matrix: number[][] = [];
+    let expectedCols = -1;
+    rows.forEach((line, idx) => {
+      const parts = line.split(/[\s,;\t]+/).filter((s) => s.length > 0);
+      const nums = parts.map((p) => Number(p.replace(',', '.')));
+      if (nums.some((n) => !Number.isFinite(n))) {
+        throw new BimatrixError(`${label} satır ${idx + 1} ayrıştırılamadı: "${line}".`);
+      }
+      if (expectedCols === -1) expectedCols = nums.length;
+      else if (nums.length !== expectedCols) {
+        throw new BimatrixError(
+          `${label} satır ${idx + 1} sütun sayısı diğerleriyle aynı olmalı (${expectedCols} bekleniyor, ${nums.length} verildi).`,
+        );
+      }
+      matrix.push(nums);
+    });
+    return matrix;
+  }
+
+  type SavedState = { rows?: string; cols?: string; A?: string; B?: string };
+  function loadState(): void {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        applySample(SAMPLES.pd);
+        return;
+      }
+      const s = JSON.parse(raw) as SavedState;
+      if (typeof s.rows === 'string') rowsInput.value = s.rows;
+      if (typeof s.cols === 'string') colsInput.value = s.cols;
+      if (typeof s.A === 'string') payoffAInput.value = s.A;
+      if (typeof s.B === 'string') payoffBInput.value = s.B;
+    } catch {
+      applySample(SAMPLES.pd);
+    }
+  }
+  function saveState(): void {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          rows: rowsInput.value,
+          cols: colsInput.value,
+          A: payoffAInput.value,
+          B: payoffBInput.value,
+        } satisfies SavedState),
+      );
+    } catch {
+      /* sessiz. */
+    }
+  }
+  function applySample(s: Sample): void {
+    rowsInput.value = s.rows;
+    colsInput.value = s.cols;
+    payoffAInput.value = s.A;
+    payoffBInput.value = s.B;
+    saveState();
+    clearError();
+  }
+
+  function showError(msg: string): void {
+    errorBox.textContent = msg;
+    errorBox.hidden = false;
+    output.hidden = true;
+  }
+  function clearError(): void {
+    errorBox.hidden = true;
+    errorBox.textContent = '';
+  }
+
+  function defaultNames(prefix: string, count: number): string[] {
+    return Array.from({ length: count }, (_, i) => `${prefix}${i + 1}`);
+  }
+
+  function renderPayoffTable(
+    A: number[][],
+    B: number[][],
+    rowNames: string[],
+    colNames: string[],
+    pureCells: Set<string>,
+  ): void {
+    const m = A.length;
+    const n = A[0].length;
+    const headerCells = colNames
+      .map(
+        (c) =>
+          `<th scope="col" class="px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">${escapeHtml(c)}</th>`,
+      )
+      .join('');
+    const rows: string[] = [];
+    for (let i = 0; i < m; i++) {
+      const cells: string[] = [];
+      for (let j = 0; j < n; j++) {
+        const isPure = pureCells.has(`${i},${j}`);
+        const cellCls = isPure
+          ? 'bg-emerald-100 font-semibold text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-100'
+          : 'text-slate-700 dark:text-slate-200';
+        cells.push(
+          `<td class="${cellCls} px-2 py-1.5 text-center font-mono text-sm tabular-nums">
+              (<span class="text-brand-700 dark:text-brand-300">${fmt(A[i][j])}</span>,
+              <span class="text-amber-700 dark:text-amber-300">${fmt(B[i][j])}</span>)
+            </td>`,
+        );
+      }
+      rows.push(
+        `<tr class="border-t border-slate-200 dark:border-slate-800">
+            <th scope="row" class="px-2 py-1.5 text-left text-sm font-medium text-slate-800 dark:text-slate-100">${escapeHtml(rowNames[i])}</th>
+            ${cells.join('')}
+          </tr>`,
+      );
+    }
+    payoffTable.innerHTML = `<table class="min-w-full text-left">
+        <thead class="bg-slate-50 dark:bg-slate-900/60">
+          <tr>
+            <th scope="col" class="px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">R \\ C</th>
+            ${headerCells}
+          </tr>
+        </thead>
+        <tbody>${rows.join('')}</tbody>
+      </table>
+      <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">
+        <span class="inline-block size-2 rounded-sm bg-emerald-300 dark:bg-emerald-700"></span>
+        yeşil = saf strateji Nash hücresi (her iki oyuncu için de en iyi yanıt).
+      </p>`;
+  }
+
+  function renderStrategyBars(
+    names: string[],
+    probs: number[],
+    accent: 'brand' | 'amber',
+  ): string {
+    const accentBar =
+      accent === 'brand' ? 'bg-brand-500 dark:bg-brand-400' : 'bg-amber-500 dark:bg-amber-400';
+    const inactiveBar = 'bg-slate-200 dark:bg-slate-800';
+    const accentPill =
+      accent === 'brand'
+        ? 'bg-brand-100 text-brand-900 dark:bg-brand-900/40 dark:text-brand-100'
+        : 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100';
+    const inactivePill = 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400';
+    return names
+      .map((name, i) => {
+        const p = probs[i];
+        const active = p > 1e-6;
+        const barWidth = Math.max(0, Math.min(100, p * 100));
+        return `<tr class="border-t border-slate-200 dark:border-slate-800">
+            <th scope="row" class="px-2 py-1.5 text-left text-sm font-medium text-slate-800 dark:text-slate-100">${escapeHtml(name)}</th>
+            <td class="px-2 py-1.5 text-right font-mono text-sm tabular-nums">
+              <span class="inline-block rounded px-1.5 py-0.5 text-xs ${active ? accentPill : inactivePill}">${fmt(p, 4)}</span>
+            </td>
+            <td class="px-2 py-1.5">
+              <div class="h-2 w-full overflow-hidden rounded ${inactiveBar}">
+                <div class="h-full ${active ? accentBar : ''}" style="width:${barWidth.toFixed(2)}%"></div>
+              </div>
+            </td>
+          </tr>`;
+      })
+      .join('');
+  }
+
+  function renderEquilibria(
+    eqs: Equilibrium[],
+    rowNames: string[],
+    colNames: string[],
+  ): void {
+    if (eqs.length === 0) {
+      equilibriaList.innerHTML = '';
+      equilibriaBlock.hidden = true;
+      emptyBlock.hidden = false;
+      return;
+    }
+    equilibriaBlock.hidden = false;
+    emptyBlock.hidden = true;
+
+    /* Sırala: önce saf (kind === 'pure'), sonra karışık. */
+    const sorted = [...eqs].sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === 'pure' ? -1 : 1;
+      return 0;
+    });
+
+    equilibriaList.innerHTML = sorted
+      .map((eq, idx) => {
+        const kindLabel = eq.kind === 'pure' ? 'Saf strateji' : 'Karışık strateji';
+        const kindCls =
+          eq.kind === 'pure'
+            ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100'
+            : 'bg-indigo-100 text-indigo-900 dark:bg-indigo-900/40 dark:text-indigo-100';
+        const supportRowText = eq.supportRow.map((i) => escapeHtml(rowNames[i])).join(', ');
+        const supportColText = eq.supportCol.map((j) => escapeHtml(colNames[j])).join(', ');
+        return `<article class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+            <header class="flex flex-wrap items-baseline justify-between gap-2">
+              <h3 class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+                Denge #${idx + 1}
+                <span class="ml-2 inline-block rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${kindCls}">${kindLabel}</span>
+              </h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                Beklenen kazanç:
+                <span class="font-mono font-semibold text-brand-700 dark:text-brand-300">u<sub>R</sub> = ${fmt(eq.payoffRow)}</span>,
+                <span class="font-mono font-semibold text-amber-700 dark:text-amber-300">v<sub>C</sub> = ${fmt(eq.payoffCol)}</span>
+              </p>
+            </header>
+            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              Destek: R = {${supportRowText}}, C = {${supportColText}}
+            </p>
+            <div class="mt-3 grid gap-4 sm:grid-cols-2">
+              <div>
+                <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300">R'ın stratejisi (x)</p>
+                <div class="mt-1 overflow-x-auto">
+                  <table class="min-w-full text-left">${renderStrategyBars(rowNames, eq.rowStrategy, 'brand')}</table>
+                </div>
+              </div>
+              <div>
+                <p class="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">C'nin stratejisi (y)</p>
+                <div class="mt-1 overflow-x-auto">
+                  <table class="min-w-full text-left">${renderStrategyBars(colNames, eq.colStrategy, 'amber')}</table>
+                </div>
+              </div>
+            </div>
+          </article>`;
+      })
+      .join('');
+  }
+
+  function solveAndRender(): void {
+    clearError();
+    let A: number[][];
+    let B: number[][];
+    try {
+      A = parseMatrix(payoffAInput.value, 'A');
+      B = parseMatrix(payoffBInput.value, 'B');
+    } catch (err) {
+      showError(err instanceof Error ? err.message : String(err));
+      return;
+    }
+
+    const m = A.length;
+    const n = A[0].length;
+    if (B.length !== m || B[0].length !== n) {
+      showError(`A (${m}×${n}) ve B (${B.length}×${B[0]?.length ?? 0}) aynı boyutta olmalı.`);
+      return;
+    }
+    if (m + n > MAX_DIM_SUM) {
+      showError(
+        `Boyut sınırı aşıldı: m + n = ${m + n} (en çok ${MAX_DIM_SUM}). Support enumeration 2^m × 2^n destek çiftini tarıyor.`,
+      );
+      return;
+    }
+
+    const rowNamesRaw = parseLines(rowsInput.value);
+    const colNamesRaw = parseListCsv(colsInput.value);
+    const rowNames = rowNamesRaw.length === m ? rowNamesRaw : defaultNames('R', m);
+    const colNames = colNamesRaw.length === n ? colNamesRaw : defaultNames('C', n);
+
+    solveBtn.disabled = true;
+    solveBtnLabel.textContent = 'Aranıyor...';
+
+    try {
+      const res = findNashEquilibria({ payoffA: A, payoffB: B });
+      output.hidden = false;
+
+      countReadout.textContent = String(res.equilibria.length);
+      const pureCount = res.equilibria.filter((e) => e.kind === 'pure').length;
+      const mixedCount = res.equilibria.length - pureCount;
+      countSub.textContent =
+        res.equilibria.length === 0
+          ? `${res.scanned} destek çifti tarandı, denge bulunamadı.`
+          : `${pureCount} saf, ${mixedCount} karışık · ${res.scanned} destek çifti tarandı.`;
+
+      /* Saf Nash hücrelerini matriste vurgulamak için set. */
+      const pureCells = new Set<string>();
+      for (const eq of res.equilibria) {
+        if (eq.kind === 'pure') {
+          pureCells.add(`${eq.supportRow[0]},${eq.supportCol[0]}`);
+        }
+      }
+      renderPayoffTable(A, B, rowNames, colNames, pureCells);
+      renderEquilibria(res.equilibria, rowNames, colNames);
+      saveState();
+    } catch (err) {
+      if (err instanceof BimatrixError) showError(err.message);
+      else showError(err instanceof Error ? err.message : String(err));
+    } finally {
+      solveBtn.disabled = false;
+      solveBtnLabel.textContent = 'Tüm dengeleri bul';
+    }
+  }
+
+  /* --- Wiring --- */
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    solveAndRender();
+  });
+  for (const btn of sampleBtns) {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.sample;
+      if (key && SAMPLES[key]) applySample(SAMPLES[key]);
+    });
+  }
+  resetBtn.addEventListener('click', () => {
+    rowsInput.value = '';
+    colsInput.value = '';
+    payoffAInput.value = '';
+    payoffBInput.value = '';
+    output.hidden = true;
+    clearError();
+    saveState();
+  });
+  [rowsInput, colsInput, payoffAInput, payoffBInput].forEach((el) =>
+    el.addEventListener('input', () => saveState()),
+  );
+
+  loadState();
+</script>

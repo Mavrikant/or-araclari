@@ -1,0 +1,299 @@
+---
+title: "Bimatris (Genel Toplam) Oyunlar: Nash Dengesi ve Support Enumeration"
+description: "İki kişilik genel toplamlı oyunlarda saf ve karışık Nash dengelerinin support enumeration ile çözümü. Tutuklu Açmazı, Cinsiyet Savaşı, Stag Hunt örnekleri, Nash teoremi ve Shapley lemma."
+pubDate: 2026-06-17
+relatedTool: "bimatris-nash-cozucu"
+keywords:
+  - "Nash dengesi"
+  - "bimatris oyun"
+  - "genel toplamlı oyun"
+  - "non-zero-sum game"
+  - "support enumeration"
+  - "Lemke-Howson"
+  - "Tutuklu Açmazı"
+  - "Cinsiyet Savaşı"
+  - "Stag Hunt"
+  - "tavuk oyunu"
+  - "karışık strateji"
+  - "best response"
+readingMinutes: 11
+faq:
+  - question: "Bimatris (genel toplamlı) oyun nedir ve sıfır toplamdan farkı nedir?"
+    answer: "Bimatris oyun, iki oyuncunun (R ve C) ayrı payoff matrisleri olan sonlu strateji oyunudur. R'ın matrisi A, C'nin matrisi B, ikisi de m×n boyutunda. A[i][j] = R'ın i. satırı j. sütun karşısında oynamasının kazancı; B[i][j] = aynı durumda C'nin kazancı. Sıfır toplamlı varsayım A + B = 0'dır (rekabet); genel toplamda bu zorunluluk yoktur — iki oyuncu kazan-kazan (Stag Hunt) ya da kaybet-kaybet (Tutuklu Açmazı) durumlarına da girebilir. Bu daha geniş model, ekonomik etkileşimlerin (oligopol, müzakere, koordinasyon, sözleşme) çoğunu temsil etmek için gerekli."
+  - question: "Nash dengesi nedir ve neden var olduğu garanti?"
+    answer: "Nash dengesi (Nash, 1950) bir strateji profili (x*, y*) öyle ki hiçbir oyuncu tek başına stratejisini değiştirerek beklenen kazancını artıramaz. Resmi olarak: (Ay*)_i = u her i ∈ supp(x*); (Ay*)_i ≤ u her i ∉ supp(x*) (R'ın indifference + off-support best response); benzer şekilde y* için. Nash'in temel teoremi (1950): her sonlu n-oyuncu oyunda en az bir karışık strateji Nash dengesi vardır. İspat Kakutani sabit-nokta teoremini best-response correspondence'ına uygular. Pratik anlam: bimatris oyun ne kadar dejenere olursa olsun çözüm vardır."
+  - question: "Saf ve karışık Nash arasındaki fark nedir, hangisi gerçek hayatta uygulanır?"
+    answer: "Saf Nash: her oyuncu deterministik bir strateji oynar (x_i* = 1, diğerleri 0). Karışık Nash: en az bir oyuncu olasılıklarla rastgeleleştirir (0 < x_i* < 1). Bir oyunda saf Nash olmayabilir (matching pennies, taş-kağıt-makas), tek saf Nash olabilir (Tutuklu Açmazı), çoklu saf Nash olabilir (Cinsiyet Savaşı, Stag Hunt). Gerçek hayatta saf Nash 'odak noktası' (focal point) varsa uygulanır — kültürel sözleşmeler, eski deneyim. Karışık Nash, rakibin sizi okumasını engellemek için kasıtlı belirsizlik (sportif penaltı yönü, askeri pozisyon, çift sayım denetimi). Birinde diğeri seçilince oyuncuların çoklu denge arasından seçim mekanizması (Pareto baskınlığı, risk dominans) ayrı bir konudur."
+  - question: "Support enumeration algoritması nasıl çalışır?"
+    answer: "Support enumeration, tüm karışık Nash dengelerini bulmak için kullanılan kavramsal olarak en açık algoritmadır. Şapley lemma (nondejenere oyunlarda): bir karışık Nash dengesinde |supp(x*)| = |supp(y*)| — yani R ve C'nin pozitif olasılıkla oynadığı strateji sayıları eşittir. Algoritma: her k = 1, 2, ..., min(m,n) için her (S₁ ⊆ {1..m}, S₂ ⊆ {1..n}) ile |S₁| = |S₂| = k destek çifti dene. Her çift için lineer sistemi çöz: A_{S₁,S₂} y_{S₂} = u·1 (k denklem), Σ y_{S₂} = 1 (1 denklem) ⇒ (k+1) bilinmeyen, (k+1) denklem. Benzer şekilde x. Sonra off-support best-response (i ∉ S₁: (Ay)_i ≤ u) doğrula. Geçenler liste başına eklenir. Karmaşıklık: O(2^m · 2^n · poly(m,n)) — küçük oyunlarda hızlı, m+n > ~16'da patlar. Aracımızın limiti m+n ≤ 12."
+  - question: "Lemke-Howson algoritması ile fark nedir, neden support enumeration seçildi?"
+    answer: "Lemke-Howson (1964) tek bir Nash dengesi bulmak için pivot tabanlı bir algoritmadır — lineer komplementarite problemi (LCP) formülasyonu üzerinde Lemke'nin tamamlayıcı pivot şemasını kullanır. Avantaj: kötü-halde-üstel olmasına rağmen pratikte çok hızlıdır ve büyük oyunlara ölçeklenir. Dezavantaj: sadece bir denge döndürür, başlangıç 'missing label' k seçimine bağlı olarak hangi dengeyi bulduğu deterministik ama hangisinin bulunduğunu kontrol etmek zor. Support enumeration: TÜM dengeleri bulur ki bu eğitim ve OR pratiği için daha bilgi verici (örnek: Cinsiyet Savaşı'nın 3 dengesi — 2 saf + 1 karışık — birlikte görülünce 'koordinasyon problemi'nin neden zor olduğu anlaşılır). Küçük matriste her ikisi de hızlı; eğitsel netlik için support enumeration tercih edildi."
+  - question: "Tutuklu Açmazı (Prisoner's Dilemma) neden Nash teorisinin klasiği?"
+    answer: "İki tutuklu, ihanet (D) ya da işbirliği (C) seçimi. A (R'a kazanç): [(C,C)=3, (C,D)=0; (D,C)=5, (D,D)=1]. B (C'ye kazanç) simetrik. Strictly dominant strateji: D her durumda C'ye baskın (5>3, 1>0 R için; 5>3, 1>0 C için). Tek Nash: (D, D) = (1, 1). Ama (C, C) = (3, 3) Pareto-baskın olur! Sosyal-optimum işbirliği oyunun kararlı dengesi değil — bireysel rasyonellik kolektif felaketi getirir. Bu paradox, kamu malları, çevre kirliliği, silahlanma yarışı, fiyat savaşı ve tüm sosyal kooperasyon problemlerinin matematiksel iskeletidir. Tekrarlı oyunlarda 'işbirliği eğilimi' (Axelrod 1984) ortaya çıkar; tek seferlik oyunda saf D-D kaçınılmazdır. Bimatris çözücümüz bu tek dengeyi doğrudan gösterir."
+  - question: "Cinsiyet Savaşı ve Stag Hunt — koordinasyon oyunlarında çoklu denge nasıl?"
+    answer: "Cinsiyet Savaşı: iki eş aynı yerde olmak ister ama biri Bach diğeri Stravinsky tercih eder. A = [[3,0],[0,2]], B = [[2,0],[0,3]]. 3 Nash: (Bach, Bach) saf, (Stravinsky, Stravinsky) saf, ve karışık (3/5, 2/5) için R, (2/5, 3/5) için C. Karışık dengede beklenen kazanç u = v = 6/5 — saf dengelerin ortalamasından düşük! Çoklu dengede 'odak noktası' seçimi sosyal dilemma'dır. Stag Hunt: A = [[4,0],[3,3]], B = [[4,3],[0,3]]. (Geyik, Geyik) Pareto-baskın (4,4) ama riskli (yalnız geyik = 0); (Tavşan, Tavşan) güvenli ama düşük (3,3). 2 saf Nash + 1 karışık. 'Risk dominans' (Harsanyi-Selten 1988) güvenli olanı, 'Pareto dominans' iyi olanı seçer — gerçek hayatta hangisinin oynanacağı bağlama bağlıdır (gelenek, iletişim, geçmiş)."
+  - question: "Dejenere oyun nedir ve algoritma nasıl etkilenir?"
+    answer: "Bimatris oyun nondejenere ⇔ R'ın saf en iyi yanıtlarının sayısı her karışık y için tek (max sütunda tek bir tepe), benzer C için. Dejenere oyunlarda payoff matrisinde 'tesadüfi' eşitlikler (aynı sütunda iki satır eşit max'a sahip) Shapley lemma'nın |S₁|=|S₂| varsayımını bozabilir. Sonuçlar: (a) sonsuz aileli denge ortaya çıkabilir (continuum of equilibria), (b) bazı dengeler farklı destek boyutlarında çıkabilir, (c) numeric tolerans önemli olur. Çözücümüz nondejenere oyunlar için optimaldir; dejenere bir oyunda (örn. tüm hücreler 1) sonuçlar bilgi verici olmayabilir. Pratik öneri: matris değerlerini küçük rastgele perturbasyonla (ε = 0.001) bozarak dejenerasyonu kaldırın; bulunan dengeler perturbasyonsuz dengelerin yakınındadır."
+---
+
+İki kişilik **bimatris oyun** — her oyuncunun kendi payoff matrisi olan
+sonlu strateji oyunu — modern oyun teorisinin en geniş ve en sık
+kullanılan modelidir. Sıfır toplam varsayımı (B = −A) ekonomi, biyoloji,
+siyaset, mühendislik ve hatta makine öğreniminin çoğu uygulamasında
+gerçekçi değildir: kazan-kazan (koordinasyon), kaybet-kaybet (kamu malı
+trajedisi), karışık güdüler. **Nash'in 1950 teoremi** bu tüm sonlu
+oyunlarda en az bir karışık strateji dengesinin varlığını garanti eder —
+ve algoritmik olarak hepsini tarayıcıda bulabiliriz.
+
+## Problemin yapısı
+
+İki oyuncu: satır oyuncusu **R** (m stratejisi), sütun oyuncusu **C** (n
+stratejisi). İki matris:
+
+- $A \in \mathbb{R}^{m \times n}$ — R'ın kazanç matrisi: $A[i,j]$ = R'ın
+  $i$ satırı, C'nin $j$ sütunu oynanırken R'ın kazancı.
+- $B \in \mathbb{R}^{m \times n}$ — C'nin kazanç matrisi: aynı
+  $(i, j)$'de C'nin kazancı.
+
+Klasik gösterim: birleşik tablo, her hücrede $(A[i,j], B[i,j])$.
+**Tutuklu Açmazı** örneği:
+
+| R \ C | İşbirliği (C) | İhanet (D) |
+| --- | --- | --- |
+| İşbirliği (C) | (3, 3) | (0, 5) |
+| İhanet (D) | (5, 0) | (1, 1) |
+
+İhanet her durumda işbirliğine baskın: R için $A_{2j} > A_{1j}\ \forall j$,
+benzer C için. Tek saf Nash: (D, D) = (1, 1). Ama sosyal-optimum (C, C) =
+(3, 3) Pareto-baskın! **Bireysel rasyonellik kolektif felakete götürür.**
+
+## Saf strateji Nash dengesi
+
+$(i^*, j^*)$ saf Nash ⇔ her iki oyuncu için karşılıklı en iyi yanıt:
+
+$$
+A[i^*, j^*] = \max_i A[i, j^*] \quad \text{ve} \quad B[i^*, j^*] = \max_j B[i^*, j]
+$$
+
+Yani R, C'nin oynadığı sütundan memnun; C, R'ın oynadığı satırdan
+memnun. Algoritma: her sütun için R'ın en iyi yanıt(lar)ı $\arg\max_i A[i,j]$;
+her satır için C'nin en iyi yanıt(lar)ı $\arg\max_j B[i,j]$;
+**kesişim hücreleri** saf Nash'tir. Bu O(mn) bir taramadır.
+
+Pratik vakalar:
+
+- **Tek saf Nash** (Tutuklu Açmazı): strictly dominant strateji
+  zorunludur. Stratejik analiz "kolay" — herkes ihanet eder.
+- **Birden fazla saf Nash** (Cinsiyet Savaşı, Stag Hunt): koordinasyon
+  problemi. Odak nokta (focal point), gelenek, iletişim ya da risk-Pareto
+  baskınlığı gibi denge seçim mekanizmaları gerekir.
+- **Saf Nash yok** (Matching Pennies, Taş-Kağıt-Makas): tahmin
+  edilebilirlik bir oyuncunun kazancını düşürür. Karışık strateji
+  zorunludur.
+
+## Karışık strateji ve Nash teoremi
+
+Karışık strateji: olasılık dağılımları $x \in \Delta^m$, $y \in \Delta^n$
+($\sum x_i = 1$, $x_i \ge 0$). Beklenen kazançlar:
+
+$$
+u_R(x, y) = x^T A y = \sum_{i,j} x_i A[i,j] y_j,
+\quad
+v_C(x, y) = x^T B y
+$$
+
+$(x^*, y^*)$ **karışık Nash dengesi** ⇔ her oyuncu için **best response
+property**:
+
+$$
+x^* \in \arg\max_{x \in \Delta^m} x^T A y^*, \quad
+y^* \in \arg\max_{y \in \Delta^n} (x^*)^T B y
+$$
+
+Bu, **indifference** koşullarına eşdeğerdir:
+
+- Her $i \in \mathrm{supp}(x^*)$: $(A y^*)_i = u$, yani destek içindeki
+  her saf strateji aynı beklenen kazancı verir (yoksa R, kötü olanı
+  bırakırdı).
+- Her $i \notin \mathrm{supp}(x^*)$: $(A y^*)_i \le u$, yani destek dışı
+  her saf strateji en az iyi.
+- Benzer C için: $j \in \mathrm{supp}(y^*) \Rightarrow ((x^*)^T B)_j = v$;
+  $j \notin \mathrm{supp}(y^*) \Rightarrow ((x^*)^T B)_j \le v$.
+
+**Nash'in temel teoremi (1950).** Her sonlu n-oyuncu oyununda en az bir
+karışık strateji Nash dengesi vardır.
+
+İspat iskeleti: her oyuncunun best-response correspondence'ı $BR_R(y)$ ve
+$BR_C(x)$ tanımlanır. Birleşik correspondence $T(x, y) = BR_R(y) \times BR_C(x)$
+üst-yarı-süreklilik, konveks-değerli ve kompakt domain
+$\Delta^m \times \Delta^n$ üzerinde tanımlıdır. Kakutani sabit-nokta
+teoremi: $T(x^*, y^*) \ni (x^*, y^*)$ — bu da Nash dengesidir.
+
+## Support enumeration algoritması
+
+Karışık Nash dengelerini bulmak için kavramsal olarak en açık algoritma.
+**Shapley lemma** (nondejenere oyunlarda): bir karışık Nash dengesinde
+$|\mathrm{supp}(x^*)| = |\mathrm{supp}(y^*)| = k$ — destek boyutları
+eşit. Sezgi: $k$ satır indifferent ise $k$ doğrusal denklem var; $k$ sütun
+indifferent ise $k$ daha; çözüm tek olabilmesi için $k$ üzerinden eşit
+boyutlu bilinmeyenler gerekir.
+
+**Algoritma:**
+
+1. Her $k = 1, 2, \dots, \min(m, n)$ için:
+2. Her $S_1 \subseteq \{1, \dots, m\}$ ile $|S_1| = k$ için:
+3. Her $S_2 \subseteq \{1, \dots, n\}$ ile $|S_2| = k$ için:
+4. Lineer sistemi çöz (bilinmeyenler $y_{S_2}$ ve $u$):
+
+$$
+\begin{cases}
+\sum_{j \in S_2} A[i, j] \cdot y_j = u & \forall i \in S_1 \\
+\sum_{j \in S_2} y_j = 1 &
+\end{cases}
+$$
+
+Benzer şekilde $x_{S_1}$ ve $v$ için. $(k+1) \times (k+1)$ sistem, Gauss
+eliminasyonu ile çözülür.
+
+5. Doğrulama:
+   - $x_i > 0$ her $i \in S_1$ (pozitif olasılık).
+   - $y_j > 0$ her $j \in S_2$.
+   - Off-support best response: $(A y)_i \le u$ her $i \notin S_1$;
+     $(x^T B)_j \le v$ her $j \notin S_2$.
+
+Geçen $(x^*, y^*, u, v)$ Nash dengesi olarak listelenir.
+
+**Karmaşıklık.** Toplam destek çifti sayısı:
+
+$$
+\sum_{k=1}^{\min(m,n)} \binom{m}{k} \binom{n}{k} = \binom{m+n}{m} - 1
+\sim O(2^{m+n})
+$$
+
+Her çift için $O(k^3)$ Gauss eliminasyonu. Küçük oyunlarda ($m, n \le 6$)
+$4096 \cdot 216 \approx 10^6$ işlem — milisaniyeler. Çözücümüz
+$m + n \le 12$ ile sınırlı.
+
+## Klasik oyunlar — sayısal turlar
+
+### Cinsiyet Savaşı (Battle of Sexes)
+
+İki eş aynı yerde olmak ister ama biri Bach (B), diğeri Stravinsky (S)
+tercih eder. $A = \begin{pmatrix} 3 & 0 \\ 0 & 2 \end{pmatrix}$,
+$B = \begin{pmatrix} 2 & 0 \\ 0 & 3 \end{pmatrix}$.
+
+**Saf Nash arama:**
+- Sütun 1 ($C = B$): R'ın en iyi yanıt = max(3, 0) = R₁ (Bach).
+- Sütun 2 ($C = S$): R'ın en iyi yanıt = max(0, 2) = R₂ (Stravinsky).
+- Satır 1 ($R = B$): C'nin en iyi yanıt = max(2, 0) = C₁ (Bach).
+- Satır 2 ($R = S$): C'nin en iyi yanıt = max(0, 3) = C₂ (Stravinsky).
+- Kesişim hücreleri: (R₁, C₁) ve (R₂, C₂) — iki saf Nash.
+
+**Karışık Nash arama ($k = 2$):** $S_1 = \{1, 2\}$, $S_2 = \{1, 2\}$.
+
+R'ın indifference: $3 y_1 + 0 y_2 = 0 y_1 + 2 y_2 \Rightarrow 3 y_1 = 2 y_2$.
+$y_1 + y_2 = 1 \Rightarrow y_1 = 2/5$, $y_2 = 3/5$.
+
+C'nin indifference: $2 x_1 + 0 x_2 = 0 x_1 + 3 x_2 \Rightarrow 2 x_1 = 3 x_2$.
+$x_1 + x_2 = 1 \Rightarrow x_1 = 3/5$, $x_2 = 2/5$.
+
+Beklenen kazançlar: $u = 3 \cdot (2/5) = 6/5$, $v = 2 \cdot (3/5) = 6/5$.
+
+**Sonuç:** 3 Nash dengesi — 2 saf (Pareto baskın değil, biri R'ın diğeri
+C'nin lehine) + 1 karışık (her ikisi için de daha düşük 6/5 kazanç).
+Karışık dengede tutarsız ulaşım fenomeni: oyuncular **eski sürelerin
+yarısında buluşamazlar** (her ikisinin bağımsız rastgeleleştirmesi tutmaz).
+
+### Stag Hunt (Geyik Avı)
+
+İki avcı: birlikte geyik (S) avlasın yüksek getiri; tek başına tavşan (H)
+güvenli ama düşük. $A = \begin{pmatrix} 4 & 0 \\ 3 & 3 \end{pmatrix}$,
+$B = \begin{pmatrix} 4 & 3 \\ 0 & 3 \end{pmatrix}$.
+
+İki saf Nash: (S, S) Pareto-baskın (4, 4), (H, H) risk-baskın (3, 3) +
+bir karışık.
+
+**Koordinasyon problemi:** Pareto baskınlık (S, S)'yi söyler; risk
+dominans (H, H)'yi söyler ("tavşan oyna" küçük risk). Hangisi
+oynanacağı sosyal sözleşmeye, iletişime ve geçmişe bağlıdır.
+
+### Tavuk Oyunu (Chicken / Hawk-Dove)
+
+İki sürücü düz git (D) veya sap (S). Düz-Düz felaketli, Sap-Sap utanç
+verici (uzlaşma), karışık asimetrik.
+$A = \begin{pmatrix} 0 & -1 \\ 1 & -10 \end{pmatrix}$,
+$B = \begin{pmatrix} 0 & 1 \\ -1 & -10 \end{pmatrix}$.
+
+İki asimetrik saf Nash: (Düz, Sap) — R kazanır, C uzlaşır; (Sap, Düz) —
+tersi + bir karışık. Sapma cesareti olan kazanır — "bağlanma" stratejisi
+(Schelling 1960) güçlü.
+
+## Lemke-Howson alternatifi
+
+Lemke-Howson (1964): tek bir Nash bulan pivot-tabanlı LCP çözücüsü. LP
+$x^T B + r = 1$ (C'nin slack) ve $A y + s = 1$ (R'ın slack)
+formülasyonundan $x_i r_i = 0$, $y_j s_j = 0$ tamamlayıcılığı kurulur.
+Her vertex çifti $(x, y)$ kombinatoryel olarak **etiketlenir**: etiket $i$
+"R, satır $i$'yi oynamıyor" ya da "C, satır $i$'nin best response
+constraint'i sıkı" demektir. Algoritma artificial vertex'ten başlar, bir
+$k$ etiketini "missing" yapar, tamamlayıcı pivot şemasıyla komşu vertex'e
+geçer; missing label döndüğünde Nash dengesi bulunur.
+
+**Avantajları:** pratikte hızlı, büyük oyunlara ölçeklenir ($m, n \le 100$
+makul). **Dezavantajı:** sadece bir denge döndürür ve hangisi olduğunu
+kontrol etmek (missing label seçimine bağlı) eğitim için netlik
+azaltır. Bizim aracımız **support enumeration** ile bütünü tarar —
+küçük oyunlarda (klasik OR ders örnekleri) tam panorama görmek esastır.
+
+## Algoritma karşılaştırması
+
+| Algoritma | Karmaşıklık | Tüm dengeler? | Ne zaman? |
+| --- | --- | --- | --- |
+| Support enumeration | $O(\binom{m+n}{m})$ | Evet | $m + n \le ~16$, eğitsel netlik |
+| Lemke-Howson | Üstel kötü durumda; pratikte hızlı | Hayır (tek) | Büyük oyunlar, tek tatmin edici denge |
+| Sınır + lineer programlama (sıfır toplam) | Polinom | LP optimumu (tek) | $B = -A$ olmalı |
+| Vertex enumeration (best-response polytope) | $O(\binom{m+n}{m})$ | Evet | Geometrik, alternatif format |
+| Mathematica/Gambit (genelleme) | Çeşitli | Tümü ya da numerik | Profesyonel araştırma |
+
+## Modelin sınırları
+
+**İki oyuncu.** $n \ge 3$ oyuncu için Nash teoremi geçerlidir ama
+algoritma çok daha pahalıdır (continuous nonlinear sistem). Gambit ya da
+mixed-integer formülasyon gerekir.
+
+**Sonlu strateji.** Sürekli stratejiler (fiyat $\in [0, \infty)$,
+karışım oranı $\in [0, 1]$) için reaksiyon fonksiyonu analitik
+çözülmelidir; Nash dengesi best-response curves'ün kesişimidir
+(örnek: Cournot oligopol).
+
+**Common knowledge of rationality.** Klasik Nash, her iki oyuncunun
+oyunu, payoff'ları ve rakibin rasyonelliğini bildiğini varsayar
+(common knowledge). Bayes oyunları (eksik bilgi), evrimsel oyun teorisi
+(sınırlı rasyonellik), behavioral game theory (sosyal tercihler) bu
+varsayımı gevşetir.
+
+**Eşit ödeme dengesi seçimi.** Çoklu Nash dengesinde hangisi
+oynanır? Refinements: alt-oyun mükemmel Nash (sequential games),
+ödemeli mükemmel Nash, trembling-hand mükemmel, Pareto-baskın, risk
+dominans (Harsanyi-Selten 1988). Bizim aracımız tüm dengeleri listeler;
+seçim ayrı bir konudur.
+
+**Dejenere oyunlar.** Payoff'larda eşitlikler Shapley lemma'yı bozabilir
+ve sonsuz aileli denge oluşturabilir. Pratik öneri: değerlere küçük
+rastgele perturbasyon ekleyin.
+
+## Sonuç
+
+Bimatris Nash dengesi, ekonomi ve sosyal bilimlerin matematiksel
+çekirdeğidir. **Saf Nash** kararlı odak noktalarını gösterir; **karışık
+Nash** belirsizlik ve tahmin-edilemezlik dinamiklerini açıklar.
+**Support enumeration** algoritması küçük oyunların tam panoramasını
+verir — özellikle koordinasyon problemlerinde (Cinsiyet Savaşı, Stag
+Hunt) çoklu dengeyi yan yana görmek strateji seçimini bağlam-bağımlı
+yapar. Daha büyük oyunlar için Lemke-Howson ya da profesyonel çözücüler
+(Gambit) gerekir; ama OR derslerinin ve pratik stratejik analizin
+büyük bölümü 2×2 ile 5×5 arasındadır — buradaki aracın domain'i.
+
+Sıfır toplamlı oyunlardan (von Neumann minimax teoremi) bimatris Nash'e
+geçiş, oyun teorisinin **rekabetten etkileşime** genelleşmesidir. İkinci
+sınıf, hayatın çok daha büyük bir kesimini kapsar.
