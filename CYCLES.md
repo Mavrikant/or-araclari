@@ -5,6 +5,28 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 
 ---
 
+## DÖNGÜ #20 — 2026-06-17
+
+**Yapılan:** Min-Cost Flow (Min Maliyetli Akış) Çözücü yayınlandı (F-MINCOST2 — F-MINCOST'un ikinci yarısı). Successive Shortest Path algoritması (residüel grafta SPFA / queue-based Bellman-Ford), her kenarda kapasite + birim maliyet, isteğe bağlı hedef akış d (boşsa max-flow kadar). Uzun-form Türkçe rehber (SSP iskeleti, residüel grafta negatif ters kenarlar, Johnson reweighting, açgözlük tuzağı, ulaştırma indirgemesi, network simplex karşılaştırması). Tool & guide tools.ts'e ve OG generator'a eklendi.
+
+**Detay:**
+- `src/lib/min-cost-flow.ts` — SSP çekirdek; düğüm interning, residüel arc çifti (ileri +w, ters −w), SPFA shortest-path, bottleneck augment; integer flow garantili; +18 vitest
+- `src/lib/min-cost-flow.test.ts` — tek yol, paralel yol (ucuz önce), maks akış kadar, infeasible, geri çağırma (cancellation) gerektiren açgözlük tuzağı, akış korunumu, totalCost = Σ flow·cost tutarlılığı, validation (6), determinism, 2×3 ulaştırma problemi (klasik LP optimumu = 375)
+- `src/pages/araclar/min-maliyet-akis-cozucu.astro` — kenar editörü, source/sink/required form alanları, 2 örnek (Açgözlük tuzağı, Ulaştırma örneği), toplam akış + toplam maliyet kartları, kenar tablosu (akış %, cost katkısı), infeasible uyarısı, localStorage state
+- `src/content/rehberler/min-maliyet-akis.mdx` — 8 FAQ, LP formülasyonu (totally unimodular), SSP pseudokod, Klein 1967 negatif yön çevrim teoremi, açgözlük tuzağı sayısal analizi (naif 202 vs SSP 4), ulaştırma indirgemesi, algoritma karşılaştırma tablosu
+- `src/data/tools.ts` — 20'nci araç; `graf` kategorisi (max-flow ile aynı), guideSlug `min-maliyet-akis`
+- `public/og/min-maliyet-akis-cozucu.png` — generate-og.mjs ile (82.5 KB)
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint) · test ✓ (408/408, +18 yeni) · build ✓ (50 sayfa, önceki 48) · Lighthouse — değişiklik yapısal mevcut araç desenleriyle birebir; ölçüm yeni sayfaya merge sonrası yapılacak
+
+**Yayın:** PR açılacak ve CI yeşilse merge.
+
+**İşaret:** yok (sırf 🟢 yeşil eylem — yeni araç + içerik; backlog'daki F-MINCOST2 done'a geçiyor)
+
+**Sıradaki:** F-GAME-NASH (Bimatris Nash dengesi, Lemke-Howson) ya da Q-AUDIT-YAML zincirinin Astro/check uyumlulukla nasıl yükseltileceğinin denenmesi. Bir sonraki döngüde F-GAME-NASH (oyun teorisi olduğu için F-GAME yapısına çok yakın referans) tercih edilebilir.
+
+---
+
 ## DÖNGÜ #1 — 2026-05-18
 
 **Yapılan:** `npm run check` üzerinde 4 TypeScript hatası giderildi; otonom ajan denetim dosyaları (CYCLES.md, BACKLOG.md, DECISIONS.md, INCIDENTS.md) oluşturuldu.
