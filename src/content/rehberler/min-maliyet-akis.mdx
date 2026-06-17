@@ -1,0 +1,240 @@
+---
+title: "Min-Cost Flow: Successive Shortest Path ile Min Maliyetli Akış"
+description: "Min maliyetli akış: Successive Shortest Path algoritması, residüel grafta negatif ters kenarlar, Bellman-Ford/SPFA, klasik uygulamalar ve örnekler."
+pubDate: 2026-06-17
+relatedTool: "min-maliyet-akis-cozucu"
+keywords:
+  - "min-cost flow"
+  - "min maliyetli akış"
+  - "successive shortest path"
+  - "SSP"
+  - "residüel graf"
+  - "Bellman-Ford"
+  - "SPFA"
+  - "Johnson potansiyeli"
+  - "network simplex"
+  - "ağ optimizasyonu"
+  - "ulaştırma problemi"
+  - "atama problemi"
+readingMinutes: 11
+faq:
+  - question: "Min-cost flow (min maliyetli akış) problemi nedir?"
+    answer: "Yönlü kapasiteli bir ağda her kenara iki sayı koy: kapasite c(u,v) ≥ 0 ve birim maliyet w(u,v). Kaynak s'den hedef t'ye toplam d birim akıt; akış kapasite kısıtlarını ve her ara düğümde Σ giren = Σ çıkan kuralını sağlasın. HEDEF: toplam maliyet Σ w(u,v)·f(u,v) minimum olsun. Max-flow probleminin doğal genellemesidir — orada sadece akış miktarını maksimize ediyorduk; burada her birim akışın ne kadara mal olduğunu da modelliyoruz. Klasik uygulamaları: ulaştırma (kaynak depodan hedef şehre min maliyetli sevkiyat), atama problemi (n işçi × n iş min maliyetli eşleme), lojistik ağ tasarımı, mali transferler, çoklu-kaynak/çoklu-hedef tedarik."
+  - question: "Successive Shortest Path (SSP) nasıl çalışır?"
+    answer: "SSP, Edmonds-Karp'ın min-cost flow analogudur. (1) Akışı 0 başlat. (2) Residüel grafikte s'den t'ye en UCUZ (cost'a göre en kısa) yolu bul — kenar uzunluğu olarak BFS yerine maliyeti kullanırız. (3) Yol üzerindeki minimum residüel kapasite δ kadar akıt; toplam akışa δ, toplam maliyete δ · pathCost ekle. (4) Hedef akışa ulaşılana veya artıran yol kalmayana kadar tekrarla. Önemli ince ayrıntı: residüel grafiğin TERS kenarları negatif maliyetlidir (akışı geri çağırmak maliyet iadesidir), bu yüzden saf Dijkstra çalışmaz — Bellman-Ford / SPFA gerekir. Pozitif maliyetli orijinal kenarlar ve negatif maliyetli ters kenarlar bir arada olduğunda 'reduced cost' (Johnson potansiyeli) ile yeniden ağırlıklandırarak Dijkstra'yı geri kazanmak da mümkündür (büyük ağlarda standart hızlandırma)."
+  - question: "Neden Dijkstra değil de Bellman-Ford / SPFA?"
+    answer: "Dijkstra'nın doğruluk kanıtı tüm kenar ağırlıklarının ≥ 0 olmasına dayanır. Min-cost flow'da orijinal maliyetler ≥ 0 olsa bile residüel grafiğin TERS kenarları −w taşır (çünkü akışı geri çağırmak maliyeti iade eder). Bu negatif ağırlık Dijkstra'nın greedy 'en yakın etiketi kilitle' kuralını bozar. İki çözüm var: (a) Bellman-Ford O(VE) ya da SPFA (queue-based optimizasyon, pratikte ~O(kE)) ile çalış — bizim aracımız bunu yapar; (b) Düğüm potansiyelleri h(v) (her iterasyonda güncellenir) ile reduced cost w'(u,v) = w(u,v) + h(u) − h(v) hesapla — bu daima ≥ 0 olur ve Dijkstra'yı kullanabilirsin. Johnson reweighting ile SSP O(F · (V + E) log V) olur; F akıtılacak birim sayısı."
+  - question: "SSP, açgözlü algoritma değil mi? Neden global optimum bulur?"
+    answer: "Görünüşte greedy — her iterasyonda 'en ucuz' yolu doluyor. Ama trick residüel grafiğin TERS kenarlarındadır: yanlış seçilen erken bir yolu sonraki iterasyonlarda ters kenarla 'geri alma' imkânı var. Teorem (Klein 1967, Busacker-Gowen 1961): bir akış f optimumdur ⇔ residüel grafiğinde negatif maliyetli yön çevirimi (negative cycle) yoktur. SSP'nin tümevarımı: 0-akışında residüel grafik = orijinal grafik (negatif yön çevrim yok); her iterasyonda EN UCUZ yolu eklediğimiz için negatif yön çevrim oluşmaz — yani her ara durumda 'o akış seviyesi için' optimumda kalırız. d birime ulaştığımızda tek seferde elde ettiğimiz şey: d-birim akış için min maliyet. Bu, dinamik programlamadaki 'her ara değer için optimum sakla' fikrinin akış versiyonudur."
+  - question: "Maks-akış (max-flow) ile min-cost flow ayrı problemler mi?"
+    answer: "Min-cost flow, max-flow'u içerir. İki kullanım: (1) Hedef akış d belirt: tam olarak d birim akıtmanın min maliyeti. (2) Hedef akış belirtme (∞): mümkün olan max akışı min maliyetle akıt — yani 'max-flow + min-cost' (sıralı: önce max miktar, sonra o miktarda min maliyet; aracımızın varsayılan davranışı budur). Tersinden: tüm kenar maliyetlerini 1'e ya da 0'a koyarsanız min-cost flow elementsiz max-flow'a indirgenir (cost önemsizleşir, sadece kapasite önemli kalır). Akademik olarak min-cost flow daha geneldir; max-flow özel hâlidir. Pratik olarak farklı çözücüler kullanılır çünkü algoritmaları (Edmonds-Karp vs SSP/network simplex) farklı altyapıya dayanır."
+  - question: "Hangi pratik problemler min-cost flow'a indirgenir?"
+    answer: "Geniş bir aile: (1) Ulaştırma — m kaynak, n hedef, c_ij birim maliyet; min sevkiyat maliyeti (aracın 'Ulaştırma örneği' tam bu). (2) Atama (Hungarian) — n×n eşleme; super-source/sink + kapasite 1. (3) Min-cost bipartite matching — ağırlıklı eşleme. (4) Optimal transport (Wasserstein) — iki dağılımı min maliyetle taşıma; ML'de yaygın. (5) Lojistik / tedarik zinciri — depo → dağıtım merkezi → mağaza üç katmanlı ağ. (6) Multi-commodity flow alt problemi olarak. Genel kural: kapasiteli ağ + lineer maliyet = min-cost flow."
+  - question: "Negatif maliyetli kenarlara izin var mı?"
+    answer: "Klasik teoride evet, ama bazı koşullarla. Eğer orijinal grafikte negatif maliyetli kenar varsa SSP'nin ilk yol arayışı önce o kenarları seçer; çözüm hâlâ doğrudur ama 'cycle-canceling' (yeni negatif yön çevirim oluşmasın diye) varsayımı dikkatli kurulmalı. Negatif maliyetli yön çevrim (negative cost cycle) varsa problem alttan sınırsız olabilir — sonsuz akışla sonsuz negatif maliyet. Bizim aracımız basitlik için maliyetleri ≥ 0 zorlar; pratikte çoğu uygulama (taşıma, atama, lojistik) zaten ≥ 0 maliyetlidir. Negatif maliyet gerekiyorsa: ya cycle-canceling tabanlı çözücü (Klein 1967), ya da problem dönüştür — sabit ekleyerek tüm maliyetleri ≥ 0 yap ve toplam akışla çarpılan sabiti son maliyetten çıkar."
+  - question: "Aracın 'açgözlük tuzağı' örneği ne öğretiyor?"
+    answer: "Klasik 5 kenarlı bir ağ: s→a (cap 2, cost 0), s→b (cap 2, cost 1), a→b (cap 1, cost 100), a→t (cap 2, cost 1), b→t (cap 2, cost 0). d=4 birim akıtmak istiyoruz. Naif açgözlü: 'en ucuz s→a→t (cost 0+1=1) yolunu doyur (2 birim), sonra a→b→t (cost 0+100+0=100) yoluyla daha ucuz olan b→t'yi keşfet (2 birim, cost 100·2+0=200)'. Toplam 2 + 200 = 202. Doğru çözüm: s→a→t (2 birim, cost 2) + s→b→t (2 birim, cost 2) = 4 birim, 4 maliyet. 50× daha ucuz. SSP'nin marifeti: ilk olarak en ucuz s→a→t, sonra ikinci en ucuz s→b→t. Açgözlü düşünce yanlış kenara saplanmaz — yol-bazlı greedy, kenar-bazlı greedy'den farklı bir şey. Bu örnek aracın 'Açgözlük tuzağı' butonunda yüklü."
+---
+
+Min-cost flow, ağ optimizasyonunun en güçlü genel çatısıdır. Max-flow
+sadece "ne kadar" sığar sorusunu çözer; min-cost flow buna "en az kaç
+para?" sorusunu ekler. Bu rehber problemi tanımlar, **Successive
+Shortest Path** algoritmasını adım adım gösterir ve uygulamalardaki
+yerini açıklar.
+
+## Problemin tanımı
+
+Yönlü kapasiteli ve birim maliyetli ağ $G = (V, E, c, w)$:
+
+- **V** düğüm kümesi, kaynak $s$ ve hedef $t$
+- **E** yönlü kenar kümesi
+- **c : E → ℝ⁺** kapasite fonksiyonu
+- **w : E → ℝ⁺** birim maliyet fonksiyonu
+
+**Akış** $f : E → ℝ⁺$ iki kurala uyar:
+
+1. **Kapasite sınırı:** $0 \le f(u, v) \le c(u, v)$
+2. **Akış korunumu:** her ara düğümde $\sum_{u} f(u, v) = \sum_{w} f(v, w)$
+
+**Min-Cost Flow problemi:** verilen hedef akış $d$ için
+
+$$
+\min \sum_{(u,v) \in E} w(u, v) \cdot f(u, v) \quad \text{s.t.} \quad |f| = d
+$$
+
+Eğer $d$ verilmezse, mümkün olan en yüksek akışı (max-flow değerini)
+min maliyetle akıtırız. Bizim aracımızın varsayılan davranışı budur.
+
+## LP formülasyonu (perde arkası)
+
+Min-cost flow doğal bir lineer programlama problemidir:
+
+$$
+\begin{aligned}
+\min \quad & \sum_{(u,v)} w_{uv} \, f_{uv} \\
+\text{s.t.} \quad & \sum_{(s,v)} f_{sv} - \sum_{(u,s)} f_{us} = d \\
+& \sum_{(v,t)} f_{vt} - \sum_{(t,u)} f_{tu} = d \\
+& \sum_{(u,v)} f_{uv} - \sum_{(v,w)} f_{vw} = 0 \quad \forall v \notin \{s, t\} \\
+& 0 \le f_{uv} \le c_{uv}
+\end{aligned}
+$$
+
+Bu LP'nin **tüm kısıt katsayıları $\{-1, 0, +1\}$** ve matris **totally
+unimodular** — integer kapasitelerde optimum daima integer akış olarak
+çıkar (round etmeye gerek yok). Bu, klasik bir "iyi yapılı kombinatoryel
+LP" özelliğidir.
+
+## Successive Shortest Path (SSP)
+
+SSP'nin sezgisi tek cümleyle: **"her seferinde en ucuz artıran yolu
+kullan."** Bu fikrin geçerli olması için residüel grafik kavramı tekrar
+devreye girer — ama bu kez kenar uzunluğu olarak BFS sayımı değil,
+**birim maliyet** kullanılır.
+
+### Residüel grafik ve negatif kenarlar
+
+Orijinal $(u, v)$ kenarı için:
+
+- **İleri residüel kenar** $(u, v)$: kapasite $c(u,v) - f(u,v)$, maliyet
+  $+w(u,v)$
+- **Ters residüel kenar** $(v, u)$: kapasite $f(u,v)$, maliyet **$-w(u,v)$**
+
+Ters kenarın **negatif** maliyeti şu sezgiden gelir: önceden gönderdiğin
+bir akışı geri çağırırsan, ödediğin maliyeti geri alırsın. Bu, ileride
+yanlış erken kararı düzeltme imkânıdır.
+
+### Algoritma
+
+```
+function SSP(G, s, t, d):
+    f ← 0; cost ← 0; flow ← 0
+    while flow < d:
+        path ← residüel grafta s'den t'ye EN UCUZ yol (Bellman-Ford / SPFA)
+        if path yoksa: break (infeasible — d kadar akış yok)
+        δ ← min(d − flow, yol üzerindeki min residüel kapasite)
+        her (u, v) yolda:
+            f[u, v] += δ; f[v, u] -= δ
+        flow += δ; cost += δ · pathCost
+    return (flow, cost)
+```
+
+Bizim aracımız tam olarak bunu yapar; SPFA (queue-based Bellman-Ford)
+kullanır çünkü orijinal kenarlar ≥ 0 maliyetli olsa bile **ters kenarlar
+−w taşıdığı için saf Dijkstra çalışmaz**.
+
+### Pratik hız: Johnson reweighting
+
+Büyük ağlarda SPFA her iterasyonda O(VE) çalışır. Klasik hızlandırma:
+
+1. İlk iterasyon Bellman-Ford ile düğüm potansiyellerini $h(v)$ hesapla.
+2. Her iterasyonda Dijkstra'yı **reduced cost**
+   $w'(u, v) = w(u, v) + h(u) - h(v)$ üzerinde çalıştır — bu daima ≥ 0.
+3. Dijkstra sonuçlarına göre potansiyelleri güncelle.
+
+Bu hile ile karmaşıklık $O(F \cdot (V + E) \log V)$ olur; $F$ akıtılacak
+birim sayısı. Bizim aracımız basit SPFA ile çalışır — küçük/orta ağlar
+için fazlasıyla yeterli.
+
+## Doğruluğun arkasındaki teorem
+
+**Negatif yön çevrim teoremi (Klein 1967):** bir akış $f$ optimumdur
+ancak ve ancak residüel grafiğinde **negatif maliyetli yön çevirim
+(negative cost cycle)** yoktur.
+
+SSP bu teoremin yapıcı bir sonucudur:
+
+- 0-akışta residüel = orijinal; orijinal grafta yön çevrim varsa
+  maliyetleri ≥ 0 olduğu için negatif yön çevrim olmaz.
+- Her iterasyonda **en ucuz** yolu eklediğimiz için yeni negatif yön
+  çevrim oluşmaz (matematiksel kanıt: yol üzerindeki maliyetler artı
+  ters kenarlarla yapılan değişimler tutarlı kalır).
+- Sonuç: her ara akış değeri kendi seviyesinde min maliyetlidir. SSP
+  durduğunda elde edilen $f$ globally optimumdur.
+
+## "Açgözlük tuzağı" örneği — neden global, lokal değil
+
+Aracın yüklü ilk örneği:
+
+| Kenar | Kapasite | Maliyet |
+| --- | --- | --- |
+| s → a | 2 | 0 |
+| s → b | 2 | 1 |
+| a → b | 1 | 100 |
+| a → t | 2 | 1 |
+| b → t | 2 | 0 |
+
+Hedef: 4 birim akıt.
+
+**Naif kenar-bazlı açgözlü:** "en ucuz kenarı kullan"
+diyerek `s → a` (cost 0) ve `b → t` (cost 0) seçilir; bunları bağlamak
+için pahalı `a → b` (cost 100) devreye girer. Tek yol: 2 birim ucuz +
+2 birim "köprü 100" = $2 \cdot 1 + 2 \cdot (0+100+0) = 202$.
+
+**SSP yol-bazlı açgözlü:**
+
+- 1. iterasyon: en ucuz yol `s → a → t` (cost 1), 2 birim, maliyet 2.
+- 2. iterasyon: en ucuz yol `s → b → t` (cost 1), 2 birim, maliyet 2.
+- 3. iterasyon: 4 birime ulaştı, dur.
+
+Toplam: 4 birim, **4 maliyet**. 50× daha ucuz. Aradaki fark: kenar
+bazlı greedy lokal, yol bazlı greedy yapısal — her seferinde GLOBAL
+en ucuz s-t bağlantısını kullanır.
+
+## Ulaştırma probleminin min-cost flow olarak modellenmesi
+
+Klasik ulaştırma problemi (taşıma): $m$ depo (arzlar $a_i$), $n$ pazar
+(talepler $b_j$), birim taşıma maliyetleri $c_{ij}$. Hedef: tüm talebi
+karşılayan minimum toplam maliyetli sevkiyat.
+
+**Min-cost flow indirgemesi:**
+
+1. Super-source `SRC` ve super-sink `SNK` ekle.
+2. `SRC → S_i` her depo için, kapasite $a_i$, maliyet 0.
+3. `S_i → D_j` her depo-pazar çifti için, kapasite $\infty$ (veya
+   $\min(a_i, b_j)$), maliyet $c_{ij}$.
+4. `D_j → SNK` her pazar için, kapasite $b_j$, maliyet 0.
+5. Hedef akış: $\sum a_i = \sum b_j$ (dengeli problem; dengesizse
+   dummy düğüm ekle).
+
+Aracımızdaki "Ulaştırma örneği" tam bunu yükler:
+
+| | D1 (10) | D2 (15) | D3 (15) |
+| --- | --- | --- | --- |
+| **S1 (15)** | 8 | 6 | 10 |
+| **S2 (25)** | 9 | 12 | 13 |
+
+SSP ile optimum: S1 → D2 (15·6 = 90), S2 → D1 (10·9 = 90),
+S2 → D3 (15·13 = 195). Toplam = **375**.
+
+Aynı sonucu `Ulaştırma Problemi Çözücü` (MODI) aracımızla da
+alabilirsiniz — iki yaklaşım eşit; min-cost flow daha geneldir çünkü
+arada transit düğümler ve karmaşık kapasiteler kabul eder.
+
+## Algoritma karşılaştırması
+
+| Algoritma | Karmaşıklık | Pratik kullanım |
+| --- | --- | --- |
+| Successive Shortest Path (Bellman-Ford) | $O(F \cdot VE)$ | Eğitim, küçük ağlar — bizim çekirdek |
+| SSP + Johnson + Dijkstra | $O(F \cdot (V + E) \log V)$ | Standart pratik çözüm |
+| Cycle-canceling (Klein) | $O(VE^2 \cdot C)$ | Negatif maliyetli başlangıç |
+| Network Simplex | Pratikte hızlı | Endüstri standardı (CPLEX, Gurobi) |
+| Cost-scaling | $O(V^2 E \log VC)$ | Büyük yoğun ağlar |
+| Hungarian algoritması | $O(n^3)$ | Sadece kare atama problemi |
+
+Bizim Edmonds-Karp / SSP tercihimiz: küçük/orta ağlarda anlık ve
+algoritmanın iskeletini ÖĞRETİCİ bir şekilde gösterir.
+
+## Sınırlar ve genellemeler
+
+- **Multi-commodity flow** — birden fazla emtia ($k$ farklı kaynak-hedef
+  çifti) aynı ağı paylaşır; LP'ye dönüşür, integer varyantı NP-hard.
+- **Generalized flow** — kenarlardan geçişte akış kaybı (mesela su
+  borusunda buharlaşma); LP'ye dönüşür ama matris artık unimodular değil.
+- **Convex maliyet** — maliyet lineer yerine konveks olursa convex
+  cost flow; SSP genelleşir ama integer optimum garantisi kaybolur.
+- **Dinamik / online** — kapasiteler/maliyetler zaman içinde değişiyorsa
+  incremental algoritmalar.
+
+Bu araç klasik LINEAR maliyetli, integer-friendly min-cost flow'u
+çözer — endüstri standardı kütüphanelerin (NetworkX, LEMON, OR-Tools,
+CPLEX) çekirdeğindeki yapı.
