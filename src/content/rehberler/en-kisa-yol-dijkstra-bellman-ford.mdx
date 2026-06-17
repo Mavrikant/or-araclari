@@ -1,0 +1,280 @@
+---
+title: "En Kısa Yol: Dijkstra ve Bellman-Ford"
+description: "Yönlü ağırlıklı ağlarda en kısa yolu bulmak: Dijkstra (≥ 0 ağırlık, binary heap) ve Bellman-Ford (negatif ağırlık + çevrim tespiti). Sayısal örnekler ve karmaşıklık karşılaştırması."
+pubDate: 2026-06-17
+relatedTool: "en-kisa-yol-cozucu"
+keywords:
+  - "en kısa yol"
+  - "Dijkstra"
+  - "Bellman-Ford"
+  - "shortest path"
+  - "graf algoritmaları"
+  - "ağırlıklı ağ"
+  - "relaxation"
+  - "negatif çevrim"
+  - "binary heap"
+  - "graf optimizasyonu"
+readingMinutes: 11
+faq:
+  - question: "En kısa yol problemi tam olarak nedir?"
+    answer: "Yönlü ağırlıklı bir grafda (V düğüm, E kenar, ağırlık w: E → ℝ) belirli bir kaynak s ile diğer düğümler arasındaki minimum toplam ağırlıklı yolu bulmak. Tek-kaynak tek-hedef (s → t), tek-kaynak tüm-düğüm (SSSP) veya tüm çiftler (APSP) varyantları vardır. Ağırlık olarak mesafe, süre, maliyet, enerji ya da olasılığın negatif logaritması kullanılabilir. Klasik uygulamalar: GPS navigasyon, internet yönlendirme (OSPF, IS-IS), oyunlarda yapay zekâ (A*), telefon şebekesi planlama, ulaştırma probleminde alternatif maliyet hesabı."
+  - question: "Dijkstra algoritması nasıl çalışır?"
+    answer: "Greedy (açgözlü) bir yaklaşım: bilinen en yakın düğümü seç, oradan komşu düğümlere doğru gevşetme (relaxation) yap, tekrarla. Adım adım: (1) kaynak için dist[s] = 0, diğerleri için Infinity. (2) Min-öncelik kuyruğundan (binary heap) en küçük dist'li düğüm u'yu çıkar. (3) Her komşu v için dist[v] > dist[u] + w(u,v) ise dist[v]'yi gevşet. (4) Kuyruk boşalana kadar tekrarla. Binary heap ile karmaşıklık O((V + E) log V); Fibonacci heap ile O(E + V log V) teorik olarak daha iyidir ama pratikte ek sabit faktörler nedeniyle binary heap daha hızlıdır. Kritik kısıt: tüm ağırlıklar negatif olmamalı — aksi hâlde algoritma yanlış sonuç verebilir, çünkü 'bir kez kapatılan' düğümü sonradan kısaltma şansını gözden kaçırır."
+  - question: "Bellman-Ford ne zaman gerekir, Dijkstra'dan ne farklıdır?"
+    answer: "Bellman-Ford negatif ağırlıklı kenarlarla çalışır ve negatif çevrimleri tespit eder. Algoritma daha sade ama yavaş: V−1 kez tüm kenarlar üzerinde dolaş, her kenarı gevşet — toplam O(V·E). V'inci pass'te hâlâ değişim olursa erişilebilir bir negatif çevrim vardır (sonsuz şekilde dönerek uzaklığı −∞'a düşürebilirsiniz, yani en kısa yol tanımsız). Ne zaman kullanılır: (1) ağırlıklar negatif olabilir (örn. ulaştırma indirgemesinde bir kenarın 'kazanç' anlamı varsa), (2) negatif çevrim olabilir mi tespit edilmesi isteniyor (arbitraj algılama, döviz/kripto arası çevrim kazançları), (3) Johnson algoritması (APSP) bir alt rutini olarak. Olumsuz yan: O(V·E) — Dijkstra'dan log V katı yavaş, büyük ağlarda fark hissedilir."
+  - question: "'Gevşetme (relaxation)' tam olarak ne demek?"
+    answer: "Bir kenarı gevşetme = mevcut dist[v] tahminini, dist[u] + w(u,v) değeriyle karşılaştırıp daha küçükse güncellemek. Bu hem Dijkstra'nın hem Bellman-Ford'un atom adımıdır. Sezgisel olarak: 'şu an v'ye olan en kısa uzaklık tahminim X. Ama u'dan geçerek dist[u] + w(u,v) ile daha kısaya ulaşabiliyorsam tahminimi düşürürüm (predecessor = u olarak kaydederim).' İki algoritma kenarları farklı sırayla gevşetir: Dijkstra her zaman en küçük dist'li ulaşılmamış düğümü seçer (heap'ten); Bellman-Ford her pass'te kenar listesini bütün olarak tarar (sıra önemli değil). Doğruluk her iki durumda da 'gevşetme yakınsadığında her kenar (u,v) için dist[v] ≤ dist[u] + w(u,v) — yani üçgen eşitsizliği' kuralının sağlanmasından gelir."
+  - question: "Negatif çevrim tam olarak ne anlama gelir?"
+    answer: "Toplam ağırlığı sıfırın altında kalan bir yönlü çevrim. Örneğin a → b ağırlık 2, b → a ağırlık −3 ise a → b → a çevrim toplamı −1; bu çevrimi sonsuz kez gezerek herhangi bir düğüme olan 'uzaklığınızı' istediğiniz kadar azaltabilirsiniz. Bu yüzden en kısa yol tanımsız hâle gelir (matematiksel olarak −∞). Bellman-Ford bunu V'inci pass'te bir değişiklik gözlemleyerek tespit eder. Çevrim erişilemez bir bileşendeyse (kaynaktan ulaşılamıyorsa) algoritma onu raporlamaz çünkü problem hâlâ tanımlı: erişilebilir düğümler için cevap var. Pratik anlamı önemli: arbitraj tespiti tam olarak negatif çevrim aramaktır — log(kur) ağırlıklı bir grafta negatif çevrim = riskten arınmış kâr fırsatı."
+  - question: "Dijkstra negatif ağırlıkta neden bozulur, somut örnek?"
+    answer: "Klasik karşı örnek: A → B ağırlık 1, A → C ağırlık 3, B → C ağırlık −5. Tüm ağırlıklar non-negatif olmadığı için Dijkstra bu grafda yanlıştır. Algoritma: dist = {A:0, B:1, C:3}. A'dan başla; min B (dist=1) → çıkar, B'yi 'kapat'; B → C gevşet: dist[C] = 1 + (−5) = −4. Şimdi C en küçük (−4) → C'yi çıkar. Algoritma bitti — dist[C] = −4 doğru cevap (A → B → C). Bu örnekte tesadüfen çalıştı, çünkü gevşetme C kapatılmadan oldu. Patolojik durum: A → C ağırlık 1, A → B ağırlık 4, B → C ağırlık −10 olsa. Dijkstra önce C'yi (dist=1) çıkarıp 'kapatır' (settled), sonra B'yi gevşetir ama B → C kenarına bakmaz çünkü C zaten settled. Doğru cevap A → B → C = −6 ama Dijkstra dist[C] = 1 raporlar. Bu yüzden negatif ağırlık varsa Bellman-Ford."
+  - question: "A*, Dijkstra'dan ne kadar daha hızlı?"
+    answer: "A* (1968, Hart-Nilsson-Raphael) Dijkstra'nın heuristic'li bir genişletmesi: priority key olarak dist[u] yerine dist[u] + h(u) — h, u'dan hedefe tahmini kalan uzaklık. h **admissible** olmalı (asla gerçek uzaklığı aşmamalı; örn. Öklid uzaklığı ya da Manhattan). Doğru h ile A* doğru cevabı verir ama Dijkstra'dan çok daha az düğüm açar — pratikte yol-bulmada (gridler, navigasyon) 10-100x hızlanma sağlar. h(u) = 0 alınca tam olarak Dijkstra'ya dönüşür. Sınırı: h iyi bir alt sınır değilse A* çok dağılır (gevşek heuristic) ya da yanlış cevap verir (tutarsız heuristic). Bu aracımız klasik Dijkstra çözüyor; A* için spesifik bir koordinat uzayı ve mesafe fonksiyonu gerektiğinden ayrı bir tasarım gerekir."
+---
+
+import { withBase } from '../../data/site';
+
+En kısa yol problemi, graf algoritmalarının temel taşıdır. GPS navigasyon
+ekranınızda gördüğünüz rota, internet trafiğinizin geçtiği yönlendirici
+sırası, hatta bir oyundaki düşman karakterinin size doğru ilerlemesi —
+hepsi arkasında bu klasik problemi taşır. Bu rehberde iki kanonik
+algoritmayı inceliyoruz: **Dijkstra** (1959) ve **Bellman-Ford** (1956).
+
+## Problemin tanımı
+
+Yönlü ağırlıklı bir graf $G = (V, E, w)$:
+
+- **V** düğüm kümesi (örn. şehirler, yönlendiriciler, oyun karoları)
+- **E** yönlü kenar kümesi
+- **w : E → ℝ** ağırlık fonksiyonu (mesafe, süre, maliyet — negatif olabilir)
+
+Bir **yol** $p = (v_0, v_1, \ldots, v_k)$ ardışık kenarlardan oluşur; yolun
+ağırlığı $w(p) = \sum_{i=0}^{k-1} w(v_i, v_{i+1})$.
+
+**Tek-kaynak en kısa yol (SSSP):** verilen $s$ kaynağından her $v \in V$
+düğümüne olan minimum yol ağırlığını $\delta(s, v)$ bul.
+
+**Tek-kaynak tek-hedef:** SSSP'nin özel hâli — yalnızca $s \to t$.
+
+## Gevşetme — algoritmaların kalbi
+
+Her iki algoritma da aynı temel adımı tekrarlar: **kenar gevşetme
+(relaxation)**.
+
+```
+Relax(u, v, w):
+    if dist[v] > dist[u] + w(u, v):
+        dist[v] ← dist[u] + w(u, v)
+        pred[v] ← u
+```
+
+Gevşetme yakınsadığında — yani hiçbir kenar daha fazla iyileşemediğinde —
+**üçgen eşitsizliği** her kenarda sağlanır:
+
+$$
+\delta(s, v) \le \delta(s, u) + w(u, v)
+$$
+
+Bu eşitsizlik en kısa yolun karakterizasyonudur. İki algoritma kenarları
+farklı bir sırayla gevşetir; farkları işte burada.
+
+## Dijkstra algoritması (≥ 0 ağırlık)
+
+**Açgözlü prensip:** her adımda **bilinen en yakın** ulaşılmamış düğümü seç.
+
+```
+function Dijkstra(G, s):
+    dist[v] ← +∞ for v ∈ V; dist[s] ← 0
+    pq ← {(0, s)}                      # min-heap
+    while pq is not empty:
+        (d, u) ← pq.pop()
+        if d > dist[u]: continue       # stale (lazy delete)
+        for each (u, v) ∈ E:
+            if Relax(u, v, w):
+                pq.push((dist[v], v))
+    return dist, pred
+```
+
+Karmaşıklık binary heap ile **O((V + E) log V)**. Pratikte 100K düğümlü
+ağlar saniyenin altında çözülür.
+
+### Neden ≥ 0 zorunlu?
+
+Açgözlü mantık şu fikre dayanır: "u'yu kapattığım anda, $\delta(s, u)$
+kesinleşmiştir; başka hiçbir yol u'yu daha kısaya getiremez." Bu
+varsayım yalnızca ağırlıklar non-negatif iken doğrudur. Negatif bir
+kenar varsa, u kapandıktan sonra başka bir komşunun negatif kenarla
+u'ya daha kısa bir alternatif yaratması mümkün olur — ama Dijkstra
+kapanan düğüme bir daha bakmaz.
+
+Somut karşı örnek (FAQ'da):
+
+| Kenar | Ağırlık |
+| --- | --- |
+| A → C | 1 |
+| A → B | 4 |
+| B → C | −10 |
+
+- Doğru cevap: $A \to B \to C = 4 + (-10) = -6$
+- Dijkstra: önce C (dist=1) settled; B sonra gelir ama B → C bakılmaz; cevap $-6$ yerine $1$ ✗
+
+### Sayısal örnek — CLRS 24.3
+
+Cormen ve arkadaşlarının ders kitabı örneği:
+
+| Kenar | Ağırlık |
+| --- | --- |
+| A → B | 10 |
+| A → D | 5 |
+| B → C | 1 |
+| B → D | 2 |
+| D → B | 3 |
+| D → C | 9 |
+| D → E | 2 |
+| C → E | 4 |
+| E → A | 7 |
+| E → C | 6 |
+
+Kaynak A. Dijkstra adım adım:
+
+| Pop | dist[A] | dist[B] | dist[C] | dist[D] | dist[E] |
+| --- | --- | --- | --- | --- | --- |
+| — (init) | 0 | ∞ | ∞ | ∞ | ∞ |
+| A (0) | 0 | 10 | ∞ | 5 | ∞ |
+| D (5) | 0 | 8 | 14 | 5 | 7 |
+| E (7) | 0 | 8 | 13 | 5 | 7 |
+| B (8) | 0 | 8 | 9 | 5 | 7 |
+| C (9) | 0 | 8 | 9 | 5 | 7 |
+
+Nihai uzaklıklar: $\delta = (0, 8, 9, 5, 7)$. Predecessor zinciriyle örn.
+$A \to C$ yolu: $A \to D \to B \to C$ (toplam 9).
+
+## Bellman-Ford algoritması (negatif ağırlık dahil)
+
+**Düz mantık:** tüm kenarları $V - 1$ kez sırayla gevşet.
+
+```
+function BellmanFord(G, s):
+    dist[v] ← +∞ for v ∈ V; dist[s] ← 0
+    for i = 1 to |V| − 1:
+        changed ← false
+        for each (u, v, w) ∈ E:
+            if Relax(u, v, w): changed ← true
+        if not changed: break          # erken çıkış
+    # Negatif çevrim kontrolü:
+    for each (u, v, w) ∈ E:
+        if dist[u] + w < dist[v]:
+            return "negatif çevrim"
+    return dist, pred
+```
+
+Karmaşıklık **O(V · E)**. Doğruluk argümanı: $k$'inci pass'ten sonra
+en fazla $k$ kenar içeren tüm en kısa yollar bulunmuş olur (induction).
+En kısa yollar negatif çevrim yokken en fazla $V - 1$ kenar uzunluğunda,
+yani $V - 1$ pass yeter. $V$'inci pass'te hâlâ değişim olursa, demek ki
+$V$ kenar uzunluğunda bir yol daha kısa — bu ancak negatif çevrim ile
+mümkündür.
+
+### Sayısal örnek — CLRS 24.1
+
+Kaynak s; ağırlıklar:
+
+| Kenar | Ağırlık |  | Kenar | Ağırlık |
+| --- | --- | --- | --- | --- |
+| s → t | 6 |  | x → t | −2 |
+| s → y | 7 |  | y → x | −3 |
+| t → x | 5 |  | y → z | 9 |
+| t → y | 8 |  | z → s | 2 |
+| t → z | −4 |  | z → x | 7 |
+
+Bellman-Ford'un nihai uzaklıkları: $\delta(s,t) = 2$, $\delta(s,x) = 4$,
+$\delta(s,y) = 7$, $\delta(s,z) = -2$. Negatif çevrim yok — algoritma
+geçerli cevap verir.
+
+### Negatif çevrim örneği
+
+```
+s → a (1)
+a → b (2)
+b → a (−4)
+b → t (1)
+```
+
+$a \to b \to a$ çevrim toplamı $-2$ < 0 — sonsuza kadar uzaklığı
+düşürebilir. Bellman-Ford bunu $V = 4$'üncü pass'te tespit eder ve
+"erişilebilir negatif çevrim" raporlar.
+
+## Algoritmaların karşılaştırması
+
+| Özellik | Dijkstra | Bellman-Ford |
+| --- | --- | --- |
+| Negatif ağırlık | **Hayır** | Evet |
+| Negatif çevrim tespiti | — (ön koşul ihlali) | **Evet** |
+| Karmaşıklık | O((V + E) log V) | O(V · E) |
+| Veri yapısı | Min-heap | Düz kenar listesi |
+| Pratik 10K düğüm | < 50 ms | ≈ 1-5 s |
+| Doğruluk koşulu | Tüm w ≥ 0 | Negatif çevrim yok |
+
+**Karar ağacı:** ağırlıklar non-negatif mi? → Dijkstra. Negatif olabilir
+mi? → Bellman-Ford. Tüm-çiftler (APSP) mi? → Floyd-Warshall O(V³) ya da
+Johnson O(V · E + V² log V).
+
+## Uzantılar ve genellemeler
+
+- **A\*** (1968) — heuristic ile Dijkstra. Hedef yönüne doğru aramayı
+  yönlendirerek pratik 10-100x hızlanma; yol-bulma (gridler, oyun yapay
+  zekâsı, OSRM gibi rota motorları) standardı. Heuristic admissible
+  olduğu sürece optimum.
+- **SPFA (Shortest Path Faster Algorithm)** — Bellman-Ford'un kuyruk
+  tabanlı pratik varyantı. Worst case yine O(V · E) ama tipik graflarda
+  çok daha hızlı. Min-Cost Flow algoritmamızın da iç motoru.
+- **Floyd-Warshall** — tüm düğüm çiftleri arası en kısa yollar; O(V³)
+  dinamik programlama, ufak/orta yoğun ağlarda zarif çözüm.
+- **Bidirectional search** — kaynak ve hedeften aynı anda iki Dijkstra
+  başlat; ortada buluşunca dur. Yaklaşık √n kat hızlanma.
+- **Contraction Hierarchies** — yol planlama motorlarının (OSRM, GraphHopper)
+  ön-işleme tekniği; sorgu O(log V) seviyesine iner.
+
+## Klasik uygulamalar
+
+| Alan | En kısa yol nasıl çıkar? |
+| --- | --- |
+| GPS navigasyon | Şehir düğüm, yol kenar, ağırlık = süre/mesafe; A* veya CH |
+| İnternet yönlendirme | OSPF/IS-IS link-state protokolleri Dijkstra kullanır |
+| Telekom kapasite planlama | Bağlantı maliyeti = ağırlık; yedeklilik için k-en kısa yol |
+| Oyun yapay zekâsı | Karo grafı + manhattan/euclid heuristic = A* |
+| Arbitraj tespiti | Kur grafında $w = -\log(\text{rate})$; negatif çevrim = kâr fırsatı |
+| Ulaştırma probleminde MODI | Reduced cost grafında en negatif kenar = girer hücre |
+| Min-Cost Flow (SSP) | Residüel grafta tekrarlı en kısa yol arama |
+| Sözlük benzeri arama | Levenshtein grafında en az düzenleme uzaklığı |
+
+## Bu araçta kullandığımız çözüm
+
+Aracımız iki algoritmayı da yerel olarak (tarayıcıda) çalıştırır:
+
+- **Dijkstra:** binary heap + lazy delete. Settled küme tutulmaz; pop
+  edilen düğüm dist'i güncel değilse atlanır. $V \le 500$, $E \le 2000$
+  sınırı eğitim/orta ölçek için yeterli.
+- **Bellman-Ford:** $V - 1$ pass + erken çıkış (bir pass'te değişim
+  yoksa yakınsadı). $V$'inci pass değişim getirirse negatif çevrim
+  raporlanır; çevrim üzerindeki bir düğüm örneği döndürülür (predecessor
+  zincirini $V$ kez geri izleyerek elde edilir).
+- **Otomatik seçim:** "auto" modu — herhangi bir negatif kenar varsa
+  Bellman-Ford, yoksa Dijkstra. Dijkstra negatif ağırlıkla zorlanırsa
+  hata döner (sessizce yanlış cevap yerine).
+
+## Sınırlar
+
+- Tek emtia (commodity), tek kaynak. Çok-kaynak gerekirse süper-kaynak
+  ekleyin (kapasiteden bağımsız 0 ağırlıklı kenarlarla).
+- Çevrim/zaman bağımlı ağırlıklar yok (dinamik / zaman-genişletilmiş graf).
+- Stokastik en kısa yol (rastgele ağırlık) bu modelde yok — beklenen
+  değer için MDP / değer iterasyonu gerekir.
+- $k$-en kısa yol (Yen / Eppstein) bu sürümde yok; tek en kısa yol +
+  alternatif rotalar için ayrı bir backlog item'ı.
+
+Bu rehberin tamamladığı [Maks-Akış / Min-Cut](/or-araclari/rehberler/maks-akis-min-cut)
+ve [Min-Maliyetli Akış](/or-araclari/rehberler/min-maliyet-akis)
+rehberleriyle birlikte graf optimizasyonunun klasik üçlüsünü tamamlar —
+en kısa yol Min-Cost Flow'un (SSP) iç motorudur, dolayısıyla ikisini
+birlikte düşünmek doğaldır.
