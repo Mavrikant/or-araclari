@@ -5,6 +5,30 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 
 ---
 
+## DÖNGÜ #21 — 2026-06-17
+
+**Yapılan:** F-GAME-NASH — Bimatris (Genel Toplam) Nash Dengesi Çözücü ve uzun-form Türkçe Nash teoremi + koordinasyon oyunları rehberi yayınlandı. Support enumeration algoritması; Shapley lemma ile |S₁|=|S₂| varsayımı; saf + karışık tüm Nash dengelerini liste hâlinde döker. F-GAME (sıfır toplam) çözücünün non-zero-sum uzantısı, optimizasyon kategorisinde.
+
+**Detay:**
+- `src/lib/bimatrix.ts` (+345) — saf algoritma: `findPureNash` (R'ın sütun-bazlı max + C'nin satır-bazlı max kesişim hücresi), `findNashEquilibria` (k=1..min(m,n) için tüm (S₁,S₂) destek çiftlerini tara), `solveSupportPair` (her destek için (k+1)×(k+1) lineer sistem: A_{S₁,S₂} y_{S₂} = u·1 + Σy=1, simetrik x için), `gaussianSolve` (kısmi pivotlu Gauss eliminasyonu), `verifyEquilibrium` (off-support best-response + pozitif olasılık), strateji normalize + duplikasyon eleme via fixed-6-digit key. `MAX_DIM_SUM = 12` ile 2^m·2^n patlamasına kapak.
+- `src/lib/bimatrix.test.ts` (+330, **23 vitest**) — Tutuklu Açmazı (tek saf (D,D)), Cinsiyet Savaşı (3 Nash: 2 saf + (3/5,2/5)/(2/5,3/5) karışık, u=v=6/5), Matching Pennies sıfır toplam (tek karışık (½,½)), Taş-Kağıt-Makas (1/3,1/3,1/3) simetrik, Şahin-Güvercin asimetrik 2 saf, Stag Hunt 2 saf+karışık, Off-support best response (3×3 dominant), 3×3 koordinasyon köşegen 3 saf, beklenen kazanç doğrulama (x^T A y = u), olasılık toplamı 1 + non-negative, determinizm, truncate (m+n=MAX), support indeks artan, 7 validation hata yolu.
+- `src/pages/araclar/bimatris-nash-cozucu.astro` (+395) — mobil-öncelikli form (R/C strateji ad input + A ve B textarea ayrı), 4 örnek (Tutuklu Açmazı, Cinsiyet Savaşı, Stag Hunt, Tavuk), denge sayısı vurgulu kart (saf/karışık dağılımı + taranan destek çifti sayısı), birleşik (A,B) payoff tablosu (saf Nash hücreleri yeşil vurgu, R-kazancı brand, C-kazancı amber renkli), her denge için ayrı card (kind pill saf/karışık, beklenen kazanç u_R/v_C, destek listesi, R ve C strateji bar grafiği brand/amber accent), boş sonuç paneli (dejenere oyun uyarısı).
+- `src/content/rehberler/nash-dengesi-bimatris.mdx` (+170) — 11 dk Türkçe rehber: bimatris-sıfır toplam farkı, Nash teoremi (Kakutani sabit-nokta), saf Nash (sütun/satır best response kesişimi), karışık Nash + indifference, support enumeration cebirsel (Shapley lemma O(C(m+n,m)) karmaşıklık), Cinsiyet Savaşı sayısal turu (3 dengenin tam çözümü), Stag Hunt (Pareto vs risk dominans), Tavuk Oyunu (Schelling bağlanma), Lemke-Howson alternatifi + karşılaştırma tablosu, modelin sınırları (n≥3 oyuncu, sürekli strateji, common knowledge, dejenere oyun), 8 FAQ JSON-LD.
+- `src/data/tools.ts` (+10) — yeni araç kaydı (21'nci araç, `optimizasyon` kategorisi, guideSlug=`nash-dengesi-bimatris`).
+- `public/og/bimatris-nash-cozucu.png` — `npm run og` ile per-tool OG kartı (80.9 KB). Diğer 20 OG kartı byte-identical (deterministik render).
+
+**Tasarım notu:** Support enumeration seçildi (Lemke-Howson yerine), çünkü (a) eğitsel netlik — Cinsiyet Savaşı'nın 3 dengesini yan yana görmek koordinasyon problemini somutlaştırır, (b) küçük matriste eşit hızlı, (c) implementation O(C(m+n,m)) okunabilir. MDX FAQ schema 200-char description limitiyle ilk denemede çakıştı; description kısaltıldı (içerik koruldu). Lemke-Howson büyük matris ölçeklenebilirliği için F-LEMKE olarak backlog'a kaydedildi.
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint, **95 dosya**) · test ✓ (**431/431**, +23 yeni bimatrix testi, 23 dosya) · build ✓ (**52 sayfa**, 6.28s — yeni araç + rehber dahil) · Lighthouse — yeni sayfa mevcut F-GAME deseni birebir izliyor (inline `<script>`, plotly yok, SVG/Tailwind, glpk.js'e bağımlı değil — saf JS Gauss eliminasyonu), mobil-öncelikli yerleşim (≥95 beklenir).
+
+**Yayın:** PR açılacak ve CI yeşilse merge.
+
+**İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber, F-GAME'in doğal genel-toplam uzantısı; mevcut deseni birebir takip).
+
+**Sıradaki:** Q-AUDIT-YAML (M efor, breaking-change riski) ya da yeni F-LEMKE (Lemke-Howson, büyük bimatris). Q-AUDIT-ESBUILD hâlâ blocked (major Astro upgrade). Backlog'da yeni araç fikri için yeni boşluk açıldı.
+
+---
+
 ## DÖNGÜ #20 — 2026-06-17
 
 **Yapılan:** Min-Cost Flow (Min Maliyetli Akış) Çözücü yayınlandı (F-MINCOST2 — F-MINCOST'un ikinci yarısı). Successive Shortest Path algoritması (residüel grafta SPFA / queue-based Bellman-Ford), her kenarda kapasite + birim maliyet, isteğe bağlı hedef akış d (boşsa max-flow kadar). Uzun-form Türkçe rehber (SSP iskeleti, residüel grafta negatif ters kenarlar, Johnson reweighting, açgözlük tuzağı, ulaştırma indirgemesi, network simplex karşılaştırması). Tool & guide tools.ts'e ve OG generator'a eklendi.

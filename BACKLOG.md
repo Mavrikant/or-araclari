@@ -23,7 +23,7 @@ Durum: open · in-progress · blocked · done
 
 | id | başlık | tür | değer | efor | durum |
 |---|---|---|---|---|---|
-| F-GAME-NASH | Bimatris (genel toplam) Nash dengesi çözücü — Lemke-Howson algoritması, F-GAME'in non-zero-sum uzantısı | feature | M | L | open |
+| F-LEMKE | Lemke-Howson pivot algoritması — büyük bimatris oyunlar için ölçeklenebilir tek-denge bulucu. F-GAME-NASH'in support enumeration sınırını (m+n ≤ 12) aşar | feature | L | L | open |
 
 ---
 
@@ -49,3 +49,4 @@ Durum: open · in-progress · blocked · done
 | F-ERLANG_A | Erlang-A Bekleme & Bırakma Analizci (M/M/c + abandonment) — doğum-ölüm zinciri özyinelemesi + tail truncation, λ > c·μ kararlılığı (θ > 0), P(abandon), λ_aban = θ·Lq, λ_served, QED rejimi rehberi; +17 vitest (PR #42) | #18 |
 | F-MINCOST (max-flow yarısı) | Maks-Akış (Max-Flow) Çözücü — Edmonds-Karp BFS, augmenting-path, min-cut çıkarımı (S→T orijinal kenarlar), CLRS örneği + boru şebekesi; +16 vitest (PR #44). Min-Cost Flow ayrı backlog F-MINCOST2 olarak kaldı | #19 |
 | F-MINCOST2 (min-cost yarısı) | Min-Cost Flow Çözücü — Successive Shortest Path, residüel grafta SPFA / Bellman-Ford, ileri +w / ters −w, hedef akış d (boşsa max-flow kadar), açgözlük tuzağı + 2×3 ulaştırma örneği; +18 vitest | #20 |
+| F-GAME-NASH | Bimatris (Genel Toplam) Nash Dengesi Çözücü — support enumeration, Shapley lemma ile |S₁|=|S₂| varsayımı, saf + karışık tüm denge tarama, m+n ≤ 12 sınırı; Tutuklu Açmazı, Cinsiyet Savaşı, Stag Hunt, Tavuk Oyunu örnekleri + 11 dk Türkçe rehber; +23 vitest | #21 |

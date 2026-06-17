@@ -227,6 +227,16 @@ export const TOOLS: readonly Tool[] = [
     status: 'ready',
     guideSlug: 'min-maliyet-akis',
   },
+  {
+    slug: 'bimatris-nash-cozucu',
+    title: 'Bimatris (Genel Toplam) Nash Dengesi Çözücü',
+    shortTitle: 'Bimatris Nash',
+    description:
+      'İki oyuncunun ayrı payoff matrislerini (A: satır, B: sütun) gir; tüm Nash dengelerini — saf ve karışık — support enumeration algoritmasıyla tarayıcıda anlık bul. Tutuklu Açmazı, Cinsiyet Savaşı, Stag Hunt gibi klasik koordinasyon ve çatışma oyunlarının tam çözümü; sıfır toplamlı oyun çözücünün genel toplama uzantısı.',
+    category: 'optimizasyon',
+    status: 'ready',
+    guideSlug: 'nash-dengesi-bimatris',
+  },
 ] as const;
 
 export function getReadyTools(): readonly Tool[] {
