@@ -21,7 +21,7 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 
 **Kalite kapıları:** check ✓ (0 hata, 0 hint, **101 dosya**) · test ✓ (**474/474**, +23 yeni MST testi, 25 dosya) · build ✓ (**56 sayfa**, 7.27s — yeni araç + rehber dahil) · Lighthouse — yeni sayfa mevcut F-SHORTEST-PATH deseni birebir izliyor (inline `<script>`, plotly/glpk yok, saf JS heap+DSU, Tailwind), mobil-öncelikli yerleşim (≥95 beklenir).
 
-**Yayın:** PR açılacak ve CI yeşilse merge.
+**Yayın:** PR #52 squash-merge edildi. Deploy to GitHub Pages workflow yeşil (1m15s, run 27784241518). Canlı doğrulama: `/araclar/minimum-yayilan-agac-cozucu/` 200 ✓, `/rehberler/minimum-yayilan-agac-prim-kruskal/` 200 ✓, `/og/minimum-yayilan-agac-cozucu.png` 200 ✓.
 
 **İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber, graf kategorisinin doğal genişlemesi).
 
