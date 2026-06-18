@@ -5,6 +5,30 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 
 ---
 
+## DÖNGÜ #23 — 2026-06-18
+
+**Yapılan:** F-MST — Minimum Yayılan Ağaç (MST) Çözücü ve uzun-form Türkçe Prim/Kruskal rehberi yayınlandı. Yönsüz ağırlıklı graf için iki algoritma: Prim (binary heap + lazy delete, bağlı olmayan grafda her bileşen için yeniden başlat) ve Kruskal (union-find: path compression + rank). Graf kategorisinin klasik dördüncü ayağı (TSP, Maks-Akış, Min-Maliyet Akış, En Kısa Yol'dan sonra).
+
+**Detay:**
+- `src/lib/mst.ts` (+360) — saf algoritma: `prim()` (binary heap min-frontier, lazy delete via `inTree[]`, runFrom helper bağlı olmayan grafta her bileşeni ziyaret), `kruskal()` ((ağırlık, kenar_id) ile deterministic sort + DSU.union ile çevrim filtresi, n−1 kenarda erken çıkış), `DSU` (path compression iki-geçişli + union-by-rank), `buildComponents()` (MST kenarları üzerinde ikinci DSU ile 0..k−1 bileşen yeniden numaralandırma), `prepareGraph()` yönsüz min-paralel-kenar Map'i ile (min(u,v)|max(u,v)) key.
+- `src/lib/mst.test.ts` (+300, **23 vitest**) — CLRS Bölüm 23 ders kitabı örneği (9 düğüm, toplam 37 — Prim ve Kruskal ayrı ayrı), üçgen en pahalı kenar atımı, zincir, kare+köşegen, başlangıç düğümü bağımsızlığı (Prim r=a vs r=e aynı toplam), Kruskal sıralı seçim, 2-bileşenli orman (Prim ve Kruskal), izole düğüm bileşeni, paralel kenar min seçimi, yönsüz (A→B)=(B→A), negatif ağırlık toplama, bileşen etiketi tutarlılığı, validation (boş kenar, self-loop, NaN, Infinity, boş ad, grafa ait olmayan startNode), Prim/Kruskal toplam ağırlık tutarlılığı.
+- `src/pages/araclar/minimum-yayilan-agac-cozucu.astro` (+340) — mobil-öncelikli form (kenar textarea + Prim/Kruskal radio + opsiyonel startNode), 3 örnek (CLRS klasik 9 düğüm, Türkçe şehir ağı 5 düğüm, 2-bileşenli orman), toplam ağırlık vurgulu kart, "bağlı değil" amber banner (bileşen sayısı), ağaç kenarları sıralı tablo (adım, kenar, ağırlık, birikimli), düğüm bileşenleri tablosu (renkli rozet — 6 ton paleti), localStorage state (`mst-state-v1`).
+- `src/content/rehberler/minimum-yayilan-agac-prim-kruskal.mdx` (+200) — 10 dk Türkçe rehber: problem tanımı (LP-tarzı), cut property + cycle property + ispatlar, Prim pseudokod + CLRS örnekli adım tablosu (37'ye nasıl ulaşılır), Kruskal pseudokod + union-find iç yapısı + aynı CLRS örneği sıralı tablosu, Prim vs Kruskal karşılaştırma tablosu, 6 uygulama (ağ tasarımı, kümeleme, TSP 2-approx, görüntü segmentasyonu, VLSI, labirent), MST vs SPT karıştırması (A-B-C üçgen örneği), pratik notlar, 8 FAQ JSON-LD (FAQPage rich result).
+- `src/data/tools.ts` (+10) — yeni araç kaydı (22'nci araç, `graf` kategorisi, guideSlug=`minimum-yayilan-agac-prim-kruskal`).
+- `public/og/minimum-yayilan-agac-cozucu.png` — `npm run og` ile per-tool OG kartı (85.1 KB). Diğer 21 OG kartı byte-identical.
+
+**Tasarım notu:** Yönsüz grafı kullanıcıdan ekstra simetri istemeden (örn. (u,v) ve (v,u) yazmak gerekmez) modellemek için `prepareGraph` paralel kenarları `(min(u,v)|max(u,v)) → min ağırlık` Map'inde toplar. Bu hem Prim'in komşuluk listesini hem Kruskal'ın kenar listesini deduplike eder. Prim için lazy delete tercih edildi (heap.decreaseKey karmaşıklığından kaçınmak için klasik tercih); Kruskal'da DSU için union-by-rank + path-compression iki-geçişli (find sırasında parent'ı kökle güncelle) implementasyon — amortize α(n).
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint, **101 dosya**) · test ✓ (**474/474**, +23 yeni MST testi, 25 dosya) · build ✓ (**56 sayfa**, 7.27s — yeni araç + rehber dahil) · Lighthouse — yeni sayfa mevcut F-SHORTEST-PATH deseni birebir izliyor (inline `<script>`, plotly/glpk yok, saf JS heap+DSU, Tailwind), mobil-öncelikli yerleşim (≥95 beklenir).
+
+**Yayın:** PR açılacak ve CI yeşilse merge.
+
+**İşaret:** yok (sırf 🟢 yeşil — yeni araç + rehber, graf kategorisinin doğal genişlemesi).
+
+**Sıradaki:** Q-AUDIT-YAML (M efor, breaking-change riski) ya da F-LEMKE / F-ASTAR (yeni araç fikirleri). Q-AUDIT-ESBUILD ve Q-CI-CHECK hâlâ blocked (insan onayı gerekir). Backlog'a F-STEINER eklendi (MST tabanlı yaklaşıklık).
+
+---
+
 ## DÖNGÜ #21 — 2026-06-17
 
 **Yapılan:** F-GAME-NASH — Bimatris (Genel Toplam) Nash Dengesi Çözücü ve uzun-form Türkçe Nash teoremi + koordinasyon oyunları rehberi yayınlandı. Support enumeration algoritması; Shapley lemma ile |S₁|=|S₂| varsayımı; saf + karışık tüm Nash dengelerini liste hâlinde döker. F-GAME (sıfır toplam) çözücünün non-zero-sum uzantısı, optimizasyon kategorisinde.

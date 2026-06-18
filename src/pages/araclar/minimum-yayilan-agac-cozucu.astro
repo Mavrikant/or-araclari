@@ -1,0 +1,448 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import { withBase, SITE } from '../../data/site';
+import { TOOLS } from '../../data/tools';
+
+const tool = TOOLS.find((t) => t.slug === 'minimum-yayilan-agac-cozucu')!;
+const guideHref = tool.guideSlug ? withBase(`/rehberler/${tool.guideSlug}`) : null;
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: tool.title,
+  applicationCategory: 'WebApplication',
+  operatingSystem: 'Any',
+  description: tool.description,
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'TRY' },
+  inLanguage: SITE.locale,
+  isAccessibleForFree: true,
+};
+---
+
+<BaseLayout
+  title={tool.title}
+  description={tool.description}
+  image={withBase(`/og/${tool.slug}.png`)}
+  imageAlt={`${tool.title} — OR Araçları`}
+>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+  </Fragment>
+
+  <Container as="section" size="wide" class="pt-12 sm:pt-16">
+    <p class="text-sm font-medium text-brand-600 dark:text-accent-400">
+      <a href={withBase('/araclar')} class="hover:underline">Araçlar</a>
+      <span class="text-slate-400 dark:text-slate-600"> / </span>
+      <span>Graf & Rota</span>
+    </p>
+    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">
+      {tool.title}
+    </h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
+      Yönsüz ağırlıklı bir ağdaki tüm düğümleri birbirine bağlayan en az
+      toplam ağırlıklı ağacı bul. <strong>Prim</strong> (binary heap) bir
+      düğümden büyütür; <strong>Kruskal</strong> (union-find) global
+      sıralama yapar. Graf bağlı değilse minimum yayılan
+      <strong>orman</strong> (forest) döner.
+      {guideHref && (
+        <a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>
+      )}
+    </p>
+  </Container>
+
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,380px)_1fr] print:block">
+    <form id="mst-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="sample-clrs-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          CLRS klasik (9 düğüm)
+        </button>
+        <button type="button" id="sample-grid-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Şehir ağı (5 düğüm)
+        </button>
+        <button type="button" id="sample-forest-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Orman (2 bileşen)
+        </button>
+        <button type="button" id="reset-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+          Sıfırla
+        </button>
+      </div>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Kenarlar
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Her satır: <span class="font-mono">u v ağırlık</span> (boşluk, virgül veya tab ile ayır)
+          </span>
+          <textarea id="edges-input" rows="9" spellcheck="false" autocomplete="off" required
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            placeholder="A B 4&#10;A C 1&#10;B C 2&#10;B D 5"></textarea>
+        </label>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          Düğüm adları otomatik keşfedilir. Kenarlar <strong>yönsüz</strong>:
+          (u, v) ve (v, u) aynı kenardır. Paralel kenarlardan en küçük
+          ağırlık alınır; ağırlık negatif olabilir.
+        </p>
+      </fieldset>
+
+      <fieldset class="space-y-2">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Algoritma
+        </legend>
+        <div class="flex flex-col gap-1.5 text-sm">
+          <label class="inline-flex items-center gap-2">
+            <input type="radio" name="algorithm" value="prim" checked class="text-brand-600 focus:ring-brand-500" />
+            <span>Prim <span class="text-xs text-slate-500 dark:text-slate-400">(binary heap)</span></span>
+          </label>
+          <label class="inline-flex items-center gap-2">
+            <input type="radio" name="algorithm" value="kruskal" class="text-brand-600 focus:ring-brand-500" />
+            <span>Kruskal <span class="text-xs text-slate-500 dark:text-slate-400">(union-find)</span></span>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="space-y-2">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Prim başlangıç düğümü <span class="font-normal text-xs text-slate-500">(opsiyonel)</span>
+        </legend>
+        <input type="text" id="start-input" autocomplete="off"
+          class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+          placeholder="boşsa ilk keşfedilen düğüm" />
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          MST tek olduğunda toplam ağırlık başlangıç seçiminden bağımsızdır.
+        </p>
+      </fieldset>
+
+      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">
+        MST'yi bul
+      </button>
+
+      <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
+    </form>
+
+    <section id="output" hidden aria-live="polite" class="space-y-6">
+      <div id="forest-banner" hidden class="rounded-2xl border border-amber-300 bg-amber-50/60 p-5 dark:border-amber-800/60 dark:bg-amber-950/30">
+        <p class="text-xs font-medium uppercase tracking-wide text-amber-700 dark:text-amber-300">
+          Bağlı değil
+        </p>
+        <p class="mt-1 font-display text-lg font-semibold text-amber-900 dark:text-amber-100">
+          Graf <span id="forest-count"></span> ayrı bileşenden oluşuyor
+        </p>
+        <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">
+          Tek bir minimum yayılan ağaç yerine <strong>minimum yayılan
+          orman</strong> döndürüldü — her bileşen için ayrı bir ağaç bulundu.
+        </p>
+      </div>
+
+      <div class="rounded-2xl border border-emerald-300 bg-emerald-50/60 p-5 dark:border-emerald-800/60 dark:bg-emerald-950/30">
+        <p class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+          MST toplam ağırlığı
+        </p>
+        <p id="total-weight" class="mt-1 font-display text-4xl font-bold tabular-nums text-emerald-900 dark:text-emerald-100"></p>
+        <p id="result-meta" class="mt-1 text-xs text-emerald-700/80 dark:text-emerald-300/80"></p>
+      </div>
+
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Ağaç kenarları — eklenme sırasıyla
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Prim her adımda mevcut ağaca en ucuz şekilde komşu yeni düğümü ekler.
+          Kruskal kenarları küresel olarak sıralayıp çevrim üretmeyenleri katar.
+        </p>
+        <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40">
+          <table class="w-full min-w-[420px] text-sm">
+            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
+              <tr>
+                <th class="px-3 py-2 text-left">Adım</th>
+                <th class="px-3 py-2 text-left">Kenar</th>
+                <th class="px-3 py-2 text-right">Ağırlık</th>
+                <th class="px-3 py-2 text-right">Birikimli</th>
+              </tr>
+            </thead>
+            <tbody id="tree-body" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Düğüm bileşenleri
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Aynı bileşen kimliğine sahip düğümler MST'de (ya da orman ise aynı ağaçta) birbirine bağlı.
+        </p>
+        <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40">
+          <table class="w-full min-w-[300px] text-sm">
+            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
+              <tr>
+                <th class="px-3 py-2 text-left">Düğüm</th>
+                <th class="px-3 py-2 text-left">Bileşen</th>
+              </tr>
+            </thead>
+            <tbody id="comp-body" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </Container>
+
+  {guideHref && (
+    <Container as="section" size="wide" class="py-12 sm:py-16">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900/40">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">
+          Konuyu derinleştir
+        </p>
+        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          Prim, Kruskal ve minimum yayılan ağaç teorisi
+        </h2>
+        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+          Cut property ve cycle property, açgözlü algoritmaların neden
+          MST'yi doğru bulduğu, union-find karmaşıklığı, bağlı olmayan
+          graflar (orman), ağ tasarımı / kümeleme / yaklaşım algoritmaları
+          uygulamaları ve sayısal örnekler.
+        </p>
+        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">
+          Rehberi oku →
+        </a>
+      </div>
+    </Container>
+  )}
+</BaseLayout>
+
+<script>
+  import { solveMst, MstError, type MstEdge, type MstResult, type MstAlgorithm } from '../../lib/mst';
+
+  const STORAGE_KEY = 'mst-state-v1';
+
+  interface Sample {
+    edges: string;
+    algorithm: MstAlgorithm;
+    startNode: string;
+  }
+  const SAMPLE_CLRS: Sample = {
+    edges:
+      'a b 4\na h 8\nb c 8\nb h 11\nc d 7\nc f 4\nc i 2\nd e 9\nd f 14\ne f 10\nf g 2\ng h 1\ng i 6\nh i 7',
+    algorithm: 'prim',
+    startNode: 'a',
+  };
+  const SAMPLE_GRID: Sample = {
+    edges:
+      'Ankara Eskisehir 230\nAnkara Konya 260\nAnkara Kayseri 320\nEskisehir Konya 340\nKonya Kayseri 320\nKayseri Sivas 200\nEskisehir Sivas 600',
+    algorithm: 'kruskal',
+    startNode: '',
+  };
+  const SAMPLE_FOREST: Sample = {
+    edges:
+      'A B 1\nB C 2\nA C 4\nX Y 3\nY Z 1\nX Z 5',
+    algorithm: 'prim',
+    startNode: '',
+  };
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el as T;
+  };
+  function fmt(n: number, d = 4): string {
+    if (!Number.isFinite(n)) return '—';
+    if (Math.abs(n) < 1e-9) return '0';
+    return n.toFixed(d).replace(/\.?0+$/, '');
+  }
+  function escapeHtml(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  const form = $<HTMLFormElement>('mst-form');
+  const edgesInput = $<HTMLTextAreaElement>('edges-input');
+  const startInput = $<HTMLInputElement>('start-input');
+  const sampleClrsBtn = $('sample-clrs-btn');
+  const sampleGridBtn = $('sample-grid-btn');
+  const sampleForestBtn = $('sample-forest-btn');
+  const resetBtn = $('reset-btn');
+  const errorBox = $('error-box');
+  const output = $('output');
+  const forestBanner = $('forest-banner');
+  const forestCount = $('forest-count');
+  const totalWeightEl = $('total-weight');
+  const resultMeta = $('result-meta');
+  const treeBody = $('tree-body');
+  const compBody = $('comp-body');
+
+  type SavedState = { edges?: string; algorithm?: MstAlgorithm; startNode?: string };
+
+  function getAlgorithm(): MstAlgorithm {
+    const checked = form.querySelector<HTMLInputElement>('input[name="algorithm"]:checked');
+    return (checked?.value as MstAlgorithm) ?? 'prim';
+  }
+  function setAlgorithm(value: MstAlgorithm): void {
+    const radio = form.querySelector<HTMLInputElement>(`input[name="algorithm"][value="${value}"]`);
+    if (radio) radio.checked = true;
+  }
+
+  function loadState(): void {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        applySample(SAMPLE_CLRS);
+        return;
+      }
+      const s = JSON.parse(raw) as SavedState;
+      if (typeof s.edges === 'string') edgesInput.value = s.edges;
+      if (typeof s.startNode === 'string') startInput.value = s.startNode;
+      if (s.algorithm) setAlgorithm(s.algorithm);
+    } catch {
+      /* önemsiz. */
+    }
+  }
+  function saveState(): void {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          edges: edgesInput.value,
+          startNode: startInput.value,
+          algorithm: getAlgorithm(),
+        } satisfies SavedState),
+      );
+    } catch {
+      /* önemsiz. */
+    }
+  }
+  function applySample(s: Sample): void {
+    edgesInput.value = s.edges;
+    startInput.value = s.startNode;
+    setAlgorithm(s.algorithm);
+    saveState();
+    clearError();
+  }
+
+  function parseEdges(text: string): MstEdge[] {
+    const lines = text
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0 && !l.startsWith('#'));
+    const out: MstEdge[] = [];
+    lines.forEach((line, idx) => {
+      const parts = line.split(/[\s,;\t]+/).filter((p) => p.length > 0);
+      if (parts.length !== 3) {
+        throw new MstError(
+          `Satır ${idx + 1}: 3 alan bekleniyor (u v ağırlık); ${parts.length} alan bulundu: "${line}".`,
+        );
+      }
+      const [from, to, wRaw] = parts;
+      const weight = Number(wRaw.replace(',', '.'));
+      if (!Number.isFinite(weight)) {
+        throw new MstError(`Satır ${idx + 1}: ağırlık sayı olmalı ("${wRaw}").`);
+      }
+      out.push({ from, to, weight });
+    });
+    return out;
+  }
+
+  /* Bileşen rozeti için sabit renk paleti — Tailwind tonları (dark uyumlu). */
+  const COMP_COLORS = [
+    'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200',
+    'bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-200',
+    'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200',
+    'bg-fuchsia-100 text-fuchsia-900 dark:bg-fuchsia-900/40 dark:text-fuchsia-200',
+    'bg-rose-100 text-rose-900 dark:bg-rose-900/40 dark:text-rose-200',
+    'bg-indigo-100 text-indigo-900 dark:bg-indigo-900/40 dark:text-indigo-200',
+  ];
+
+  function renderTree(result: MstResult): void {
+    let cum = 0;
+    const rows = result.treeEdges.map((e) => {
+      cum += e.weight;
+      return `<tr>
+        <td class="px-3 py-2 text-slate-500 dark:text-slate-400">${e.order}</td>
+        <td class="px-3 py-2 font-mono text-slate-900 dark:text-white">${escapeHtml(e.from)} — ${escapeHtml(e.to)}</td>
+        <td class="px-3 py-2 text-right font-mono tabular-nums">${fmt(e.weight, 3)}</td>
+        <td class="px-3 py-2 text-right font-mono tabular-nums text-emerald-700 dark:text-emerald-300">${fmt(cum, 3)}</td>
+      </tr>`;
+    });
+    treeBody.innerHTML = rows.join('');
+  }
+
+  function renderComponents(result: MstResult): void {
+    const rows = result.nodeComponents.map((nc) => {
+      const cls = COMP_COLORS[nc.component % COMP_COLORS.length];
+      return `<tr>
+        <td class="px-3 py-2 font-mono text-slate-900 dark:text-white">${escapeHtml(nc.node)}</td>
+        <td class="px-3 py-2"><span class="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${cls}">#${nc.component}</span></td>
+      </tr>`;
+    });
+    compBody.innerHTML = rows.join('');
+  }
+
+  function showError(msg: string): void {
+    errorBox.textContent = msg;
+    errorBox.hidden = false;
+    output.hidden = true;
+  }
+  function clearError(): void {
+    errorBox.hidden = true;
+    errorBox.textContent = '';
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clearError();
+    saveState();
+    try {
+      const edges = parseEdges(edgesInput.value);
+      const startNode = startInput.value.trim();
+      const result = solveMst({
+        edges,
+        algorithm: getAlgorithm(),
+        startNode: startNode.length > 0 ? startNode : undefined,
+      });
+
+      totalWeightEl.textContent = fmt(result.totalWeight, 4);
+      const algLabel = result.algorithm === 'prim' ? 'Prim' : 'Kruskal';
+      resultMeta.textContent =
+        `${algLabel} ${result.iterations} adımda yakınsadı. ` +
+        `${result.nodeComponents.length} düğüm, ${result.treeEdges.length} ağaç kenarı, ` +
+        `${result.components} bileşen.`;
+
+      forestBanner.hidden = result.components <= 1;
+      if (result.components > 1) {
+        forestCount.textContent = String(result.components);
+      }
+
+      renderTree(result);
+      renderComponents(result);
+      output.hidden = false;
+      output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      const msg = err instanceof MstError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
+      showError(msg);
+    }
+  });
+
+  [edgesInput, startInput].forEach((el) => el.addEventListener('input', saveState));
+  form.querySelectorAll<HTMLInputElement>('input[name="algorithm"]').forEach((el) =>
+    el.addEventListener('change', saveState),
+  );
+  sampleClrsBtn.addEventListener('click', () => applySample(SAMPLE_CLRS));
+  sampleGridBtn.addEventListener('click', () => applySample(SAMPLE_GRID));
+  sampleForestBtn.addEventListener('click', () => applySample(SAMPLE_FOREST));
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('Form sıfırlanacak. Devam edilsin mi?')) return;
+    edgesInput.value = '';
+    startInput.value = '';
+    setAlgorithm('prim');
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* önemsiz. */
+    }
+    clearError();
+    output.hidden = true;
+  });
+
+  loadState();
+</script>

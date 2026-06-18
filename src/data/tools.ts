@@ -247,6 +247,16 @@ export const TOOLS: readonly Tool[] = [
     status: 'ready',
     guideSlug: 'en-kisa-yol-dijkstra-bellman-ford',
   },
+  {
+    slug: 'minimum-yayilan-agac-cozucu',
+    title: 'Minimum Yayılan Ağaç (MST) Çözücü',
+    shortTitle: 'MST (Prim · Kruskal)',
+    description:
+      'Yönsüz ağırlıklı bir ağdaki tüm düğümleri birbirine bağlayan en az toplam ağırlıklı ağacı Prim (binary heap) ya da Kruskal (union-find) algoritmasıyla tarayıcıda anlık bul. Graf bağlı değilse minimum yayılan orman; paralel kenarlardan en küçük olanı seçilir; negatif ağırlık desteklenir. Ağ tasarımı, kümeleme ve yaklaşım algoritmalarının temel taşı.',
+    category: 'graf',
+    status: 'ready',
+    guideSlug: 'minimum-yayilan-agac-prim-kruskal',
+  },
 ] as const;
 
 export function getReadyTools(): readonly Tool[] {

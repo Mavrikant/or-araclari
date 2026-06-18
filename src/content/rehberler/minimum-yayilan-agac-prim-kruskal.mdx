@@ -1,0 +1,278 @@
+---
+title: "Minimum Yayılan Ağaç: Prim ve Kruskal"
+description: "Yönsüz ağırlıklı bir graftaki en az toplam ağırlıklı ağacı bulmak: Prim (binary heap) ve Kruskal (union-find). Cut property, döngü özelliği, ağ tasarımı uygulamaları ve sayısal örnekler."
+pubDate: 2026-06-18
+relatedTool: "minimum-yayilan-agac-cozucu"
+keywords:
+  - "minimum yayılan ağaç"
+  - "MST"
+  - "Prim"
+  - "Kruskal"
+  - "minimum spanning tree"
+  - "union-find"
+  - "ayrık küme"
+  - "cut property"
+  - "ağ tasarımı"
+  - "graf algoritmaları"
+readingMinutes: 10
+faq:
+  - question: "Minimum yayılan ağaç (MST) tam olarak nedir?"
+    answer: "Yönsüz ağırlıklı bir graf G = (V, E, w) için, V'deki tüm düğümleri birbirine bağlayan, kenar ağırlıkları toplamı en küçük olan ağaca minimum yayılan ağaç denir. Ağaç olduğundan tam V−1 kenar içerir ve hiç çevrim yoktur. Bağlanmış olduğundan herhangi iki düğüm arasında tek bir yol vardır. MST tek olmak zorunda değildir — birden fazla minimum yayılan ağaç olabilir — ama toplam ağırlık her zaman aynıdır. Graf bağlı değilse her bağlı bileşen için ayrı bir ağaç bulunur, bu yapıya minimum yayılan orman (spanning forest) denir."
+  - question: "Prim algoritması nasıl çalışır?"
+    answer: "Prim açgözlü (greedy) bir yaklaşımdır: bir düğümle başla, her adımda 'mevcut ağacın bir ucu sende olan ve seni en ucuza yeni bir düğüme götüren' kenarı seç, ağaca ekle. Adım adım: (1) keyfi bir başlangıç düğümü r seç, ağacı T = {r} olarak başlat. (2) Min-öncelik kuyruğunda 'T'deki bir düğümden T dışındaki düğümlere giden tüm kenarları' tut. (3) En küçük ağırlıklı kenarı (u, v) çıkar; v zaten T'deyse atla, değilse v'yi T'ye, (u, v)'yi MST'ye ekle. (4) v'nin T dışındaki komşuları için heap'e yeni adaylar ekle. (5) T tüm düğümleri kapsayana kadar tekrarla. Binary heap ile karmaşıklık O((V + E) · log V); Fibonacci heap ile O(E + V · log V) teorik olarak daha iyidir."
+  - question: "Kruskal algoritması nasıl çalışır?"
+    answer: "Kruskal da açgözlüdür ama global bakar: tüm kenarları ağırlığa göre küçükten büyüğe sırala, her birini sırasıyla incele — kenar bir çevrim üretmiyorsa MST'ye ekle, üretiyorsa atla. Çevrim kontrolü için ayrık küme (union-find / disjoint-set) veri yapısı kullanılır: kenarın iki ucu aynı küme kökünde mi? Eşitse çevrim olur, ekleme; değilse iki kümeyi birleştir ve kenarı MST'ye al. n−1 kenar eklenince ya da listeyi bitirince dur. Karmaşıklık O(E · log E) — sıralama baskın; union-find amortize O(α(n)) ≈ sabit. Pratikte sparse (seyrek) graflarda Prim'le yarışır; çok bağlantılı graflarda Prim daha hızlıdır."
+  - question: "Bu açgözlü seçimler neden doğru çalışıyor (cut property)?"
+    answer: "MST'nin temel teoremi: bir 'kesim' (cut) (S, V \\ S) — yani düğümleri iki gruba ayıran bir ayrım — verildiğinde, iki grup arasındaki tüm kenarlar içinde minimum ağırlıklı olan kenar mutlaka bir MST'de yer alır. Buna cut property denir. İspat değişim argümanı: minimum kenar e MST'de değilse, kesimi geçen başka bir kenar f MST'de olmalı (yoksa ağaç bağlı değil); e'yi ekleyip f'yi çıkarınca yeni bir yayılan ağaç elde edilir ve w(e) < w(f) olduğundan toplam ağırlık küçülür — çelişki. Prim her adımda mevcut S = T (ağaçtaki düğümler) ve V \\ T arasındaki minimum kenarı seçer; Kruskal her aldığı kenar için 'aynı bileşene düşmediği' tüm kesimleri kapsar. İki algoritma da cut property'nin farklı uygulamalarıdır."
+  - question: "MST nerede kullanılır?"
+    answer: "Klasik motivasyon ağ tasarımıdır — şehirler arasında en az toplam uzunlukta kablo/yol/boru hattı çekmek (Borůvka 1926 elektrik şebekesi için ilk algoritmayı geliştirdi). Modern uygulamalar: (1) telekomünikasyon backbone planlama, (2) kümeleme (single-linkage hierarchical clustering MST kenarlarının uzunluk sırasına göre kesimle çalışır), (3) yaklaşım algoritmaları (gezgin satıcı için 2-approx: TSP turu MST × 2 ≥ optimum), (4) görüntü segmentasyonu (Felzenszwalb-Huttenlocher), (5) tasarım otomasyonu (VLSI rota planlama), (6) ağ akışı problemlerinde alt rutin, (7) labirent üretme (rastgele ağırlıklı tam graf üzerinde MST = rastgele labirent)."
+  - question: "MST tek midir, birden fazla olabilir mi?"
+    answer: "Tüm kenar ağırlıkları farklıysa MST tektir. Aynı ağırlıklı kenarlar varsa birden fazla MST mümkündür — Prim'in başlangıç düğümü ya da Kruskal'ın eşit ağırlıklı kenarlar arasındaki tie-break kuralı farklı ama eşdeğer ağaçlar üretebilir. Ancak toplam ağırlık her durumda aynıdır (cut property doğrudan toplam ağırlığı sabitler). Bu deterministiklik için pratik bir kural: kenarları (ağırlık, kenar_id) gibi ikili anahtarla sırala ki eşit ağırlıkta hep aynı sıra korunsun. Aracımız bu kuralı uygular; aynı girdiye karşı aynı ağaç döner."
+  - question: "Graf bağlı değilse ne olur?"
+    answer: "MST tanımı 'tüm düğümleri bağlayan ağaç' der; graf bağlı değilse tek bir ağaç mümkün değildir. Bu durumda algoritma her bağlı bileşen için ayrı bir ağaç bulur — buna minimum yayılan orman (minimum spanning forest) denir. Prim'in standart hâli sadece başlangıç düğümünden erişilebilen bileşeni keşfeder; bağımsız bileşenler için yeniden başlatılması gerekir. Kruskal doğal olarak doğru çalışır: kenarları sıraladığında farklı bileşenlerdeki kenarlar birbirini etkilemez, sonunda bileşen sayısı kadar ayrı ağaç kalır. Aracımız Prim'i otomatik olarak her bileşen için yeniden başlatır; sonuçta n − k kenarlı (k = bileşen sayısı) bir orman döner."
+  - question: "MST ile en kısa yol ağacı (SPT) farkı nedir?"
+    answer: "Aynı görünseler de farklıdırlar ve aynı grafa uygulanırsa farklı ağaçlar üretirler. MST 'tüm kenar ağırlıklarının toplamını' minimize eder — küresel bir hedef. En kısa yol ağacı (Dijkstra çıktısı) 'kaynaktan her düğüme uzaklığı' minimize eder — kaynağa göre yerel bir hedef. Klasik karşı örnek: A-B (ağırlık 1), B-C (ağırlık 1), A-C (ağırlık 1.9) üçgeninde. MST = {A-B, B-C} (toplam 2). Kaynak A için Dijkstra'nın SPT'si = {A-B (uzaklık 1), A-C (uzaklık 1.9)} (toplam 2.9). MST'de A → C uzaklığı 2 — SPT'den uzun. Yani MST 'en ucuz ortak iletim altyapısı' iken SPT 'her noktaya en hızlı ulaşan yol' problemidir."
+---
+
+import { withBase } from '../../data/site';
+
+Minimum yayılan ağaç (Minimum Spanning Tree, MST), graf algoritmalarının
+en eski ve en sezgisel problemlerinden biridir: bir grup şehri en az
+toplam uzunlukta yolla birbirine nasıl bağlarsın? Otmar Borůvka'nın 1926'da
+Moravya'nın elektrik şebekesi için çözdüğü bu problem, bugün hâlâ kümeleme,
+yaklaşım algoritmaları ve ağ tasarımının temel yapı taşıdır.
+
+## Problemin tanımı
+
+Yönsüz ağırlıklı bir graf $G = (V, E, w)$:
+
+- **V** düğüm kümesi
+- **E** yönsüz kenar kümesi — $(u, v)$ ile $(v, u)$ aynı kenardır
+- **w : E → ℝ** ağırlık fonksiyonu (mesafe, maliyet, gecikme — negatif olabilir)
+
+Bir **yayılan ağaç** (spanning tree), $V$'deki tüm düğümleri kapsayan
+çevrimsiz ve bağlı bir alt graftır. Her yayılan ağacın tam $|V| - 1$
+kenarı vardır. **Minimum** yayılan ağaç, kenar ağırlıkları toplamı en
+küçük olan yayılan ağaçtır:
+
+$$
+\text{MST}(G) = \arg\min_{T \subseteq E,\ T \text{ ağaç},\ |T|=|V|-1} \sum_{e \in T} w(e)
+$$
+
+Graf bağlı değilse problem değişir: her bağlı bileşen için ayrı bir
+ağaç bulunur, yapıya **minimum yayılan orman** (minimum spanning forest)
+denir. Aracımız bu durumu otomatik olarak ele alır.
+
+## Cut property — neden açgözlülük çalışıyor?
+
+MST'yi anlamanın anahtarı **cut property**'dir:
+
+> Düğümleri iki gruba ayıran herhangi bir kesim $(S, V \setminus S)$
+> için, bu iki grup arasındaki tüm kenarlar arasında **minimum ağırlıklı**
+> olan bir kenar mutlaka bir MST'de yer alır.
+
+İspatı değişim argümanıyla: minimum kesim kenarı $e^*$ MST'de değilse,
+kesimi geçen başka bir kenar $f$ MST'de olmalı (yoksa ağaç bağlı değil).
+$e^*$'ı ekleyip $f$'i çıkarırsak hâlâ bir yayılan ağacımız olur ve
+$w(e^*) < w(f)$ olduğundan toplam ağırlık küçülür — çelişki. Demek ki
+$e^*$ bir MST'de zaten vardır.
+
+Bu teorem her iki algoritmanın da doğruluğunu doğrudan verir. Prim her
+adımda mevcut ağaç düğümleri $S$ ile diğerleri arasındaki minimum kenarı
+seçer — cut property'nin tam tanımı. Kruskal her seçtiği kenar için,
+iki bileşeni birleştiren tüm kesimlerin minimum kenarıdır (çünkü ondan
+küçük tüm kenarlar zaten incelendi ve bileşeni değiştirmedi).
+
+Tamamlayıcı bir teorem **cycle property**: bir çevrimdeki **maksimum**
+ağırlıklı kenar **hiçbir MST'de yer almaz**. Birlikte iki teorem MST'yi
+benzersiz şekilde karakterize eder.
+
+## Prim algoritması — adım adım
+
+Bir başlangıç düğümünden bir bitkinin büyümesi gibi: her adımda mevcut
+ağaca komşu olan ve onu en ucuza genişleten kenarı seç.
+
+```
+PRIM(G, r):
+  T ← {r}
+  Q ← min-heap, r'nin tüm kenarlarını ekle
+  while T ≠ V:
+    (u, v, w) ← Q.popMin()         # heap'ten en küçük ağırlıklı kenar
+    if v ∈ T: continue              # lazy delete: v zaten ağaçta
+    T ← T ∪ {v}
+    MST ← MST ∪ {(u, v)}
+    for (v, x, w') ∈ E:             # v'nin komşularını heap'e ekle
+      if x ∉ T:
+        Q.push(w', x, v)
+```
+
+**Karmaşıklık:** Binary heap ile $O((V + E) \log V)$. Her kenar en fazla
+bir kez heap'e girer, her pop $O(\log V)$. Fibonacci heap ile $O(E + V \log V)$
+teorik olarak daha iyidir, ama sabit faktörler nedeniyle pratikte binary
+heap genelde kazanır.
+
+**Lazy delete:** kenarları "düğümün heap'teki yeri"ni güncellemek yerine
+yeni bir kayıt itip pop sırasında "bu düğüm zaten ağaçta mı?" diye
+sorarız. Heap büyür ama her işlem hâlâ $O(\log V)$.
+
+### Prim — sayısal örnek
+
+CLRS Ch. 23'ün klasik MST grafı (9 düğüm, 14 kenar). $r = a$ başlangıç:
+
+| Adım | Heap'ten seçilen | Eklenen kenar | Ağırlık | Birikimli |
+|:---:|:---:|:---:|:---:|:---:|
+| 1 | $a$ | başlangıç | — | 0 |
+| 2 | $b$ | $a - b$ | 4 | 4 |
+| 3 | $c$ | $b - c$ | 8 | 12 |
+| 4 | $i$ | $c - i$ | 2 | 14 |
+| 5 | $f$ | $c - f$ | 4 | 18 |
+| 6 | $g$ | $f - g$ | 2 | 20 |
+| 7 | $h$ | $g - h$ | 1 | 21 |
+| 8 | $d$ | $c - d$ | 7 | 28 |
+| 9 | $e$ | $d - e$ | 9 | 37 |
+
+Toplam MST ağırlığı **37**. Tüm düğümler eklendi, 8 = $V - 1$ kenar
+seçildi.
+
+## Kruskal algoritması — adım adım
+
+Kruskal Prim'in tersine **global** bakar: kenarları sıralayıp tek tek
+inceler, çevrim oluşturmayanları kabul eder.
+
+```
+KRUSKAL(G):
+  E_sorted ← E'yi (ağırlık, kenar_id) ile sırala
+  DSU ← Union-Find(V)               # her düğüm kendi kümesinde
+  MST ← ∅
+  for (u, v, w) ∈ E_sorted:
+    if DSU.find(u) ≠ DSU.find(v):   # farklı bileşenler — çevrim yok
+      DSU.union(u, v)
+      MST ← MST ∪ {(u, v)}
+      if |MST| = V − 1: break
+```
+
+**Karmaşıklık:** $O(E \log E)$ — sıralama baskın. Union-find ile
+amortize $O(\alpha(n))$ ≈ sabit; toplam $O(E \log E + E \cdot \alpha(V))$.
+
+### Union-find (ayrık küme) yapısı
+
+Her düğüm bir "kök"e işaret eder; aynı kökteki düğümler aynı bileşendedir.
+
+- **find(x):** kökü bul (path compression — bulunan zincirdeki her
+  düğümü doğrudan köke bağla).
+- **union(a, b):** iki kökü birleştir (union by rank — daha derin ağaç
+  altta kalır).
+
+Bu iki optimizasyonla birlikte amortize maliyet pratikte sabittir.
+
+### Kruskal — sayısal örnek (aynı CLRS grafı)
+
+Kenarlar sıralı (ağırlık artan):
+
+| Sıra | Kenar | Ağırlık | Aynı bileşen? | MST'ye eklenir mi? |
+|:---:|:---:|:---:|:---:|:---:|
+| 1 | $g - h$ | 1 | hayır | **evet** |
+| 2 | $c - i$ | 2 | hayır | **evet** |
+| 3 | $f - g$ | 2 | hayır | **evet** |
+| 4 | $a - b$ | 4 | hayır | **evet** |
+| 5 | $c - f$ | 4 | hayır | **evet** |
+| 6 | $g - i$ | 6 | EVET | hayır (çevrim) |
+| 7 | $c - d$ | 7 | hayır | **evet** |
+| 8 | $h - i$ | 7 | EVET | hayır |
+| 9 | $a - h$ | 8 | hayır | **evet** |
+| 10 | $b - c$ | 8 | EVET | hayır |
+| 11 | $d - e$ | 9 | hayır | **evet** |
+| 12 | … | | | (8 kenar eklendi, dur) |
+
+Toplam ağırlık $1 + 2 + 2 + 4 + 4 + 7 + 8 + 9 = 37$ — Prim'le aynı.
+Seçilen kenar kümesi farklı görünse de (örn. Prim $b-c$ aldı, Kruskal
+$a-h$ aldı) toplam ağırlık MST için tektir.
+
+## Prim mi, Kruskal mı?
+
+İki algoritma da aynı problemi çözer; pratik tercih grafın yoğunluğuna
+ve yapıya bağlı.
+
+| | Prim | Kruskal |
+|---|---|---|
+| **Karmaşıklık** | $O((V+E) \log V)$ | $O(E \log E)$ |
+| **Veri yapısı** | min-heap | union-find + sort |
+| **Yoğun graf** ($E \approx V^2$) | hızlı | yavaş |
+| **Seyrek graf** ($E \approx V$) | benzer | hafifçe daha hızlı |
+| **Dağıtık çalıştırma** | zor (merkezi heap) | kolay (her düğüm yerel) |
+| **Bağlı olmayan graf** | manuel yeniden başlat | doğal olarak çalışır |
+| **Akışlı kenar girdisi** | uyumsuz | doğal (gelen kenarı işle) |
+
+Sezgisel kural: graf yoğunsa Prim, seyrekse Kruskal. Ama modern CPU'larda
+$V < 10^5$ için fark genelde 2x'ten az. Bağlı olmayan graf bekliyorsanız
+ya da kenarları stream olarak işliyorsanız Kruskal daha temiz.
+
+## Yaygın uygulamalar
+
+**Ağ tasarımı.** Klasik motivasyon: $n$ şehri kablolarla bağlamak,
+toplam kablo uzunluğu en az olsun. MST direkt çözüm. Telekomünikasyon
+backbone, su/elektrik dağıtım hattı, fiber rotalama hep bu varyantın
+genişletilmiş hâlleri.
+
+**Kümeleme.** Single-linkage hierarchical clustering MST'yi alıp
+ağırlık eşiği üstündeki kenarları siler — kalan bileşenler kümeleri
+verir. Eşiği değiştirerek hiyerarşik ağaç (dendrogram) elde edilir.
+
+**TSP için 2-yaklaşım.** Metrik TSP'de minimum tur MST ağırlığının en
+az iki katıdır; MST'yi DFS ile dolaşıp tekrar eden düğümleri atlayan
+bir tur, optimum turun en fazla 2 katı uzunluktadır.
+
+**Görüntü segmentasyonu.** Felzenszwalb-Huttenlocher (2004): piksel
+benzerlik grafı üzerinde MST kur, yerel ağırlık eşiğine göre kenarları
+ayır — bölgeler kalır.
+
+**VLSI ve PCB rotalama.** Devre üzerinde minimum bağlantı uzunluğu MST
+veya MST varyantları (Steiner tree) ile yaklaşık çözülür.
+
+**Labirent üretme.** Rastgele ağırlıklı bir grid grafı üzerinde MST,
+döngüsüz ama tüm hücreleri kapsayan bir labirent üretir.
+
+## Sık karıştırılan kavramlar
+
+**MST vs en kısa yol ağacı.** Aynı kelimeler ("ağaç", "minimum") ama
+farklı problemler. MST tüm kenar ağırlıklarının **toplamını** minimize
+eder. En kısa yol ağacı (Dijkstra'nın çıktısı) **kaynaktan her düğüme
+mesafeyi** minimize eder. Aynı grafta genelde farklı ağaçlar üretirler.
+
+Klasik örnek: üçgen $A-B$ (1), $B-C$ (1), $A-C$ (1.9):
+
+- MST = $\{A-B, B-C\}$, toplam 2
+- $A$ kaynaklı SPT = $\{A-B, A-C\}$, toplam 2.9
+- Ama SPT'de $A \to C$ uzaklığı 1.9 ✓; MST'de $A \to C$ uzaklığı 2 (✗ SPT için)
+
+**MST yönlü graflarda yoktur.** Bizim çözücümüz yönsüz graf varsayar.
+Yönlü versiyon "minimum spanning arborescence" (Edmonds algoritması) —
+çok daha karmaşık ve farklı bir problemdir.
+
+**MST benzersiz değildir.** Aynı ağırlıklı kenarlar varsa birden fazla
+MST olabilir; ama toplam ağırlık tektir. Aracımızda kenar sırası
+deterministik tie-break sağlar.
+
+## Aracı kullanırken pratik notlar
+
+- **Yönsüz girdi:** $(u, v, w)$ ve $(v, u, w)$ aynı kenardır; ikisini
+  birden yazmak gerekmez. Yazılırsa tek olarak ele alınır.
+- **Paralel kenarlar:** aynı $(u, v)$ çifti için farklı ağırlıklar
+  yazarsanız en küçüğü seçilir (büyük olanlar MST'ye zaten girmez).
+- **Self-loop:** $(u, u)$ MST'ye katkı sağlamadığından reddedilir.
+- **Negatif ağırlık:** kabul edilir; toplam ağırlık negatif olabilir.
+  MST tanımı için bir engel yoktur — cut property negatif ağırlıkta da
+  geçerlidir.
+- **Bağlı olmayan graf:** otomatik olarak orman döndürülür; bileşen
+  sayısı çıktıda gösterilir, her düğüm bir bileşen kimliği alır.
+- **Prim başlangıç:** boş bırakırsanız ilk keşfedilen düğümden başlar.
+  Tek MST varsa toplam ağırlık başlangıçtan bağımsızdır; birden fazla
+  MST varsa başlangıç seçimi hangi MST'nin döndüğünü etkileyebilir
+  ama toplam ağırlığı değiştirmez.
+
+## Kaynaklar
+
+- Cormen, Leiserson, Rivest, Stein — *Introduction to Algorithms*, 3. baskı, Bölüm 23.
+- Kleinberg, Tardos — *Algorithm Design*, Bölüm 4.5–4.7.
+- Sedgewick, Wayne — *Algorithms*, 4. baskı, Bölüm 4.3.
+- Felzenszwalb, Huttenlocher (2004) — *Efficient Graph-Based Image Segmentation*.
