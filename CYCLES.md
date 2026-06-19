@@ -5,6 +5,30 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 
 ---
 
+## DÖNGÜ #25 — 2026-06-20
+
+**Yapılan:** F-STEINER — Steiner Ağacı Çözücü (Kou-Markowsky-Berman 1981 2-yaklaşımı) ve uzun-form Türkçe rehberi yayınlandı. Yönsüz ağırlıklı bir grafta bir terminal alt kümesini en az toplam ağırlıkla bağlayan ağacı bulur; ara düğümler (Steiner noktaları) isteğe bağlı olarak ağaca dahil edilir. Problem NP-zor (Karp 1972); KMB en kötü durumda 2·OPT garantili polinom zamanlı yaklaşım. F-MST'nin doğal uzantısı, graf kategorisinin sekizinci aracı.
+
+**Detay:**
+- `src/lib/steiner.ts` (+390) — KMB 6 adım: terminal başına Dijkstra (binary heap, Float64Array dist + Int32Array pred), metrik kapanış tam grafı (terminal çiftleri arası en kısa yol), Kruskal MST (union-find: path compression + union-by-rank), yolları orijinal kenarlara genişletme + paralel kenar tekilleştirme (Map ile), alt graf üzerinde ikinci MST, terminal olmayan yaprakları ardışık fix-point kırpma. Ayrıca tüm grafın MST'sini karşılaştırma için raporlar. Sınırlar: 200 düğüm, 1000 kenar, 30 terminal; ağırlık ≥ 0 zorunlu (Dijkstra). Validation: boş kenar/terminal, self-loop, NaN/Infinity, negatif ağırlık, tekrar terminal, grafa ait olmayan terminal.
+- `src/lib/steiner.test.ts` (+250, **23 vitest**) — Y-yıldız hub seçimi (3 terminal, OPT = 3 hub C üzerinden), zincir ortası Steiner noktası (A–B–C–D–E uçlardan terminal → B/C/D Steiner), terminal olmayan yaprak kırpma (saplama C–X atılır), metrik kapanış yol raporu (Dijkstra A–B–C 7 < direkt 10), iki terminal en kısa yol, KMB ≤ 2·OPT sınırı, paralel kenarda min seçimi, erişilemez terminal → reachable=false, determinizm aynı giriş aynı çıktı, MST karşılaştırması saplama atımı, 7 validation hata yolu, K4 4 terminal → kenar = düğüm − 1, zincirde tüm uçlar terminal → tam zincir.
+- `src/pages/araclar/steiner-agaci-cozucu.astro` (+325) — mobil-öncelikli form (kenar textarea + terminal listesi text input), **3 örnek** (Y-yıldız 3 terminal, ızgara 4 köşe 2 terminal, saplama-kırpma örneği), **3 sonuç kartı** (Steiner toplamı emerald, tüm graf MST'si sky, Steiner noktası sayısı + listesi amber), ağaç kenarları tablosu (terminal/Steiner rozetleri ile renk kodlu — terminal yeşil pill, Steiner amber pill), metrik kapanış yolları tablosu (terminal çift, uzaklık, adım adım yol), erişilemez red banner, localStorage state (`steiner-state-v1`).
+- `src/content/rehberler/steiner-agaci-2-yaklasim.mdx` (+200) — 11 dk Türkçe rehber: Karp 1972 NP-tam indirgemesi ve uç hâller (|R|=2 SP, R=V MST, arada NP-zor), KMB 6 adım pseudokod + Y şekli sayısal yürüteç, metrik kapanış üçgen eşitsizliği özellikleri, yaklaşım faktörü 2(1−1/ℓ)'nin Euler turu temelli ispatı, MST karşılaştırma tablosu, 6 uygulama alanı (VLSI, telekom backbone, IP multicast, filogenetik, yol/boru hattı planlaması, sosyal ağ), 9 FAQ JSON-LD (FAQPage rich result).
+- `src/data/tools.ts` (+10) — yeni araç kaydı (25'inci araç, `graf` kategorisi, guideSlug=`steiner-agaci-2-yaklasim`).
+- `public/og/steiner-agaci-cozucu.png` — `npm run og` ile per-tool OG kartı (84.5 KB).
+
+**Tasarım notu:** KMB metrik kapanışta tie-break ile bazı sayısal örneklerde optimum yerine 4 (= 2·OPT/1.5) verebilir — örneğin direkt kenar = hub-yolu olduğunda Kruskal'ın deterministic sıralaması direkt kenarları seçer, sonuç hub-tabanlı çözümden pahalı olur. Bu pratik olarak normal: KMB yaklaşım algoritması, optimum değil. Test "KMB ≤ 2·OPT (basit kontrol)" bu durumu açıkça ele alıyor (`toBeLessThanOrEqual(2 * opt)`). Sayfadaki "MST karşılaştırması" kartı kullanıcının ara düğüm kullanmanın getirdiği kazancı somut görmesini sağlıyor. Yaprak kırpma fix-point loop'u: tek pass yeterli değil çünkü bir yaprağı atınca komşusu yeni bir yaprağa dönüşebilir — `while toRemove.size > 0` ile sabit noktaya kadar tekrarlanıyor.
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint, **107 dosya**) · test ✓ (**517/517**, +23 yeni Steiner testi, 27 dosya) · build ✓ (**60 sayfa**, 5.57s — yeni araç + rehber dahil) · Lighthouse — yeni sayfa mevcut F-MST / F-SHORTEST-PATH deseni birebir izliyor (inline `<script>`, plotly/glpk yok, saf JS heap, Tailwind grid + table), mobil-öncelikli yerleşim (≥95 beklenir).
+
+**Yayın:** PR #55 squash-merge edildi (793195b). Deploy run 27849801194 queued — main üzerine push tamam.
+
+**İşaret:** yok.
+
+**Sıradaki:** F-LEMKE (Lemke-Howson pivot — F-GAME-NASH'in support enumeration sınırını aşar) ya da F-JPS (Jump Point Search — F-ASTAR'ın eş-maliyetli ızgarada 10× hızlanması). Q-AUDIT-YAML hâlâ open. Q-AUDIT-ESBUILD ve Q-CI-CHECK blocked (insan onayı).
+
+---
+
 ## DÖNGÜ #24 — 2026-06-19
 
 **Yapılan:** F-ASTAR — A* (A-yıldız) Izgara Yol Bulucu ve uzun-form Türkçe sezgisel arama rehberi yayınlandı. 2D ızgarada f(n) = g(n) + h(n) önceliği ile bilgili arama; Manhattan / Octile / Euclidean / Chebyshev / Zero heuristic seçenekleri; 4 ya da 8 bağlantı (kardinal 1, çapraz √2); corner-cutting yasak/serbest. Görsel ızgarada tıkla-engel/start/goal editörü; açılan hücreler (closed set) ayrı renkte gösterilerek heuristic kalitesi gözle ölçülebiliyor. F-SHORTEST-PATH'in koordinatlı uzantısı, graf kategorisinin yedinci aracı.

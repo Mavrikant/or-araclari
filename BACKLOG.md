@@ -24,7 +24,6 @@ Durum: open · in-progress · blocked · done
 | id | başlık | tür | değer | efor | durum |
 |---|---|---|---|---|---|
 | F-LEMKE | Lemke-Howson pivot algoritması — büyük bimatris oyunlar için ölçeklenebilir tek-denge bulucu. F-GAME-NASH'in support enumeration sınırını (m+n ≤ 12) aşar | feature | L | L | open |
-| F-STEINER | Steiner ağacı yaklaşıklığı (MST tabanlı 2-approx) — F-MST'nin doğal uzantısı, ağ tasarımında ara düğümlerle daha kısa toplam | feature | L | M | open |
 | F-JPS | Jump Point Search — A*'ın eş-maliyetli ızgaralarda dramatic hızlanması (Harabor & Grastien 2011); F-ASTAR'ın doğal uzantısı, büyük açık alanda 10×+ hız | feature | L | M | open |
 
 ---
@@ -55,3 +54,4 @@ Durum: open · in-progress · blocked · done
 | F-SHORTEST-PATH | En Kısa Yol Çözücü — Dijkstra (binary heap + lazy delete) + Bellman-Ford (V−1 pass + erken çıkış + V'inci pass negatif çevrim tespiti), auto-mode (negatif varsa BF), kaynak → tüm düğüm + opsiyonel hedefe adım adım yol rekonstrüksiyonu; CLRS 24.3 + CLRS 24.1 + negatif çevrim örnekleri; +20 vitest | #22 |
 | F-MST | Minimum Yayılan Ağaç Çözücü — Prim (binary heap + lazy delete, çoklu bileşen için yeniden başlat) + Kruskal (union-find: path compression + rank), paralel kenarda min ağırlık, negatif ağırlık desteği, bağlı olmayan grafda orman; CLRS 23 ders kitabı örneği + şehir ağı + orman örnekleri; +23 vitest | #23 |
 | F-ASTAR | A* (A-yıldız) Izgara Yol Bulucu — f = g + h, Manhattan/Octile/Euclidean/Chebyshev/Zero heuristic, 4/8 bağlantı, corner-cutting yasak/serbest, görsel ızgarada tıkla-engel/start/goal editörü, açılan kapalı küme görselleştirmesi; labirent + odalar + açık alan örnekleri; +20 vitest | #24 |
+| F-STEINER | Steiner Ağacı Çözücü (KMB 2-yaklaşım) — her terminalden Dijkstra → metrik kapanış tam grafı → Kruskal MST → orijinal yollara genişletme + paralel kenar dedup → alt graf MST → terminal olmayan yaprak ardışık kırpma; Y-yıldız (hub seçimi) + ızgara 4 köşe + saplama-kırpma örnekleri; tüm grafın MST karşılaştırması; +23 vitest | #25 |
