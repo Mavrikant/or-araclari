@@ -267,6 +267,16 @@ export const TOOLS: readonly Tool[] = [
     status: 'ready',
     guideSlug: 'minimum-yayilan-agac-prim-kruskal',
   },
+  {
+    slug: 'steiner-agaci-cozucu',
+    title: 'Steiner Ağacı Çözücü (KMB 2-Yaklaşımı)',
+    shortTitle: 'Steiner Ağacı',
+    description:
+      'Yönsüz ağırlıklı bir ağda bir terminal alt kümesini birbirine bağlayan en az toplam ağırlıklı ağacı Kou-Markowsky-Berman 1981 algoritmasıyla tarayıcıda anlık bul. Steiner noktaları (terminal olmayan ara düğümler) toplam ağırlığı düşürmek için seçilebilir. Problem NP-zor; KMB 2-yaklaşım garantisi sağlar. Tüm grafın MST karşılaştırması ve terminaller arası en kısa yollar (metrik kapanış) raporlanır. VLSI, multicast ve telekomünikasyon backbone tasarımının temeli.',
+    category: 'graf',
+    status: 'ready',
+    guideSlug: 'steiner-agaci-2-yaklasim',
+  },
 ] as const;
 
 export function getReadyTools(): readonly Tool[] {
