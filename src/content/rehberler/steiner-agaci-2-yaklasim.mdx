@@ -1,0 +1,220 @@
+---
+title: "Steiner Ağacı: NP-Zor Problem ve MST Tabanlı 2-Yaklaşım"
+description: "Bir alt küme terminali en ucuz biçimde bağlamak: Steiner ağacı problemi, NP-zorluk, Kou-Markowsky-Berman 2-yaklaşımı, metrik kapanış, MST ile farkı ve sayısal örnekler."
+pubDate: 2026-06-20
+relatedTool: "steiner-agaci-cozucu"
+keywords:
+  - "Steiner ağacı"
+  - "Steiner tree"
+  - "Kou Markowsky Berman"
+  - "KMB algoritması"
+  - "2-yaklaşım"
+  - "metrik kapanış"
+  - "NP-zor"
+  - "ağ tasarımı"
+  - "minimum spanning tree"
+  - "graf algoritmaları"
+readingMinutes: 11
+faq:
+  - question: "Steiner ağacı problemi nedir, MST'den farkı ne?"
+    answer: "Steiner ağacı problemi yönsüz ağırlıklı bir grafta (V, E, w) bir terminal alt kümesi R ⊆ V verildiğinde, R'deki tüm düğümleri bağlayan en küçük toplam ağırlıklı ağacı bulmaktır. Fark: MST tüm V'yi bağlar, Steiner ağacı sadece R'yi bağlar — ama isteğe bağlı olarak R dışı 'Steiner noktaları' kullanabilir. Klasik örnek: 3 terminal eşkenar üçgenin köşelerinde; doğrudan üçgenin iki kenarı (toplam 2L) yerine merkezden bir hub kullanmak (3·L/√3 ≈ 1.732 L) daha ucuzdur. MST düğüm sayısı sabit (|V|−1 kenar) olduğu için bu kazancı yakalayamaz; Steiner ağacında ara düğüm seçimi tam da problemin NP-zor olmasının kaynağıdır."
+  - question: "Problem neden NP-zor?"
+    answer: "Karp'ın 1972 listesinde 21 NP-tam problemden biri olarak yer alır — Steiner Tree in Graphs. Karar versiyonu: 'toplam ağırlığı ≤ k olan bir Steiner ağacı var mı?' NP-tam'dır. İndirgeme klasik olarak Exact Cover problemi üzerinden yapılır. Pratikte 'hangi Steiner noktasını seçeyim' kombinatoryel patlama yaratır: |V|−|R| aday düğümden 2^(|V|−|R|) alt küme. Tüm terminaller verildiğinde (R = V) problem MST'ye indirgenir ve polinom zamanlıdır; tek terminalde de trivial. Asıl zorluk |R| < |V| aralığındadır — terminal sayısı sabit ise FPT (sabit-parametre çekilebilir) algoritmalar polinom çalışır (Dreyfus-Wagner: O(3^|R| · n)). Genel durumda ise yaklaşım algoritması kullanırız."
+  - question: "KMB 2-yaklaşım algoritması nasıl çalışır?"
+    answer: "Kou, Markowsky, Berman 1981 dört adımlık zarif bir tarif sunar. Adım 1: her terminalden Dijkstra ile diğer tüm terminallere en kısa yolu hesapla — |R| kez Dijkstra. Adım 2: terminaller üzerinde 'metrik kapanış' tam grafı K kur; (r_i, r_j) kenarının ağırlığı orijinal grafda en kısa yol uzunluğudur. Adım 3: K üzerinde MST T₁ bul (Prim ya da Kruskal). Adım 4: T₁'in her kenarını orijinal grafdaki gerçek yola genişlet → alt graf S. Adım 5: S üzerinde tekrar MST T₂ (çakışan yollardan doğan çevrimleri kırpar). Adım 6: T₂'den terminal olmayan yaprakları ardışık olarak kaldır (sadece bedel ekliyor). Karmaşıklık O(|R| · (E + V log V)). Yaklaşım garantisi: T_KMB ≤ 2 · (1 − 1/ℓ) · T_OPT; ℓ optimumun yaprak sayısı, en kötü durumda 2."
+  - question: "Yaklaşım faktörü 2 ne anlama geliyor, nereden geliyor?"
+    answer: "KMB'nin bulduğu ağacın toplam ağırlığı, gerçek optimum Steiner ağacının en fazla iki katıdır. İspatın kalbi şu gözlemdir: optimum Steiner ağacı T* üzerinde her kenarı iki kez dolaşan bir Euler turu çizilir — bu tur terminalleri belirli bir sırayla ziyaret eder ve toplam uzunluğu 2·w(T*). Bu turdan terminaller arası ardışık yolları çıkarınca metrik kapanışta bir spanning tree (zincir) elde edilir; toplam ağırlığı yine ≤ 2·w(T*). KMB'nin metrik kapanıştaki MST'si bu zincirden daha kötü olamaz — yani T_KMB ≤ 2·w(T*). Daha sıkı analiz 2(1 − 1/ℓ) verir, ama ℓ ≥ 2 olduğundan pratikte 2 üst sınırı kullanılır. Modern algoritmalar (Robins-Zelikovsky 2000, Byrka et al. 2010) sınırı 1.39'a çekti, ama daha karmaşıklar."
+  - question: "Metrik kapanış (metric closure) tam olarak nedir?"
+    answer: "Bir graf G üzerindeki metrik kapanış K_R, sadece R terminalleri arasında kenarları olan **tam graf**tır (her terminal çifti arası bir kenar). Kenar (r_i, r_j) ağırlığı d_G(r_i, r_j) — yani G'deki en kısa yol uzunluğu. Bu yapı 'üçgen eşitsizliğini' otomatik sağlar (en kısa yol metriği bir metriktir), bu yüzden K_R üzerinde MST + yol genişletme süreci doğru çalışır. Metrik kapanışın iki güzel özelliği: (1) MST hesabı küçük tam graf üzerinde hızlı — |R|² kenar, sıralama O(|R|² log |R|). (2) Sonucun KMB'nin orijinal G üzerinde gerçek Steiner ağacına yakın olmasını teorik garanti altına alır."
+  - question: "MST ile Steiner ağacı sonucu ne kadar farklılaşabilir?"
+    answer: "Genel olarak Steiner ağacı ≤ MST. Eşitlik tüm V terminal olduğunda (R = V) tabii ki kesindir. Fark açıldığında dramatik olabilir: 'yıldız' örneği — hub C ile k terminal ve aralarında pahalı doğrudan kenarlar. Steiner = k·1 = k (hub üzerinden); doğrudan terminal-terminal MST = (k−1)·D (D yüksek olduğunda çok daha pahalı). Pratik fark genelde %10–%30 mertebesindedir; ancak Steiner noktası seçeneği zenginleştikçe (bağlantı yoğunluğu yüksek graflar) kazanç büyür. Bizim aracımız her iki sayıyı da raporlar — birlikte görüldüğünde 'ara düğümler kullanmak ne kadar tasarruf sağlıyor?' sorusu somut yanıtlanır."
+  - question: "Terminal olmayan yaprakları neden kırpıyoruz?"
+    answer: "Adım 5'in çıktısı MST T₂; bağlı ve döngüsüz bir alt ağaç. Ama T₂'nin uçlarında (yaprak: derece 1 düğüm) bazen terminal olmayan bir düğüm kalır — örneğin yolu metrik kapanıştan geri açtığımızda zincirin ucundaki Steiner noktası daha sonra başka bir terminal yoluna katkı vermiyorsa orada terminal olmayan bir yaprak doğar. Bu yaprağa giden kenar 'çıkmaz sokak': sadece bağlantısı olan terminale gidiyor ve hiçbir terminal değil. Onu kesmek toplam ağırlığı azaltır ve hâlâ tüm terminaller bağlı kalır. Ardışık (peel) olarak yapılır: bir kırpma yeni bir yaprak ortaya çıkarabilir; derece 1 ve terminal olmayan hiç düğüm kalmayana kadar tekrarlanır."
+  - question: "Steiner ağacı nerede kullanılır?"
+    answer: "Klasik motivasyonlar: (1) VLSI tasarımı — çip üzerinde belirli pinleri en az toplam tel uzunluğu ile bağlamak (terminaller pinler, Steiner noktaları ara düğümler). (2) Telekomünikasyon — backbone planlama; belli şehirler arası fiber çekmek, ara şehirleri ekleyerek toplam fiberi azaltmak. (3) Multicast yönlendirme — bir kaynaktan bir grup alıcıya minimum bant genişliği ile yayın (IP multicast tree, SDN). (4) Filogenetik ağaçlar — biyolojide tür dizilerinin tarihsel ilişkisi; terminaller mevcut türler, Steiner noktaları varsayılan atalar. (5) Boru hattı / yol şebekesi planlaması — coğrafi terminaller, Steiner noktaları yeni kavşaklar. (6) Sosyal ağ analizinde Steiner-tabanlı önemli düğüm çıkarımı. Hepsinde aynı motif: bir alt kümeyi bağla, gerisini özgürce kullan."
+  - question: "Aracın sınırları nedir, ne zaman optimum bulamaz?"
+    answer: "(1) Yaklaşım, optimum değil: T_KMB ≤ 2·T_OPT. Pratikte bizim deneyimimizde tipik %5–%30 sapma; en kötü durumlarda 2× yaklaşılabilir. Tam optimum istiyorsanız Dreyfus-Wagner (|R| küçükse) ya da Branch-and-Cut (büyük örneklerde) gerekir. (2) Ağırlık ≥ 0 zorunlu (Dijkstra varsayımı); negatif ağırlık desteklenmez. (3) Maksimum 200 düğüm, 1000 kenar, 30 terminal — tarayıcıda anlık tepki için. (4) Yönsüz graf varsayımı; yönlü Steiner ağacı (directed Steiner tree, Steiner arborescence) daha zor problemlerdir, log-yaklaşım üst sınırı vardır. (5) Tüm terminallerin aynı bağlı bileşende olması gerekir — değilse araç 'erişilemez' uyarısı verir."
+---
+
+import { withBase } from '../../data/site';
+
+Steiner ağacı problemi, graf algoritmalarının en zarif "NP-zor"
+örneklerinden biridir. MST'nin doğal genelleştirmesi gibi görünür ama
+problemin matematiksel yapısı bambaşka bir yere — kombinatoryel patlamaya —
+götürür. Bu rehberde problemi tanımlar, NP-zorluğunu ele alır, ve
+**Kou-Markowsky-Berman** (KMB) 1981 *2-yaklaşımını* — yani en kötü
+durumda optimumdan en fazla iki kat sapan bir polinom zamanlı algoritmayı —
+adım adım çözeriz.
+
+## Problemin tanımı
+
+Yönsüz ağırlıklı bir graf $G = (V, E, w)$ ve bir **terminal** alt kümesi
+$R \subseteq V$ verilsin. Amaç:
+
+$$
+T^\star = \arg\min_{T \subseteq E,\ T \text{ ağaç},\ R \subseteq V(T)} \sum_{e \in T} w(e)
+$$
+
+Yani $R$'deki tüm düğümleri içeren ve bağlayan en küçük toplam ağırlıklı
+ağacı bul. $T^\star$ isteğe bağlı olarak $V \setminus R$'den **Steiner
+noktaları** (ara düğümler) içerebilir.
+
+İki uç hâl problemin sınırlarını çizer:
+
+- **$R = V$:** Tüm düğümler terminal. Problem klasik MST'ye indirgenir;
+  polinom zamanlıdır.
+- **$|R| = 2$:** İki terminal. Problem klasik en kısa yola indirgenir;
+  Dijkstra ile çözülür.
+
+Aradaki tüm durumlarda problem **NP-zor**dur. Bu çelişkili gibi
+görünebilir: MST ve en kısa yol kolay, ikisinin "ortası" zor. Sebebi
+$V \setminus R$'den hangi düğümlerin Steiner noktası olarak seçileceğinin
+$2^{|V|-|R|}$ alt kümeli bir kombinatoryel arama olmasıdır.
+
+## Neden MST yetmiyor — sayısal örnek
+
+Üçgen yıldız: $T_1, T_2, T_3$ terminalleri ve merkez hub $C$.
+
+- $T_i$–$C$ kenarları her biri ağırlık 1
+- $T_i$–$T_j$ kenarları her biri ağırlık 5
+
+MST $V = \{T_1, T_2, T_3, C\}$ üzerinde 3 kenar seçer: $\{T_1C, T_2C, T_3C\}$,
+toplam $3$. Burada hub C otomatik olarak ağaca dahil edildi — şanslıyız.
+
+Ama eğer terminaller $R = \{T_1, T_2, T_3\}$ ve $C$ terminal değilse,
+$C$'nin ağaca alınıp alınmamasına karar vermeliyiz. **Steiner** çözücü
+"$C$'yi al, toplam ağırlık 3" der. Bizim aracımızı $T_1$–$T_2$ ile
+$T_2$–$T_3$ doğrudan ağırlıkları 5'le çalıştırırsanız Steiner çözümünün
+$3$, doğrudan terminal-MST'nin (sadece $R$ üzerinde MST) $10$ olduğunu
+görürsünüz.
+
+## Kou-Markowsky-Berman 2-yaklaşımı
+
+Algoritma 5 adımdır:
+
+```
+KMB(G = (V, E, w), R):
+  // 1. Terminaller arası tüm-çift en kısa yol
+  for r ∈ R:
+    dist[r], pred[r] = Dijkstra(G, r)
+
+  // 2. Metrik kapanış G1 — R üzerinde tam graf
+  G1 ← yeni boş graf, düğümleri R
+  for r_i, r_j ∈ R, i < j:
+    w_G1(r_i, r_j) ← dist[r_i][r_j]
+
+  // 3. G1 üzerinde MST T1
+  T1 ← MST(G1)           // Kruskal: O(|R|² log |R|)
+
+  // 4. T1'in her kenarını orijinal grafdaki yola genişlet
+  S ← boş alt graf
+  for (r_i, r_j) ∈ T1:
+    S ← S ∪ pred[r_i][r_j] yolu     // çakışan kenarlar bir kez sayılır
+
+  // 5. S üzerinde MST T2 (çakışmadan doğan çevrimleri kırpar)
+  T2 ← MST(S)
+
+  // 6. Terminal olmayan yaprakları ardışık kaldır
+  while T2'de derecesi 1 ve R'de olmayan düğüm var:
+    bu düğümü ve kenarını çıkar
+
+  return T2
+```
+
+### Adım adım yürüteç — Y şekli
+
+Üçgen yıldız örneğinde KMB'yi adım adım izleyelim. Graf:
+
+$$
+E = \{ (T_1,C,1),\ (T_2,C,1),\ (T_3,C,1),\ (T_1,T_2,5),\ (T_2,T_3,5),\ (T_1,T_3,5) \}
+$$
+
+**Adım 1.** $T_1$'den Dijkstra: $d(T_1,T_2)=2$ (via $C$), $d(T_1,T_3)=2$,
+$d(T_1,C)=1$. $T_2$'den ve $T_3$'ten benzeri sonuçlar.
+
+**Adım 2.** Metrik kapanış $G_1$ — 3 düğüm, 3 kenar, hepsi ağırlık 2.
+
+**Adım 3.** $G_1$'in MST'si: 2 kenar, toplam 4.
+
+**Adım 4.** Her metrik kenarı orijinal yola genişlet. Diyelim $T_1$–$T_2$
+seçildi → yol $T_1$–$C$–$T_2$ (2 kenar). $T_2$–$T_3$ seçildi → yol
+$T_2$–$C$–$T_3$ (2 kenar). $C$ iki yolda da geçiyor; alt graf
+$S = \{T_1C, T_2C, T_3C\}$ — 3 kenar.
+
+**Adım 5.** $S$ zaten ağaç (çevrim yok). $T_2 = S$, toplam 3.
+
+**Adım 6.** Tüm yaprakların terminaller; kırpma yok. Sonuç: 3. Optimum ile
+aynı.
+
+## Yaklaşım garantisinin ispatı (özet)
+
+**Teorem.** $w(T_{KMB}) \leq 2 \cdot (1 - 1/\ell) \cdot w(T^\star)$,
+burada $\ell$ optimum Steiner ağacının yaprak sayısıdır.
+
+**Kanıt fikri.** Optimum ağaç $T^\star$ üzerinde her kenarı iki kez
+dolaşan bir Euler turu çiz. Toplam uzunluk $2 \cdot w(T^\star)$.
+Bu tur terminalleri belirli bir sırayla ziyaret eder; terminalden
+terminale geçen ardışık alt yolları toplayarak metrik kapanışta
+$|R|$ kenarlı bir **döngü** (cycle) elde ederiz, toplam ağırlığı
+$\leq 2 \cdot w(T^\star)$. En pahalı kenarı atınca metrik kapanışta bir
+$(|R|-1)$ kenarlı Hamiltonian yol elde ederiz, ağırlığı
+$\leq (1 - 1/\ell) \cdot 2 \cdot w(T^\star)$. Bu yol metrik kapanışta
+bir spanning tree (en kötü ihtimalle). KMB'nin metrik kapanışta MST'si
+ondan iyi olamaz; dolayısıyla:
+
+$$
+w(T_{KMB}) \leq w(MST(G_1)) \leq 2(1 - 1/\ell) \cdot w(T^\star)
+$$
+
+$\ell \geq 2$ olduğundan en kötü durumda $2 \cdot w(T^\star)$ üst
+sınırı garanti.
+
+## MST ile karşılaştırma
+
+| Özellik | MST | Steiner ağacı |
+|---|---|---|
+| Hedef | $V$'yi bağla | $R \subseteq V$'yi bağla |
+| Düğüm sayısı | $\|V\|$ sabit | $\|R\| \leq \|V_T\| \leq \|V\|$ değişken |
+| Karmaşıklık | $O(E \log V)$ | NP-zor |
+| Optimum | Polinom zamanda | Yaklaşım gerekli |
+| Trivial uçlar | — | $\|R\| = 2$ shortest path; $R = V$ MST |
+
+MST, Steiner ağacının yumuşak özel hâli sayılabilir: tüm düğümler zorunlu
+ise hiçbir seçim yapmayız. Steiner'da asıl problem **hangi ara düğümler
+ağaca dahil olsun?** — bu seçim NP-zorluğun kalbidir.
+
+## Uygulama alanları
+
+1. **VLSI tasarımı.** Çip üzerinde belirli pinleri en az toplam tel
+   uzunluğu ile bağlamak. Pinler terminaller, ara routing noktaları
+   Steiner noktaları. Modern EDA yazılımlarında Rectilinear Steiner Tree
+   varyantı standart.
+2. **Telekomünikasyon backbone.** Belirli şehirler arası fiber
+   altyapısını planlamak; ara şehirleri rota olarak kullanarak toplam
+   fiber uzunluğunu azaltmak.
+3. **IP multicast.** Bir kaynaktan bir grup alıcıya verimli yayın için
+   "multicast tree" — Steiner ağacı problemine indirgenir.
+4. **Filogenetik.** Biyolojide mevcut türlerin tarihsel ilişkisi —
+   terminaller bugünkü türler, Steiner noktaları varsayımsal atalar.
+5. **Yol / boru hattı planlaması.** Belirli coğrafi noktaları bağlamak;
+   ara kavşaklar Steiner noktası olarak seçilir.
+6. **Sosyal ağ analizi.** Bir hedef grup arasında bilgi akışını
+   minimum kenar ile sağlayacak alt graf çıkarımı.
+
+## Aracımız hakkında
+
+Bu site KMB algoritmasını saf JavaScript'te tarayıcı içinde çalıştırır:
+
+- Her terminalden Dijkstra (binary heap, lazy decrease-key) — `Float64Array`
+  uzaklık ve `Int32Array` predecessor.
+- Metrik kapanışta Kruskal (union-find: path compression + union-by-rank).
+- Yolları genişletme: paralel kenar tekilleştirmesi `Map` ile.
+- Yaprak kırpma: ardışık derece-1 + terminal değil testi sabit fix-point.
+- Maksimum 200 düğüm, 1000 kenar, 30 terminal — anlık tepki için.
+- Ek olarak tüm grafın MST toplam ağırlığını da raporlar; Steiner'ın MST'ye
+  göre kazancını somut görürsünüz.
+
+Aracı denemek için <a href={withBase('/araclar/steiner-agaci-cozucu')}>Steiner
+Ağacı Çözücü</a> sayfasına gidin. Birkaç hazır örnek mevcut: 3-terminal
+yıldız (KMB tam optimum), 5-terminal ızgara (Steiner noktaları kazanç
+sağlıyor), ve "saplama" örneği (terminal olmayan kollar kırpılıyor).
