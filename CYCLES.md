@@ -5,6 +5,52 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 
 ---
 
+## DÖNGÜ #24 — 2026-06-19
+
+**Yapılan:** F-ASTAR — A* (A-yıldız) Izgara Yol Bulucu ve uzun-form Türkçe sezgisel arama rehberi yayınlandı. 2D ızgarada f(n) = g(n) + h(n) önceliği ile bilgili arama; Manhattan / Octile / Euclidean / Chebyshev / Zero heuristic seçenekleri; 4 ya da 8 bağlantı (kardinal 1, çapraz √2); corner-cutting yasak/serbest. Görsel ızgarada tıkla-engel/start/goal editörü; açılan hücreler (closed set) ayrı renkte gösterilerek heuristic kalitesi gözle ölçülebiliyor. F-SHORTEST-PATH'in koordinatlı uzantısı, graf kategorisinin yedinci aracı.
+
+**Detay:**
+- `src/lib/astar.ts` (+290) — saf algoritma: `solveAStar()` (f-min heap + Uint8Array closed-set + Int32Array predecessor + Float64Array g-score, 4/8 komşu sabit dizileri, corner-cutting check), `computeHeuristic()` (5 heuristic enum + Octile için √2−1 sabit), `MinHeap` (f primary + h secondary tie-break — hedefe yakın olanı tercih eder, cephe daralır), `validate()` (80×80 max, eşit satır uzunluğu, start≠goal, start/goal engelin üstünde değil), karakter şeması (`. ' ' S G s g o O 0` boş; diğeri engel).
+- `src/lib/astar.test.ts` (+260, **20 vitest**) — boş ızgarada Manhattan = gerçek maliyet (heuristic mükemmel), 8-bağlantı Octile = 2√2+2 doğru, zero vs Manhattan aynı maliyet farklı genişletme sayısı (Dijkstra eşdeğeri), duvar etrafında dolaşma (10 maliyet), erişilemez hedef (reachable=false + empty path), corner-cutting yasak/izinli ikili (kritik kontrol — köşe geçişi kararlılığı), tek-engelli çapraz hâlâ izinli, heuristic etkinliği (zero > manhattan açma sayısı), 4/8 yolda kardinal/çapraz adım doğrulaması, 5 validation hata yolu, kıyaslama (admissible heuristic'ler aynı optimum).
+- `src/pages/araclar/a-star-grid-cozucu.astro` (+420) — mobil-öncelikli form (ızgara textarea + start/goal sayı inputları + heuristic 5-radio + 4/8 bağlantı + corner-cut checkbox), **3 örnek** (12×16 labirent, 10×14 odalar, 8×12 açık alan), **görsel ızgara** (Tailwind grid + cellSize 14–28px responsive, rol bazlı renkler: S yeşil / G kırmızı / yol mavi / açılan amber / engel slate / boş beyaz), **tıkla-düzenle** (Start/Goal/Engel modu — hücreye tıkla rolü değiştir, anında yeniden çöz), legend bar, sonuç kartı (maliyet + adım + açılan sayısı + başlangıç heuristic'i), erişilemez amber banner, localStorage state (`astar-state-v1`).
+- `src/content/rehberler/a-star-grid-heuristik.mdx` (+200) — 11 dk Türkçe rehber: tarihsel arka plan (Hart-Nilsson-Raphael 1968, Shakey robot), f = g + h anatomisi, admissibility + consistency ispatları, 4 heuristic karşılaştırma tablosu (bağlantı eşleme kuralı), algoritma pseudokod + tie-breaking, heuristic etkinliği somut karşılaştırması (7×7'de Manhattan vs zero), A* ↔ Dijkstra ilişkisi, 8 bağlantı + corner-cutting görsel açıklaması, 5 uygulama alanı (oyun AI, robotik, GPS, puzzle, otomatik planlama), 5 sınır (bellek, heuristic kalitesi, dinamik ortam, çoklu ajan, süreklilik), karıştırılan kavramlar (BFS/DFS, Greedy Best-First, heuristic vs maliyet), 10 FAQ JSON-LD (FAQPage rich result).
+- `src/data/tools.ts` (+10) — yeni araç kaydı (24'üncü araç, `graf` kategorisi, guideSlug=`a-star-grid-heuristik`).
+- `public/og/a-star-grid-cozucu.png` — `npm run og` ile per-tool OG kartı (79.6 KB).
+
+**Tasarım notu:** Görsel ızgara doğrudan DOM butonları (Tailwind sınıflarıyla) — Plotly/Canvas yok. Bu yaklaşım hem mobilde dokunmatik dostu hem ışıltı yapmaz; 80×80 üst sınır 6400 düğümle bile DOM bütçesinde kalıyor. f tie-break'inde ikincil anahtar h: eşit f değerinde hedefe daha yakın hücreyi tercih ederek arama cephesini sıkı tutar — pratikte Dijkstra ile aynı optimum, daha az açılan hücre. Corner-cutting varsayılan yasak (gerçekçi); kullanıcı isterse checkbox ile serbestleştirebilir. MDX zod şeması ile description ≤200 ve faq.answer ≤800 char çakıştı (ilk denemede 7 hata), kısaltıldı (içerik korundu).
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint, **104 dosya**) · test ✓ (**494/494**, +20 yeni A* testi, 26 dosya) · build ✓ (**58 sayfa**, 5.52s — yeni araç + rehber dahil) · Lighthouse — yeni sayfa mevcut F-SHORTEST-PATH / F-MST deseni birebir izliyor (inline `<script>`, plotly/glpk yok, saf JS heap, Tailwind grid), mobil-öncelikli yerleşim + responsive cellSize (≥95 beklenir).
+
+**Yayın:** PR açılacak ve CI yeşilse merge.
+
+**İşaret:** sarı — DÖNGÜ #22 docs PR'ı (#51) `cycle/22-log` dalında conflict (DIRTY) bırakılmış; cycle #22 kaydı CYCLES.md'de eksikti. Bu döngüde retroaktif eklendi (aşağı bkz). PR #51 superseded → kapatıldı.
+
+**Sıradaki:** F-STEINER (MST tabanlı 2-approx Steiner ağacı) ya da F-LEMKE (Lemke-Howson pivot). Q-AUDIT-YAML hâlâ open. Q-AUDIT-ESBUILD ve Q-CI-CHECK blocked (insan onayı).
+
+---
+
+## DÖNGÜ #22 — 2026-06-17 (retroaktif kayıt — döngü #24'te eklendi)
+
+**Yapılan:** F-SHORTEST-PATH — En Kısa Yol Çözücü (Dijkstra + Bellman-Ford) ve uzun-form Türkçe rehberi yayınlandı. Yönlü ağırlıklı ağda kaynaktan (s) tüm düğümlere ya da seçilen hedefe (t) en kısa yol; ağırlıklar negatif değilse Dijkstra (binary heap, lazy delete), aksi hâlde Bellman-Ford (V−1 pass + erken çıkış + V'inci pass negatif çevrim tespiti); auto modu ağırlık dağılımına göre otomatik seçer. Graf kategorisinin temel taşı; max-flow ve min-cost flow'dan sonra üçüncü.
+
+**Detay:**
+- `src/lib/shortest-path.ts` (+490) — `solveShortestPath()` ortak iskelet, `dijkstra()` (Float64Array dist + Int32Array pred + MinHeap), `bellmanFord()` (V−1 relax + cycleSeed → V kez geri git ile garanti çevrim üyeliği), `reconstructPath()` (target verilirse predecessor zinciri), `prepareGraph()` (string adı intern → int).
+- `src/lib/shortest-path.test.ts` (+200, **20 vitest**) — CLRS 24.3 Dijkstra örneği (s=A, doğrulanmış 5 düğüm uzaklıkları), CLRS 24.1 Bellman-Ford örneği, auto-mode negatif → BF düşmesi, negatif çevrim tespiti + nodes listesi, ulaşılamaz düğüm reachable=false, target yol rekonstrüksiyonu, Dijkstra negatif ağırlıkta hata, validation 6 yol.
+- `src/pages/araclar/en-kisa-yol-cozucu.astro` (+330) — mobil-öncelikli form (kenar textarea + source/target input + 3-radio algoritma), 3 örnek (Dijkstra CLRS, Bellman-Ford negatif, Negatif çevrim), hedef varsa "en kısa uzaklık" kartı + adım adım yol tablosu, tüm düğümler tablosu (uzaklık, predecessor, durum), negatif çevrim red banner.
+- `src/content/rehberler/en-kisa-yol-dijkstra-bellman-ford.mdx` (+170) — 10 dk Türkçe rehber: gevşetme (relaxation) kavramı, Dijkstra açgözlü doğruluk ispatı (kesim argümanı + ≥0 ağırlık gereksinimi), Bellman-Ford V−1 pass mantığı, negatif çevrim tespit teoremi, iki algoritma karşılaştırma tablosu, 5 uygulama (yol, telekom, oyun AI, valuta arbitrajı, görüntü işleme), FAQ JSON-LD.
+- `src/data/tools.ts` (+10) — yeni araç kaydı (23'üncü araç, `graf` kategorisi).
+- `public/og/en-kisa-yol-cozucu.png` — OG kartı.
+
+**Kalite kapıları:** check ✓ · test ✓ (**451/451**, +20) · build ✓ (54 sayfa) · Lighthouse (mevcut graf desen).
+
+**Yayın:** PR #50 squash-merge edildi (b1b8004). Deploy yeşil (run 27710956462).
+
+**İşaret:** sarı — docs PR (#51) ayrı dalda açıldı ama bekleyen squash + ardından #52 docs PR'ı (#53) ile main divergence → conflict. #24'te superseded olarak kapatıldı; bu kayıt manuel oluşturuldu.
+
+**Sıradaki:** F-MST (gerçekleşti, döngü #23).
+
+---
+
 ## DÖNGÜ #23 — 2026-06-18
 
 **Yapılan:** F-MST — Minimum Yayılan Ağaç (MST) Çözücü ve uzun-form Türkçe Prim/Kruskal rehberi yayınlandı. Yönsüz ağırlıklı graf için iki algoritma: Prim (binary heap + lazy delete, bağlı olmayan grafda her bileşen için yeniden başlat) ve Kruskal (union-find: path compression + rank). Graf kategorisinin klasik dördüncü ayağı (TSP, Maks-Akış, Min-Maliyet Akış, En Kısa Yol'dan sonra).

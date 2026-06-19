@@ -1,0 +1,265 @@
+---
+title: "A* (A-yıldız): Sezgisel Arama ve Izgara Üzerinde En Kısa Yol"
+description: "f = g + h denklemiyle çalışan A* algoritması: admissible ve consistent heuristic, Manhattan / Octile / Euclidean / Chebyshev, 4 ve 8 bağlantı, Dijkstra ile ilişki, oyun yapay zekâsı uygulamaları."
+pubDate: 2026-06-19
+relatedTool: "a-star-grid-cozucu"
+keywords:
+  - "A* algoritması"
+  - "A-yıldız"
+  - "sezgisel arama"
+  - "heuristic search"
+  - "Manhattan uzaklığı"
+  - "Octile heuristic"
+  - "ızgara üzerinde en kısa yol"
+  - "yol bulma"
+  - "pathfinding"
+  - "oyun yapay zekâsı"
+readingMinutes: 11
+faq:
+  - question: "A* algoritması nedir, neden bu kadar popüler?"
+    answer: "A* (telaffuz: 'A-yıldız', İng. 'A-star'), 1968'de Stanford Research Institute'te Peter Hart, Nils Nilsson ve Bertram Raphael tarafından Shakey robotunun yol planlaması için geliştirildi. En kısa yol arayışında f(n) = g(n) + h(n) ölçüsünü kullanır: g(n) başlangıçtan n'e bilinen en kısa yol, h(n) ise n'den hedefe sezgisel (heuristic) tahmin. Her adımda en küçük f değerli düğümü açar. Heuristic 'admissible' (gerçek uzaklığı aşırı tahmin etmeyen) ise A* her zaman optimum yolu bulur; ve 'iyi' bir heuristic varsa Dijkstra'dan çok daha az hücre açarak bunu yapar — pratikte oyun motorlarından GPS rotalayıcılara, robot navigasyonundan derleyici optimizasyonuna kadar her yerde A* veya türevleri çalışır."
+  - question: "g(n), h(n) ve f(n) tam olarak ne ifade ediyor?"
+    answer: "Düğüm n için: g(n) başlangıç düğümünden n'e şu ana kadar bulunan en kısa yolun gerçek maliyeti — yol uzadıkça güncellenir, kapatıldığında kesinleşir. h(n) ise n'den hedefe alt sınır bir tahmin — heuristic fonksiyon hesaplar, asla aşırı tahmin etmez (admissibility). f(n) = g(n) + h(n) bu düğüm üzerinden hedefe ulaşmanın 'tahmini toplam maliyetidir'. A* her adımda 'önce ümit verici görüneni dene' diyerek heap'ten en küçük f'li düğümü çıkarır. Hedef düğüm için h = 0 olduğundan oraya ulaşıldığında f = g, yani gerçek en kısa yol maliyeti."
+  - question: "Admissible heuristic ne demek, neden gerekli?"
+    answer: "Heuristic h admissible'dır eğer her n için h(n) ≤ h*(n) — yani n'den hedefe gerçek en kısa uzaklığa eşit ya da ondan küçükse. Sezgisel olarak: 'hep iyimser tahmin et, asla abartma'. Admissibility A*'ın **optimum** olduğunu garantiler — bulunan ilk yol kesinlikle en kısadır. Çünkü en küçük f değerli açılan düğüm hedef olduğunda, bekleyen tüm düğümlerin f değeri ≥ f(hedef) ve hepsinin h iyimser olduğundan g + h* ≥ g + h ≥ f(hedef), dolayısıyla onlar üzerinden gidilse bile daha kısa yol bulunamaz. Aşırı tahmin yapan (inadmissible) heuristic A*'ı hızlandırabilir ama optimum garantisi kaybolur — bulunan yol gerçek en kısa olmayabilir."
+  - question: "Manhattan, Octile, Euclidean, Chebyshev — hangisini seçmeliyim?"
+    answer: "Heuristic'i bağlantı türüne göre eşleştirmek gerekir, yoksa admissibility bozulur. 4 bağlantıda (yalnız N/S/E/W, maliyet 1) Manhattan |dx|+|dy| hem admissible hem consistent. 8 bağlantıda (çapraz √2) Manhattan inadmissible olur — çapraz hareket dx ve dy'yi tek seferde azaltır, Manhattan ikisini ayrı sayar. 8 bağlantı için doğru seçim Octile: max(|dx|,|dy|) + (√2−1)·min(|dx|,|dy|). Chebyshev max(|dx|,|dy|) — çapraz da maliyeti 1 olan oyunlar için (satranç şahı gibi). Euclidean √(dx²+dy²) her bağlantı için admissible ama gevşek; sürekli uzay yaklaşımı için iyidir. Zero h(n)=0 ise A* Dijkstra'ya indirgenir — heuristic etkisini ölçmek için iyi bir baz çizgisi."
+  - question: "Admissible ile consistent arasındaki fark nedir?"
+    answer: "Admissibility tek düğüm hakkındadır: h(n) ≤ h*(n). Consistency iki komşu düğüm arasındaki ilişkidir: her kenar (u, v) için h(u) ≤ c(u, v) + h(v). u'dan v'ye geçince heuristic en fazla kenar maliyeti kadar azalabilir — üçgen eşitsizliği gibi. Consistent ⇒ admissible (tersi değil). Pratik fark: consistent ile bir düğüm kapatıldığında g değeri kesinleşir — bir daha açmaya gerek yok. Sadece admissible heuristic'te kapatılmış düğüm daha kısa bir yolla yeniden bulunabilir; bu durumda 'open list'e geri koyma' mekanizması gerekir. İyi haber: ızgara heuristic'lerinin hepsi (Manhattan, Octile, Euclidean, Chebyshev) uygun bağlantı ile consistent'tır, basit closed-set yeterli."
+  - question: "A* ile Dijkstra arasındaki fark nedir?"
+    answer: "İkisi de aynı genel arama şablonunu kullanır — min-heap ile g(n)'i artıran sırada düğüm aç — ama A* heap önceliği olarak f(n) = g(n) + h(n) kullanır; Dijkstra ise sadece g(n). Yani Dijkstra 'hedef nerede olduğunu bilmediği için her yönde aynı hızla yayılır' (dairesel/elmas şekilli bir ön cephe), A* 'hedefe doğru iten' bir heuristic ile dar bir koridor açar. h(n) = 0 olduğunda A* tam olarak Dijkstra'dır. Algoritmik karmaşıklık aynı (O((V+E) log V)) ama A*'ın 'gerçekte açtığı düğüm sayısı' çok daha az — heuristic ne kadar gerçek uzaklığa yakınsa o kadar az. Mükemmel heuristic (h = h*) ile A* doğrudan optimum yolu izler, hiç sapma yapmaz. Bizim aracımızda 'zero' heuristic ile Dijkstra modunu deneyip 'manhattan' ile karşılaştırınca açılan hücre sayısındaki dramatik düşüş bunu somut gösterir."
+  - question: "8 bağlantıda 'corner-cutting' nedir, neden yasaklanır?"
+    answer: "8 bağlantılı ızgarada hücre köşe komşusuna geçerken iki engel arasında 'köşe kesebilir'. Örnek: (1,1)'den (0,0)'a çapraz giderken (0,1) ve (1,0) engelse, çapraz hareket fiziksel olarak iki duvarın köşesinden geçmek anlamına gelir — gerçek dünyada (robot, oyun karakteri) çoğu zaman mümkün değildir. Standart pratik 'corner-cutting yasak': çapraz (u, v) ancak iki kardinal komşudan en az biri açıksa izinli. Aracımızda varsayılan kapalı; nokta robot ya da soyut simülasyon için checkbox ile serbest bırakılabilir. Köşe kesme yasak olunca yol biraz uzun olabilir ama gerçekçidir."
+  - question: "A* nerede kullanılır?"
+    answer: "Sezgisel arama klasik AI'nın temel taşıdır: (1) Oyun yapay zekâsı — NPC takibi, RTS birim yönlendirme; A* türevleri HPA*, JPS standarttır. (2) Robotik — gezici robot, drone motion planning; gerçek dünyada grid değil 'navigation mesh' ya da 'configuration space' üstünde. (3) GPS / harita rotalayıcılar — yol ağında en kısa rota; pratikte ALT, Contraction Hierarchies gibi ön-işlemli varyantlar daha hızlı. (4) 15-puzzle, Rubik küpü — durum uzayında hedef konfigürasyona en az hamle; heuristic = pattern database. (5) Otomatik planlayıcılar (STRIPS, PDDL) — hedef duruma giden minimum eylem dizisi. (6) Doğal dil işleme — ASR / MT decoding. Hep aynı şablon: durum uzayı + adım maliyeti + alt sınır heuristic."
+  - question: "A*'ın sınırları nedir, ne zaman çalışmaz?"
+    answer: "(1) Bellek — A* tüm açtığı düğümleri saklar; büyük durum uzaylarında bellek tükenebilir. IDA* (iterative deepening) ve SMA* (memory-bounded) alternatiftir. (2) Heuristic kalitesi — kötü heuristic A*'ı Dijkstra'ya yaklaştırır, hız avantajı kaybolur; heuristic tasarımı problemin kalbidir (pattern database, relaxation, deep learning ile öğrenilmiş heuristic aktif araştırma alanı). (3) Dinamik ortam — engeller hareket ediyorsa A* yeniden çalıştırılmalı; D*, D* Lite, LPA* inkremental varyantlar değişiklikleri tekrar başlatmadan günceller. (4) Çoklu ajan — standart A* tek başlangıç-tek hedef varsayar; Conflict-Based Search (CBS) gibi uzantılar gerekir. (5) Süreklilik — ızgara yaklaşık temsil; Theta*, Field D* gibi 'any-angle' varyantlar daha düzgün yol üretir."
+  - question: "Bizim aracımız hangi varyantı uyguluyor?"
+    answer: "Klasik (vanilla) A*: f = g + h önceliği ile min-heap, kapatılan düğümleri Uint8Array ile O(1) işaretler, predecessor'ı Int32Array ile saklar — O((V+E) log V) zaman, O(V) bellek. Tie-breaking heap'te (eşit f) h'ya göre yapılır; pratikte hedefe yakın düğümleri tercih ederek cephe dar tutulur. Maksimum ızgara 80×80 (= 6400 hücre). 8 bağlantıda corner-cutting yasak varsayılan; checkbox ile serbest. Heuristic seçimi kullanıcıda — 'zero' ile A*'ın Dijkstra'ya nasıl döndüğünü gözle görmek mümkün. Saf JS, WASM bağımlılığı yok — tüm hesaplama anlık ve tamamen tarayıcıda."
+---
+
+import { withBase } from '../../data/site';
+
+A* (telaffuz: "A-yıldız"; İng. *A-star*), klasik yapay zekânın en zarif
+ve en yaygın algoritmalarından biridir. 1968'de Stanford Research
+Institute'te Peter Hart, Nils Nilsson ve Bertram Raphael, *Shakey* adlı
+robotun fiziksel ortamda yol planlaması için bu algoritmayı geliştirdi.
+Yarım asırdan uzun süredir oyun motorlarından harita uygulamalarına,
+robotikten otomatik planlayıcılara kadar her yerde — ya kendisi ya da bir
+türevi — çalışır. Mesajı tek bir denklemde özetlenebilir:
+
+$$
+f(n) = g(n) + h(n)
+$$
+
+g geçmiştir, h gelecektir, f ikisinin toplamı — A* her adımda en küçük f
+değerli düğümü açar.
+
+## Problemin tanımı
+
+Bir **durum uzayı** verilsin: düğümler $V$, kenarlar $E$, her kenarda
+maliyet $c(u, v) \geq 0$. Bir başlangıç düğümü $s$ ile bir hedef düğümü
+$t$ verildiğinde, **en kısa yol** $s$'den $t$'ye toplam maliyeti minimum
+olan dizidir. Bu sayfada ızgara (2D grid) örneğine odaklanacağız: hücreler
+düğüm, komşu hücreler arasında bir kenar var; kenar maliyeti 4 bağlantıda
+1, 8 bağlantıda kardinal 1 / çapraz $\sqrt{2}$.
+
+Diğer en kısa yol algoritmalarıyla farkı: A* **bilgili** (informed)
+aramadır — hedefin nerede olduğunu bilir ve buna doğru iter. Dijkstra
+ise **bilgisiz** (uninformed) — her yönde aynı hızla yayılır.
+
+## f = g + h denkleminin anatomisi
+
+Her düğüm $n$ için iki sayı tutarız:
+
+- $g(n)$: **başlangıçtan $n$'e** şu ana kadar bulunan en kısa yolun
+  gerçek maliyeti. Yol uzadıkça güncellenir; düğüm "kapatıldığında"
+  (closed list'e konunca) kesinleşir.
+- $h(n)$: **$n$'den hedefe** sezgisel tahmin. Heuristic fonksiyon
+  tarafından hesaplanır; problem hakkındaki ön bilgiyi kullanır.
+
+Üçüncü sayı $f(n) = g(n) + h(n)$ — "$n$ üzerinden hedefe ulaşmanın
+tahmini toplam maliyeti." A*'ın min-heap'i bu değere göre sıralar.
+
+Hedef düğüm $t$ için $h(t) = 0$ olduğundan, $t$ heap'ten çıkarıldığında
+$f(t) = g(t)$ ve bu zaten gerçek en kısa yol maliyetidir. Admissibility
+varsa bu garanti edilir (aşağıda).
+
+## Admissibility ve consistency — A*'ın iki güvencesi
+
+**Admissibility**: heuristic asla aşırı tahmin etmez —
+
+$$
+\forall n: h(n) \leq h^*(n)
+$$
+
+burada $h^*(n)$ gerçek en kısa uzaklıktır. Sezgisel olarak "iyimser ol,
+asla abartma". Admissibility A*'ın **optimum** olduğunu garantiler:
+bulunan ilk yol kesinlikle en kısadır.
+
+İspat eskizi: $A^*$ hedef $t$'yi heap'ten çıkardığında, çıkışında
+$f(t) = g(t)$. Heap'te kalan herhangi bir düğüm $n$ için $f(n) \geq f(t)$
+(çünkü min-heap). $n$ üzerinden $t$'ye giden gerçek en kısa yol maliyeti
+$g(n) + h^*(n)$ ve admissibility'den $h^*(n) \geq h(n)$, dolayısıyla
+gerçek maliyet $\geq f(n) \geq f(t) = g(t)$. Yani $n$ üzerinden daha kısa
+yol yok.
+
+**Consistency** (ya da monotonicity) daha güçlüdür: her kenar $(u, v)$ için
+
+$$
+h(u) \leq c(u, v) + h(v)
+$$
+
+Üçgen eşitsizliği gibi. Consistent ise admissible'dır (tersi değil).
+Pratik sonucu: consistent heuristic ile bir düğüm kapatıldıktan sonra
+$g(u)$ değeri kesinleşir — bir daha açılmasına gerek yoktur, basit bir
+closed-set yeterlidir.
+
+Şanslıyız ki standart ızgara heuristic'leri uygun bağlantı seçimi ile
+hep consistent'tır:
+
+| Bağlantı | Önerilen heuristic | Formül |
+|---|---|---|
+| 4 | Manhattan | $|dx| + |dy|$ |
+| 8 (kardinal 1, çapraz √2) | Octile | $\max(\|dx\|, \|dy\|) + (\sqrt{2}-1) \cdot \min(\|dx\|, \|dy\|)$ |
+| 8 (her hareket maliyeti 1) | Chebyshev | $\max(\|dx\|, \|dy\|)$ |
+| Sürekli uzay | Euclidean | $\sqrt{dx^2 + dy^2}$ |
+
+## Algoritma — adım adım
+
+```
+A*(s, t):
+  open  ← min-heap, anahtar f
+  open.push((f=h(s), s))
+  g(s) ← 0
+  while open ≠ ∅:
+    u ← open.pop()         # en küçük f
+    if u closed: continue
+    closed[u] ← true
+    if u = t: return reconstruct(t)
+    for each neighbor v of u:
+      tentative_g ← g(u) + c(u, v)
+      if tentative_g < g(v):
+        g(v)        ← tentative_g
+        pred(v)     ← u
+        open.push((f=tentative_g + h(v), v))
+  return failure
+```
+
+Bizim aracımız bu iskeletin neredeyse birebir uygulamasıdır; varyasyon
+sadece tie-breaking'de: eşit $f$ değerinde daha küçük $h$'lı düğüm önce
+açılır. Bu "hedefe yakın olanı tercih et" kuralı arama cephesini sıkı bir
+koridorda tutar.
+
+## Heuristic'in etkisi — somut bir karşılaştırma
+
+A*'ın gücü heuristic'in iyiliğinden gelir. Açılan hücre sayısı bunu
+ölçer: aynı problem için Manhattan ile zero heuristic'i karşılaştır.
+
+7×7 boş ızgarada $(0, 0)$'dan $(6, 6)$'ya yol — yol maliyeti her iki
+durumda da 12 (zaten optimum garanti). Ama:
+
+- **zero heuristic** (Dijkstra): tüm 49 hücreyi açar — hedefe doğru bir
+  "yön" hissi olmadığı için elmas şeklinde yayılır.
+- **Manhattan** heuristic: yaklaşık 13–25 hücre açar — hedefe doğru bir
+  koridor seçer.
+
+İdeal heuristic ($h = h^*$) ile A* hiç sapma yapmaz, sadece optimum
+yolun hücrelerini açar (7 hücre). Pratikte böyle mükemmel heuristic
+elde etmek zordur — ama "yeterince iyi" bir alt sınır pratikte çok büyük
+hızlanma sağlar.
+
+## A* ile Dijkstra ilişkisi
+
+Tek bir cümle: **A*, $h = 0$ olduğunda tam olarak Dijkstra'dır.**
+
+Çünkü heap önceliği $f(n) = g(n) + 0 = g(n)$ olur; Dijkstra'nın
+standart heap önceliği de tam budur. Tersi: Dijkstra'ya iyi bir
+heuristic ekleyerek "her yöne yayılma" davranışını "hedefe doğru iter"
+davranışına çevirebilirsiniz — bu A*'ın icatından önce mevcut algoritmaya
+bir bilgi katmanı eklemekten ibaret bir buluştur.
+
+İmplikasyonlar:
+
+- Dijkstra **kaynaktan tüm düğümlere** uzaklığı hesaplar; A* genelde
+  **tek hedefe** odaklanır (çok hedef varyantları da var).
+- A* + admissible heuristic = optimum garanti, Dijkstra'dan kötü değil.
+- A* + inadmissible heuristic = daha hızlı olabilir ama optimum garantisi
+  yok (genelde "weighted A*" $f = g + w \cdot h$ ile $w > 1$ pratikte
+  kullanılır; iyi bir hız/kalite dengesi).
+
+## 8 bağlantı ve corner-cutting
+
+8 bağlantılı ızgarada bir hücre 8 komşusuyla bağlıdır: 4 kardinal
+(maliyet 1) + 4 çapraz (maliyet $\sqrt{2}$). Çapraz hareket bir adımda
+hem $dx$ hem $dy$'yi 1 azaltır — bu yüzden 4 bağlantıdaki Manhattan
+heuristic'i 8 bağlantıda **inadmissible** olur (gerçek uzaklık daha kısa
+olabilir, Manhattan aşırı tahmin yapar).
+
+8 bağlantıda gerçekçi bir kısıtlama vardır: **corner-cutting yasak**.
+Hücre $u$'dan çapraz komşusu $v$'ye giderken, aradaki iki kardinal hücre
+(yani $u$ ile $v$'nin paylaştığı satır ve sütundaki ortak komşular)
+incelenir; her ikisi de engelse, çapraz hareket fiziksel olarak iki
+duvarın köşesinden geçmek anlamına gelir ve genelde yasaklanır.
+
+Aracımızda bu kural varsayılan olarak açıktır; nokta robotlar veya soyut
+simülasyonlar için checkbox ile serbest bırakılabilir.
+
+## Kullanım alanları
+
+- **Oyun yapay zekâsı**: NPC ve düşman yapay zekâsı için yol bulma —
+  RTS oyunlarındaki birim yönlendirme, RPG'lerde takip etme. Profesyonel
+  motorlarda HPA* (hiyerarşik A*), JPS (Jump Point Search), Theta*
+  (any-angle) gibi varyantlar tercih edilir; hepsinin temeli A*.
+- **Robotik**: gezici robot ve drone'lar için motion planning. Gerçek
+  uygulamada ızgara değil "navigation mesh" ya da "konfigürasyon uzayı"
+  üzerinde çalışır, ama arama algoritması aynıdır.
+- **Harita / GPS rotalayıcılar**: yol ağında en kısa rota. Çok büyük
+  ağlarda (Avrupa yol ağı, milyonlarca düğüm) saf A* yetersiz — ALT,
+  Contraction Hierarchies, CRP gibi ön-işlem destekli varyantlar
+  kullanılır; hepsi A*'tan türemiştir.
+- **15-puzzle, Rubik küpü, planlama**: durum uzayında hedef konfigürasyona
+  en az hamle. Heuristic = "pattern database" ya da "yanlış yerdeki taş
+  sayısı".
+- **Otomatik planlama (STRIPS, PDDL)**: hedef duruma giden minimum eylem
+  dizisi. Modern planlayıcılar (FF, Fast Downward) hâlâ A* tabanlı.
+
+## Aracı kullanırken pratik notlar
+
+- **Izgara karakterleri**: `.` (nokta), boşluk, `S`, `G` boş hücre; diğer
+  her karakter engel sayılır. `#` standart engel gösterimidir.
+- **Tıklama ile düzenleme**: Önce mod butonunu seç (S / G / Engel), sonra
+  görsel ızgarada hücreye tıkla — rolü değişir ve A* anında yeniden
+  çözülür.
+- **Heuristic'i karşılaştır**: Aynı haritada heuristic'i değiştir;
+  "Açılan" hücre sayısının nasıl düştüğünü gözle. **zero** ile
+  **manhattan**'ı kıyaslamak A*'ın hızlanma kazancını dramatik gösterir.
+- **Bağlantıyı değiştir**: 4 bağlantıda erişilemez bir hedef 8 bağlantıda
+  ulaşılabilir olabilir — duvarlar arasındaki dar koridorlar bunu
+  tetikler. Corner-cutting checkbox'ı da bu eşiği oynar.
+- **Maksimum boyut**: 80 × 80 hücre (= 6400). Daha büyük haritalar için
+  hiyerarşik yaklaşımlar (HPA*) gerekir; bu aracın kapsamı dışında.
+
+## Sık karıştırılan kavramlar
+
+**A* ile BFS / DFS farkı.** BFS / DFS bilgisiz aramadır ve genelde
+maliyet bilgisini kullanmazlar (BFS yalnızca eşit maliyetli grafta
+optimumdur). A* heuristic ile bilgili arar; her durumda kullanılabilir.
+
+**A* ile Greedy Best-First farkı.** Greedy Best-First sadece $h(n)$'ye
+göre seçer ($f = h$). Hızlıdır ama optimum değildir — yanlış koridora
+sapabilir. A* $g$'yi de hesaba katarak "şimdiye kadar ne harcadık?"
+sorusunu unutmaz.
+
+**Heuristic vs maliyet.** Heuristic problem hakkındaki ön bilgidir,
+algoritma değil. Maliyet kenarda verilen gerçek değerdir, problem
+tanımının parçası. Heuristic değişebilir (Manhattan → Octile gibi);
+maliyet sabittir.
+
+## Kaynaklar
+
+- Hart, Nilsson, Raphael (1968) — *A Formal Basis for the Heuristic Determination of Minimum Cost Paths*, IEEE Transactions on Systems Science and Cybernetics.
+- Russell, Norvig — *Artificial Intelligence: A Modern Approach*, Bölüm 3 (Solving Problems by Searching).
+- Cormen, Leiserson, Rivest, Stein — *Introduction to Algorithms*, 3. baskı, Bölüm 24 (en kısa yol bağlamı).
+- Pearl (1984) — *Heuristics: Intelligent Search Strategies for Computer Problem Solving*.
+- Patel, Amit — *Amit's A\* Pages* (Stanford) — pratik uygulamalar ve heuristic seçimi için klasik referans.

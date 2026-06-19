@@ -4,6 +4,20 @@ Kırılan her şey: belirti, kök neden, düzeltme, önlem.
 
 ---
 
+## 2026-06-19 — Döngü #22 docs PR'ı (PR #51) merge edilmeden conflict'e düştü; cycle #22 kaydı CYCLES.md'de eksik kaldı
+
+**Belirti:** Döngü #24 başlangıcında `gh pr list --state open` PR #51'i `cycle/22-log` dalında DIRTY/CONFLICTING gösterdi. CYCLES.md tarama: #23, #21, #20 var; **#22 yok**. Yani döngü #22 (F-SHORTEST-PATH) F-MST'den önce yayınlanmış ama docs kaydı PR olarak açılıp merge edilmemiş, ardından döngü #23 ayrı bir docs PR'ı (#53) ile main'e ekleme yaptığı için #51 conflict'e düşmüştü.
+
+**Kök neden:** Cycle #22 docs PR'ı, asıl feat PR'ı (#50) merge edildikten sonra ayrı bir `cycle/22-log` dalında açıldı ama merge edilmedi. Bir sonraki turun ajanı (#23) `gh pr list --state open` ile #51'i görse de eski kaydı tamamlamak yerine doğrudan kendi #23 cycle PR'ını açtı; main bir CYCLES.md değişikliği aldı, #51 stale kaldı.
+
+**Düzeltme:** Döngü #24'te (a) PR #51 superseded olarak kapatıldı, (b) cycle #22 kaydı CYCLES.md'ye **retroaktif** olarak eklendi (#24 ile aynı commitin parçası, başlığında "retroaktif kayıt — döngü #24'te eklendi" notu).
+
+**Önlem:**
+- Yeni cycle'a başlarken `gh pr list --state open --base main` ÇIKTISINI **gerçekten oku**: eski cycle docs PR'ı varsa **önce onu** rebase + merge et, sonra yeni iş al.
+- CYCLES.md'ye ekleme yapmadan önce `grep -c "DÖNGÜ #" CYCLES.md` ve son komiti karşılaştır — kayıt sayısı son cycle numarasıyla eşleşmiyorsa eksik kayıt vardır.
+
+---
+
 ## 2026-06-10 — Döngü #13 docs PR'ı tekrarlandı (PR #31 + PR #32 aynı içerik)
 
 **Belirti:** `main` üzerinde döngü #13 docs commit'i iki ardışık SHA olarak göründü (`1de96f1` ve `8f3366a`); ikinci squash-merge boş diff'li no-op çıktı.

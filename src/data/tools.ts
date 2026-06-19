@@ -248,6 +248,16 @@ export const TOOLS: readonly Tool[] = [
     guideSlug: 'en-kisa-yol-dijkstra-bellman-ford',
   },
   {
+    slug: 'a-star-grid-cozucu',
+    title: 'A* (A-yıldız) Izgara Yol Bulucu',
+    shortTitle: 'A* Yol Bulucu',
+    description:
+      '2D ızgara üzerinde bir başlangıç hücresinden hedefe en kısa yolu A* (A-yıldız) sezgisel arama ile tarayıcıda anlık bul. Manhattan, Octile, Euclidean, Chebyshev veya sıfır heuristic; 4 ya da 8 bağlantı (kardinal 1, çapraz √2); köşe kesme yasak/serbest seçeneği. Görsel ızgarada tıklayarak engelleri çiz; yolun her hücresi, açılan kapalı küme ve sezginin iyiliği aynı anda görselleştirilir. Oyun yapay zekâsı, robotik ve harita rotalamanın temel algoritması.',
+    category: 'graf',
+    status: 'ready',
+    guideSlug: 'a-star-grid-heuristik',
+  },
+  {
     slug: 'minimum-yayilan-agac-cozucu',
     title: 'Minimum Yayılan Ağaç (MST) Çözücü',
     shortTitle: 'MST (Prim · Kruskal)',
