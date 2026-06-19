@@ -1,0 +1,652 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import { withBase, SITE } from '../../data/site';
+import { TOOLS } from '../../data/tools';
+
+const tool = TOOLS.find((t) => t.slug === 'a-star-grid-cozucu')!;
+const guideHref = tool.guideSlug ? withBase(`/rehberler/${tool.guideSlug}`) : null;
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: tool.title,
+  applicationCategory: 'WebApplication',
+  operatingSystem: 'Any',
+  description: tool.description,
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'TRY' },
+  inLanguage: SITE.locale,
+  isAccessibleForFree: true,
+};
+---
+
+<BaseLayout
+  title={tool.title}
+  description={tool.description}
+  image={withBase(`/og/${tool.slug}.png`)}
+  imageAlt={`${tool.title} — OR Araçları`}
+>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+  </Fragment>
+
+  <Container as="section" size="wide" class="pt-12 sm:pt-16">
+    <p class="text-sm font-medium text-brand-600 dark:text-accent-400">
+      <a href={withBase('/araclar')} class="hover:underline">Araçlar</a>
+      <span class="text-slate-400 dark:text-slate-600"> / </span>
+      <span>Graf & Rota</span>
+    </p>
+    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">
+      {tool.title}
+    </h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
+      2D ızgarada bir başlangıç hücresinden hedefe en kısa yolu
+      <strong>A* (A-yıldız)</strong> ile bul. f(n) = g(n) + h(n) — g
+      gerçek maliyet, h heuristic tahmin. Manhattan, Octile, Euclidean,
+      Chebyshev veya sıfır heuristic seç; 4 ya da 8 bağlantı, çapraz
+      köşe kesme yasak/serbest. Açılan hücre sayısı heuristic'in
+      iyiliğini ölçer.
+      {guideHref && (
+        <a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>
+      )}
+    </p>
+  </Container>
+
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,380px)_1fr] print:block">
+    <form id="astar-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="sample-maze-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Labirent (12×16)
+        </button>
+        <button type="button" id="sample-rooms-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Odalar (10×14)
+        </button>
+        <button type="button" id="sample-open-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Açık alan (8×12)
+        </button>
+        <button type="button" id="reset-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+          Sıfırla
+        </button>
+      </div>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Izgara
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Her satır eşit uzunlukta. Karakterler: <span class="font-mono">.</span> boş ·
+            <span class="font-mono">#</span> engel
+          </span>
+          <textarea id="grid-input" rows="10" spellcheck="false" autocomplete="off" required
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-xs leading-snug text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            placeholder="...#...&#10;.#.#...&#10;...#..."></textarea>
+        </label>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          En fazla 80 × 80 hücre. <span class="font-mono">' '</span>,
+          <span class="font-mono">'S'</span>, <span class="font-mono">'G'</span>
+          de boş sayılır; diğer her şey engel.
+        </p>
+      </fieldset>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Başlangıç & hedef <span class="font-normal text-xs text-slate-500">(satır, sütun — 0'dan başlar)</span>
+        </legend>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Başlangıç</span>
+            <div class="mt-1 grid grid-cols-2 gap-2">
+              <input type="number" id="start-row" min="0" required value="0"
+                class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+              <input type="number" id="start-col" min="0" required value="0"
+                class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+            </div>
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Hedef</span>
+            <div class="mt-1 grid grid-cols-2 gap-2">
+              <input type="number" id="goal-row" min="0" required value="0"
+                class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+              <input type="number" id="goal-col" min="0" required value="0"
+                class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+            </div>
+          </label>
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          İpucu: ızgarada hücreye <strong>tıkla</strong> — modu seçtikten sonra
+          (Başlangıç / Hedef / Engel) hücre rolü değişir.
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" data-mode="start" class="mode-btn inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-200">
+            S
+          </button>
+          <button type="button" data-mode="goal" class="mode-btn inline-flex items-center gap-1.5 rounded-md border border-rose-300 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-800 dark:border-rose-800/60 dark:bg-rose-950/40 dark:text-rose-200">
+            G
+          </button>
+          <button type="button" data-mode="wall" class="mode-btn inline-flex items-center gap-1.5 rounded-md border border-slate-400 bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+            Engel
+          </button>
+        </div>
+      </fieldset>
+
+      <fieldset class="space-y-2">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Heuristic
+        </legend>
+        <div class="grid grid-cols-2 gap-y-1.5 text-sm">
+          <label class="inline-flex items-center gap-2">
+            <input type="radio" name="heuristic" value="manhattan" checked class="text-brand-600 focus:ring-brand-500" />
+            <span>Manhattan</span>
+          </label>
+          <label class="inline-flex items-center gap-2">
+            <input type="radio" name="heuristic" value="octile" class="text-brand-600 focus:ring-brand-500" />
+            <span>Octile</span>
+          </label>
+          <label class="inline-flex items-center gap-2">
+            <input type="radio" name="heuristic" value="euclidean" class="text-brand-600 focus:ring-brand-500" />
+            <span>Euclidean</span>
+          </label>
+          <label class="inline-flex items-center gap-2">
+            <input type="radio" name="heuristic" value="chebyshev" class="text-brand-600 focus:ring-brand-500" />
+            <span>Chebyshev</span>
+          </label>
+          <label class="inline-flex items-center gap-2">
+            <input type="radio" name="heuristic" value="zero" class="text-brand-600 focus:ring-brand-500" />
+            <span>Zero (Dijkstra)</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="space-y-2">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Bağlantı
+        </legend>
+        <div class="flex flex-col gap-1.5 text-sm">
+          <label class="inline-flex items-center gap-2">
+            <input type="radio" name="connectivity" value="4" checked class="text-brand-600 focus:ring-brand-500" />
+            <span>4 yön <span class="text-xs text-slate-500 dark:text-slate-400">(N/S/E/W, maliyet 1)</span></span>
+          </label>
+          <label class="inline-flex items-center gap-2">
+            <input type="radio" name="connectivity" value="8" class="text-brand-600 focus:ring-brand-500" />
+            <span>8 yön <span class="text-xs text-slate-500 dark:text-slate-400">(çapraz √2)</span></span>
+          </label>
+        </div>
+        <label class="mt-2 inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+          <input type="checkbox" id="corner-cut" class="rounded text-brand-600 focus:ring-brand-500" />
+          <span>8 bağlantıda köşe kesmeye izin ver (corner-cutting)</span>
+        </label>
+      </fieldset>
+
+      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">
+        Yolu bul
+      </button>
+
+      <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
+    </form>
+
+    <section id="output" aria-live="polite" class="space-y-6">
+      <div id="result-card" hidden class="rounded-2xl border border-emerald-300 bg-emerald-50/60 p-5 dark:border-emerald-800/60 dark:bg-emerald-950/30">
+        <p class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+          Yol maliyeti
+        </p>
+        <p id="path-cost" class="mt-1 font-display text-4xl font-bold tabular-nums text-emerald-900 dark:text-emerald-100"></p>
+        <p id="result-meta" class="mt-1 text-xs text-emerald-700/80 dark:text-emerald-300/80"></p>
+      </div>
+
+      <div id="unreachable-card" hidden class="rounded-2xl border border-amber-300 bg-amber-50/60 p-5 dark:border-amber-800/60 dark:bg-amber-950/30">
+        <p class="text-xs font-medium uppercase tracking-wide text-amber-700 dark:text-amber-300">
+          Erişilemez
+        </p>
+        <p class="mt-1 font-display text-lg font-semibold text-amber-900 dark:text-amber-100">
+          Hedef hücreye giden bir yol yok
+        </p>
+        <p id="unreachable-meta" class="mt-1 text-sm text-amber-800 dark:text-amber-200"></p>
+      </div>
+
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Görselleştirme
+        </h2>
+        <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+          <span class="inline-flex items-center gap-1.5">
+            <span class="inline-block h-3 w-3 rounded-sm bg-emerald-500"></span> Başlangıç (S)
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <span class="inline-block h-3 w-3 rounded-sm bg-rose-500"></span> Hedef (G)
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <span class="inline-block h-3 w-3 rounded-sm bg-sky-400"></span> Yol
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <span class="inline-block h-3 w-3 rounded-sm bg-amber-200 dark:bg-amber-700/60"></span> Açılan
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <span class="inline-block h-3 w-3 rounded-sm border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900"></span> Boş
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <span class="inline-block h-3 w-3 rounded-sm bg-slate-700 dark:bg-slate-300"></span> Engel
+          </span>
+        </div>
+        <div id="grid-view" class="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div id="grid-cells" class="grid select-none gap-px" role="grid"></div>
+        </div>
+      </div>
+    </section>
+  </Container>
+
+  {guideHref && (
+    <Container as="section" size="wide" class="py-12 sm:py-16">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900/40">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">
+          Konuyu derinleştir
+        </p>
+        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          A*, sezgisel arama ve admissibility
+        </h2>
+        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+          f = g + h denklemi, admissible / consistent heuristic ayrımı,
+          Manhattan vs Octile vs Euclidean kıyaslaması, oyun yapay zekâsı
+          ve robotik uygulamaları, Dijkstra ile bağ ve sayısal örnekler.
+        </p>
+        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">
+          Rehberi oku →
+        </a>
+      </div>
+    </Container>
+  )}
+</BaseLayout>
+
+<script>
+  import { solveAStar, AStarError, type AStarHeuristic, type AStarConnectivity, type AStarResult } from '../../lib/astar';
+
+  const STORAGE_KEY = 'astar-state-v1';
+
+  interface Sample {
+    grid: string;
+    start: [number, number];
+    goal: [number, number];
+    heuristic: AStarHeuristic;
+    connectivity: AStarConnectivity;
+    cornerCut: boolean;
+  }
+  const SAMPLE_MAZE: Sample = {
+    grid: [
+      '................',
+      '.####.######.##.',
+      '.#...#......#.#.',
+      '.#.#.######.#.#.',
+      '.#.#......#.#.#.',
+      '.#.######.#.#.#.',
+      '.#.#......#.#.#.',
+      '.#.#.######.#.#.',
+      '.#.#........#.#.',
+      '.#.##########.#.',
+      '.#............#.',
+      '.##############.',
+    ].join('\n'),
+    start: [0, 0],
+    goal: [11, 15],
+    heuristic: 'manhattan',
+    connectivity: '4',
+    cornerCut: false,
+  };
+  const SAMPLE_ROOMS: Sample = {
+    grid: [
+      '..............',
+      '.####.#####...',
+      '.#..#.#...#...',
+      '.#..#.#...#...',
+      '.#..#.#####...',
+      '.#..#.........',
+      '.####.#####...',
+      '......#...#...',
+      '......#####...',
+      '..............',
+    ].join('\n'),
+    start: [0, 0],
+    goal: [3, 8],
+    heuristic: 'octile',
+    connectivity: '8',
+    cornerCut: false,
+  };
+  const SAMPLE_OPEN: Sample = {
+    grid: [
+      '............',
+      '............',
+      '....####....',
+      '....#..#....',
+      '....#..#....',
+      '....####....',
+      '............',
+      '............',
+    ].join('\n'),
+    start: [0, 0],
+    goal: [7, 11],
+    heuristic: 'octile',
+    connectivity: '8',
+    cornerCut: false,
+  };
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el as T;
+  };
+  function fmt(n: number, d = 3): string {
+    if (!Number.isFinite(n)) return '—';
+    if (Math.abs(n) < 1e-9) return '0';
+    return n.toFixed(d).replace(/\.?0+$/, '');
+  }
+
+  const form = $<HTMLFormElement>('astar-form');
+  const gridInput = $<HTMLTextAreaElement>('grid-input');
+  const startRow = $<HTMLInputElement>('start-row');
+  const startCol = $<HTMLInputElement>('start-col');
+  const goalRow = $<HTMLInputElement>('goal-row');
+  const goalCol = $<HTMLInputElement>('goal-col');
+  const cornerCut = $<HTMLInputElement>('corner-cut');
+  const errorBox = $('error-box');
+  const resultCard = $('result-card');
+  const unreachableCard = $('unreachable-card');
+  const pathCostEl = $('path-cost');
+  const resultMeta = $('result-meta');
+  const unreachableMeta = $('unreachable-meta');
+  const gridCells = $('grid-cells');
+  const modeBtns = Array.from(document.querySelectorAll<HTMLButtonElement>('.mode-btn'));
+
+  type Mode = 'start' | 'goal' | 'wall';
+  let currentMode: Mode = 'wall';
+
+  type SavedState = {
+    grid?: string;
+    start?: [number, number];
+    goal?: [number, number];
+    heuristic?: AStarHeuristic;
+    connectivity?: AStarConnectivity;
+    cornerCut?: boolean;
+  };
+
+  function getHeuristic(): AStarHeuristic {
+    const v = form.querySelector<HTMLInputElement>('input[name="heuristic"]:checked')?.value;
+    return (v as AStarHeuristic) ?? 'manhattan';
+  }
+  function setHeuristic(v: AStarHeuristic): void {
+    const radio = form.querySelector<HTMLInputElement>(`input[name="heuristic"][value="${v}"]`);
+    if (radio) radio.checked = true;
+  }
+  function getConnectivity(): AStarConnectivity {
+    const v = form.querySelector<HTMLInputElement>('input[name="connectivity"]:checked')?.value;
+    return (v as AStarConnectivity) ?? '4';
+  }
+  function setConnectivity(v: AStarConnectivity): void {
+    const radio = form.querySelector<HTMLInputElement>(`input[name="connectivity"][value="${v}"]`);
+    if (radio) radio.checked = true;
+  }
+
+  function saveState(): void {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          grid: gridInput.value,
+          start: [Number(startRow.value), Number(startCol.value)],
+          goal: [Number(goalRow.value), Number(goalCol.value)],
+          heuristic: getHeuristic(),
+          connectivity: getConnectivity(),
+          cornerCut: cornerCut.checked,
+        } satisfies SavedState),
+      );
+    } catch {
+      /* önemsiz. */
+    }
+  }
+  function loadState(): void {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        applySample(SAMPLE_MAZE);
+        return;
+      }
+      const s = JSON.parse(raw) as SavedState;
+      if (typeof s.grid === 'string') gridInput.value = s.grid;
+      if (s.start) {
+        startRow.value = String(s.start[0]);
+        startCol.value = String(s.start[1]);
+      }
+      if (s.goal) {
+        goalRow.value = String(s.goal[0]);
+        goalCol.value = String(s.goal[1]);
+      }
+      if (s.heuristic) setHeuristic(s.heuristic);
+      if (s.connectivity) setConnectivity(s.connectivity);
+      if (typeof s.cornerCut === 'boolean') cornerCut.checked = s.cornerCut;
+    } catch {
+      applySample(SAMPLE_MAZE);
+    }
+  }
+  function applySample(s: Sample): void {
+    gridInput.value = s.grid;
+    startRow.value = String(s.start[0]);
+    startCol.value = String(s.start[1]);
+    goalRow.value = String(s.goal[0]);
+    goalCol.value = String(s.goal[1]);
+    setHeuristic(s.heuristic);
+    setConnectivity(s.connectivity);
+    cornerCut.checked = s.cornerCut;
+    saveState();
+    clearError();
+    runSolve();
+  }
+
+  function parseGrid(text: string): string[] {
+    const lines = text.split(/\r?\n/);
+    /* Trailing boş satırları at. */
+    while (lines.length > 0 && lines[lines.length - 1].length === 0) lines.pop();
+    return lines;
+  }
+
+  function showError(msg: string): void {
+    errorBox.textContent = msg;
+    errorBox.hidden = false;
+    resultCard.hidden = true;
+    unreachableCard.hidden = true;
+  }
+  function clearError(): void {
+    errorBox.hidden = true;
+    errorBox.textContent = '';
+  }
+
+  function renderGrid(result: AStarResult | null, rawGrid: string[]): void {
+    const rows = rawGrid.length;
+    const cols = rows > 0 ? rawGrid[0].length : 0;
+    if (rows === 0 || cols === 0) {
+      gridCells.innerHTML = '';
+      return;
+    }
+    /* Hücre boyutunu ızgara genişliğine göre ayarla — mobil dostu. */
+    const cellSize = Math.max(14, Math.min(28, Math.floor(560 / cols)));
+    gridCells.style.gridTemplateColumns = `repeat(${cols}, ${cellSize}px)`;
+    gridCells.style.gridTemplateRows = `repeat(${rows}, ${cellSize}px)`;
+
+    /* Yol ve açılan hücreleri set'lere koy — O(1) bakış için. */
+    const pathSet = new Set<number>();
+    const expandedSet = new Set<number>();
+    if (result) {
+      for (const c of result.path) pathSet.add(c.row * cols + c.col);
+      for (const e of result.expanded) expandedSet.add(e.row * cols + e.col);
+    }
+    const sR = Number(startRow.value);
+    const sC = Number(startCol.value);
+    const gR = Number(goalRow.value);
+    const gC = Number(goalCol.value);
+    const sIdx = sR * cols + sC;
+    const gIdx = gR * cols + gC;
+
+    const PASSABLE = new Set(['.', ' ', 'S', 'G', 's', 'g', 'o', 'O', '0']);
+    const frag = document.createDocumentFragment();
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const idx = r * cols + c;
+        const ch = rawGrid[r][c] ?? '#';
+        const wall = !PASSABLE.has(ch);
+        const isStart = idx === sIdx;
+        const isGoal = idx === gIdx;
+        const isPath = pathSet.has(idx) && !isStart && !isGoal;
+        const isExp = expandedSet.has(idx) && !isPath && !isStart && !isGoal;
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.dataset.row = String(r);
+        cell.dataset.col = String(c);
+        cell.setAttribute('role', 'gridcell');
+        cell.setAttribute('aria-label', `Satır ${r}, sütun ${c}`);
+        cell.style.width = `${cellSize}px`;
+        cell.style.height = `${cellSize}px`;
+        let cls = 'rounded-[2px] focus:outline-none focus:ring-2 focus:ring-brand-500/40 transition-colors ';
+        if (isStart) cls += 'bg-emerald-500';
+        else if (isGoal) cls += 'bg-rose-500';
+        else if (isPath) cls += 'bg-sky-400 dark:bg-sky-500';
+        else if (wall) cls += 'bg-slate-700 dark:bg-slate-300';
+        else if (isExp) cls += 'bg-amber-200 dark:bg-amber-700/60';
+        else cls += 'bg-white border border-slate-200 dark:bg-slate-900 dark:border-slate-700';
+        cell.className = cls;
+        frag.appendChild(cell);
+      }
+    }
+    gridCells.innerHTML = '';
+    gridCells.appendChild(frag);
+  }
+
+  function setMode(mode: Mode): void {
+    currentMode = mode;
+    for (const btn of modeBtns) {
+      const active = btn.dataset.mode === mode;
+      btn.setAttribute('aria-pressed', String(active));
+      btn.classList.toggle('ring-2', active);
+      btn.classList.toggle('ring-brand-500', active);
+    }
+  }
+
+  function handleCellClick(ev: MouseEvent): void {
+    const target = ev.target as HTMLElement;
+    if (!target.dataset.row || !target.dataset.col) return;
+    const r = Number(target.dataset.row);
+    const c = Number(target.dataset.col);
+    const grid = parseGrid(gridInput.value);
+    if (r < 0 || c < 0 || r >= grid.length) return;
+    if (currentMode === 'start') {
+      /* Engelse önce aç. */
+      grid[r] = setChar(grid[r], c, '.');
+      gridInput.value = grid.join('\n');
+      startRow.value = String(r);
+      startCol.value = String(c);
+    } else if (currentMode === 'goal') {
+      grid[r] = setChar(grid[r], c, '.');
+      gridInput.value = grid.join('\n');
+      goalRow.value = String(r);
+      goalCol.value = String(c);
+    } else {
+      /* Wall toggle — ama start/goal hücresini boş bırak. */
+      const sR = Number(startRow.value);
+      const sC = Number(startCol.value);
+      const gR = Number(goalRow.value);
+      const gC = Number(goalCol.value);
+      if ((r === sR && c === sC) || (r === gR && c === gC)) return;
+      const ch = grid[r][c];
+      const next = ch === '#' ? '.' : '#';
+      grid[r] = setChar(grid[r], c, next);
+      gridInput.value = grid.join('\n');
+    }
+    saveState();
+    runSolve();
+  }
+
+  function setChar(s: string, i: number, ch: string): string {
+    if (i < 0 || i >= s.length) return s;
+    return s.substring(0, i) + ch + s.substring(i + 1);
+  }
+
+  function runSolve(): void {
+    clearError();
+    const grid = parseGrid(gridInput.value);
+    if (grid.length === 0) {
+      gridCells.innerHTML = '';
+      resultCard.hidden = true;
+      unreachableCard.hidden = true;
+      return;
+    }
+    try {
+      const result = solveAStar({
+        grid,
+        start: { row: Number(startRow.value), col: Number(startCol.value) },
+        goal: { row: Number(goalRow.value), col: Number(goalCol.value) },
+        heuristic: getHeuristic(),
+        connectivity: getConnectivity(),
+        allowCornerCutting: cornerCut.checked,
+      });
+      renderGrid(result, grid);
+      if (result.reachable) {
+        resultCard.hidden = false;
+        unreachableCard.hidden = true;
+        pathCostEl.textContent = fmt(result.pathCost, 4);
+        resultMeta.textContent =
+          `${result.path.length - 1} adım · ${result.expandedCount} hücre açıldı · ` +
+          `başlangıç heuristic'i ${fmt(result.initialHeuristic, 3)} · ` +
+          `${result.heuristic} / ${result.connectivity}-bağlantı.`;
+      } else {
+        resultCard.hidden = true;
+        unreachableCard.hidden = false;
+        unreachableMeta.textContent =
+          `${result.expandedCount} hücre açıldı; tüm erişilebilir alan tarandı. ` +
+          `Hedef hücreye giden bir yol yok — duvarları kontrol et ya da bağlantıyı 8'e çevir.`;
+      }
+    } catch (err) {
+      const msg = err instanceof AStarError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
+      showError(msg);
+      renderGrid(null, grid);
+    }
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    saveState();
+    runSolve();
+  });
+  [gridInput, startRow, startCol, goalRow, goalCol, cornerCut].forEach((el) =>
+    el.addEventListener('change', () => {
+      saveState();
+      runSolve();
+    }),
+  );
+  gridInput.addEventListener('input', () => {
+    /* Sadece kaydet — çok sık yeniden çözmemek için. */
+    saveState();
+  });
+  form.querySelectorAll<HTMLInputElement>('input[name="heuristic"], input[name="connectivity"]').forEach((el) =>
+    el.addEventListener('change', () => {
+      saveState();
+      runSolve();
+    }),
+  );
+  gridCells.addEventListener('click', handleCellClick);
+  modeBtns.forEach((btn) =>
+    btn.addEventListener('click', () => setMode(btn.dataset.mode as Mode)),
+  );
+  $('sample-maze-btn').addEventListener('click', () => applySample(SAMPLE_MAZE));
+  $('sample-rooms-btn').addEventListener('click', () => applySample(SAMPLE_ROOMS));
+  $('sample-open-btn').addEventListener('click', () => applySample(SAMPLE_OPEN));
+  $('reset-btn').addEventListener('click', () => {
+    if (!confirm('Form sıfırlanacak. Devam edilsin mi?')) return;
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* önemsiz. */
+    }
+    applySample(SAMPLE_MAZE);
+  });
+
+  setMode('wall');
+  loadState();
+  runSolve();
+</script>
