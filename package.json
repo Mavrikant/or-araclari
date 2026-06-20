@@ -23,7 +23,7 @@
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource/atkinson-hyperlegible": "^5.2.8",
     "@tailwindcss/vite": "^4.2.4",
-    "astro": "^6.2.2",
+    "astro": "^6.4.8",
     "glpk.js": "^5.0.0",
     "katex": "^0.16.45",
     "plotly.js-basic-dist-min": "^3.0.0",
