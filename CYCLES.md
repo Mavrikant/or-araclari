@@ -19,7 +19,7 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 
 **Kalite kapıları:** check ✓ (0 hata, 0 hint, **109 dosya**) · test ✓ (**538/538**, +21 yeni Lemke-Howson testi, 28 dosya) · build ✓ (**60 sayfa**, 5.23s — aynı sayfa/araç sayısı, lib + script genişledi) · Lighthouse — mevcut F-GAME-NASH sayfası birebir korundu, sadece +1 radyo grubu + +1 alt panel + ~85 JS satırı; mobil yerleşim aynı Tailwind desenleriyle (`flex items-start gap-2`, `ml-6 ... p-3`), ≥95 beklenir.
 
-**Yayın:** PR açılacak ve CI yeşilse merge.
+**Yayın:** PR #57 squash-merge edildi (cc56ae2). Deploy run 28326655011 → completed/success — main üzerine push tamam, https://karaman.dev/or-araclari/ canlı.
 
 **İşaret:** yok.
 
