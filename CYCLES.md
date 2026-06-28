@@ -5,6 +5,28 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 
 ---
 
+## DÖNGÜ #26 — 2026-06-28
+
+**Yapılan:** F-LEMKE — F-GAME-NASH Bimatris Nash Çözücü'ne ikinci algoritma olarak Lemke-Howson (1964) tamamlayıcı pivot algoritması eklendi. Support enumeration m + n ≤ 12 sınırının üzerine çıkar; tek denge yeterli olduğunda büyük oyunlarda hızlı sonuç verir. MST (Prim + Kruskal) ve Shortest Path (Dijkstra + Bellman-Ford) desenine uygun "iki algoritma, tek araç" yapısı.
+
+**Detay:**
+- `src/lib/lemke-howson.ts` (+330) — saf algoritma: `lemkeHowson(input, dropLabel)` (1..m+n) tek pivot zinciri; iki en-iyi-yanıt poliyedrası P, Q için ayrı tableau (P: n satır × m+n+1, Q: m satır × m+n+1), pozitiflik kaydırması (min ≤ 0 ise 1 − min), Bland kuralı min-oran eşitliklerinde küçük taban indeksi (döngüsüzlük), `LemkeStatus` enum (`found`/`degenerate`/`maxiter`/`invalid-drop`), `LemkePivotStep` adım kaydı, `lemkeHowsonAllDrops()` k = 1..m+n için art arda çalıştırma + deduplike denge kümesi. Etiket sözleşmesi: P sütun 0..m-1 = x̄, m..m+n-1 = s; Q sütun 0..m-1 = r, m..m+n-1 = ȳ. Non-basic sütun indeksi = karşılanan etiket. Ray termination dejenere statüsü döner. Payoff orijinal (kaydırılmamış) A, B ile hesaplanır.
+- `src/lib/lemke-howson.test.ts` (+260, **21 vitest**) — Tutuklu Açmazı tek saf NE (D, D), Cinsiyet Savaşı saf NE'lerinden biri (dropLabel=1), Matching Pennies tek karışık NE (½, ½), Stag Hunt + Tavuk Oyunu saf NE varyantları, negatif sıfır-toplamlı 2×2 (kaydırma sonrası ½-½ doğrulandı), strateji vektörü ∈ Δ değişmezi (≥0 + toplam 1), support indeksleri pozitif olasılıklara eşleşir, payoff = xᵀ A y kaydırılmamış, karışık dengede indifference koşulu (Ay)_i = u ∀ i ∈ supp(x), 3×3 + 2×3 + 3×2 asimetrik oyunlar, farklı dropLabel farklı NE bulur (BoS'ta ≥2), pivot adımları alternate, `lemkeHowsonAllDrops` PD'de tek NE / BoS'ta ≥2 NE, validation hataları (dropLabel aralık, boş matris, boyut uyumsuzluğu, NaN).
+- `src/pages/araclar/bimatris-nash-cozucu.astro` (+85) — form üstünde algoritma seçici radyo grubu ("Support enumeration" / "Lemke-Howson") + Lemke seçildiğinde açılan alt panel ("Tüm dropLabel'ları dene" checkbox + sabit dropLabel sayı inputu). Solve butonu etiketi seçime göre dinamik ("Tüm dengeleri bul" / "Lemke-Howson tüm dropLabel'larla" / "Lemke-Howson (tek pivot zinciri)"). MAX_DIM_SUM (=12) kontrolü sadece support seçildiğinde uygulanır — Lemke büyük oyunda çalışır. Sonuç kartı altı "${pure} saf, ${mixed} karışık · ${pivots} pivot adımı (Lemke-Howson)." gibi algoritma-spesifik detay raporlar. `LemkeError` yakalama dalı eklendi.
+- `src/content/rehberler/nash-dengesi-bimatris.mdx` (+15/-12) — "Lemke-Howson alternatifi" bölümü artık "araçta seçilebilir" başlığıyla genişletildi: P, Q poliyedraları + etiket sözleşmesi tam liste (4 satır), yapay (0,0) tepesinden tamamlayıcı pivot zinciri açıklaması, "Tüm dropLabel'ları dene" UX notu. FAQ "neden support enumeration seçildi" sorusu "hangisini ne zaman seçmeli" olarak güncellendi (her iki algoritma sunulur).
+
+**Tasarım notu:** Lemke-Howson polytope formülasyonunda P ve Q'da sütun indeksi → etiket eşlemesi birebir aynı tutuldu (col 0..m-1 her ikisinde de "etiket 1..m'in karşılayıcısı" — P'de x̄_i, Q'da r_i; col m..m+n-1 her ikisinde "etiket m+1..m+n" — P'de s_j, Q'da ȳ_j); böylece "duplicate etiket" tespiti tek bir `leavingCol === dropLabel0` kontrolüne indi. Pozitiflik kaydırması shiftA = 1 − minA (eğer minA ≤ 0) optimumu etkilemez çünkü stratejiler best-response indifference'ı koruyor; payoff sabit ekleme ile değişir, biz orijinal A ile yeniden hesaplıyoruz. Bland kuralı min-oran eşitliklerinde "küçük taban indeksli satırı bırak" → Lemke-Howson literatüründe standart anti-cycling (Howson 1972). MDX schema'sında faq.answer ≤ 800 char sınırı ilk yazımda ihlal edildi (1086 char); kısaltılarak korundu.
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint, **109 dosya**) · test ✓ (**538/538**, +21 yeni Lemke-Howson testi, 28 dosya) · build ✓ (**60 sayfa**, 5.23s — aynı sayfa/araç sayısı, lib + script genişledi) · Lighthouse — mevcut F-GAME-NASH sayfası birebir korundu, sadece +1 radyo grubu + +1 alt panel + ~85 JS satırı; mobil yerleşim aynı Tailwind desenleriyle (`flex items-start gap-2`, `ml-6 ... p-3`), ≥95 beklenir.
+
+**Yayın:** PR açılacak ve CI yeşilse merge.
+
+**İşaret:** yok.
+
+**Sıradaki:** F-JPS (Jump Point Search — F-ASTAR'ın eş-maliyetli ızgarada 10× hızlanması) ya da Q-AUDIT-YAML (yaml-language-server zinciri). Q-AUDIT-ESBUILD ve Q-CI-CHECK blocked (insan onayı).
+
+---
+
 ## DÖNGÜ #25 — 2026-06-20
 
 **Yapılan:** F-STEINER — Steiner Ağacı Çözücü (Kou-Markowsky-Berman 1981 2-yaklaşımı) ve uzun-form Türkçe rehberi yayınlandı. Yönsüz ağırlıklı bir grafta bir terminal alt kümesini en az toplam ağırlıkla bağlayan ağacı bulur; ara düğümler (Steiner noktaları) isteğe bağlı olarak ağaca dahil edilir. Problem NP-zor (Karp 1972); KMB en kötü durumda 2·OPT garantili polinom zamanlı yaklaşım. F-MST'nin doğal uzantısı, graf kategorisinin sekizinci aracı.
