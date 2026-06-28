@@ -118,9 +118,47 @@ const softwareJsonLd = {
             class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             placeholder=" 3   5&#10; 0   1"></textarea>
         </label>
-        <p class="text-xs text-slate-500 dark:text-slate-400">
-          Boyut sınırı: m + n ≤ 12 (2<sup>m</sup>·2<sup>n</sup> desteklerin sayımı için).
-        </p>
+      </fieldset>
+
+      <fieldset class="space-y-2">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Algoritma
+        </legend>
+        <label class="flex items-start gap-2">
+          <input type="radio" name="algo" value="support" checked
+            class="mt-1 size-4 border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-700 dark:bg-slate-950" />
+          <span class="text-sm">
+            <span class="font-medium text-slate-800 dark:text-slate-100">Support enumeration</span>
+            <span class="block text-xs text-slate-500 dark:text-slate-400">
+              Tüm Nash dengelerini (saf + karışık) tarar. Boyut sınırı: m + n ≤ 12.
+            </span>
+          </span>
+        </label>
+        <label class="flex items-start gap-2">
+          <input type="radio" name="algo" value="lemke"
+            class="mt-1 size-4 border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-700 dark:bg-slate-950" />
+          <span class="text-sm">
+            <span class="font-medium text-slate-800 dark:text-slate-100">Lemke-Howson</span>
+            <span class="block text-xs text-slate-500 dark:text-slate-400">
+              Tamamlayıcı pivot — her dropLabel için tek denge bulur, büyük m + n'de çalışır.
+              "Tüm dropLabel'ları dene" ile birden çok denge yakalanabilir (garanti değil).
+            </span>
+          </span>
+        </label>
+        <div id="lemke-opts" hidden class="ml-6 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+            <input type="checkbox" id="lemke-all-drops" checked
+              class="size-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-700 dark:bg-slate-950" />
+            Tüm dropLabel değerlerini (1..m+n) dene
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+              Sabit dropLabel (1..m+n, "tüm" işaretliyse yok sayılır)
+            </span>
+            <input type="number" id="lemke-drop" min="1" step="1" value="1"
+              class="mt-1 block w-24 rounded-lg border border-slate-300 bg-white px-2 py-1 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+        </div>
       </fieldset>
 
       <button type="submit" id="solve-btn" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">
@@ -204,6 +242,12 @@ const softwareJsonLd = {
     MAX_DIM_SUM,
     type Equilibrium,
   } from '../../lib/bimatrix';
+  import {
+    lemkeHowson,
+    lemkeHowsonAllDrops,
+    LemkeError,
+    type LemkeResult,
+  } from '../../lib/lemke-howson';
 
   interface Sample {
     rows: string;
@@ -262,9 +306,30 @@ const softwareJsonLd = {
   const equilibriaList = $('equilibria-list');
   const emptyBlock = $('empty-block');
   const equilibriaBlock = $('equilibria-block');
+  const lemkeOpts = $('lemke-opts');
+  const lemkeAllDrops = $<HTMLInputElement>('lemke-all-drops');
+  const lemkeDrop = $<HTMLInputElement>('lemke-drop');
+  const algoRadios = Array.from(
+    document.querySelectorAll<HTMLInputElement>('input[name="algo"]'),
+  );
   const sampleBtns = Array.from(
     document.querySelectorAll<HTMLButtonElement>('[data-sample]'),
   );
+
+  function selectedAlgo(): 'support' | 'lemke' {
+    const r = algoRadios.find((el) => el.checked);
+    return r?.value === 'lemke' ? 'lemke' : 'support';
+  }
+  function refreshAlgoUI(): void {
+    const algo = selectedAlgo();
+    lemkeOpts.hidden = algo !== 'lemke';
+    solveBtnLabel.textContent =
+      algo === 'lemke'
+        ? lemkeAllDrops.checked
+          ? 'Lemke-Howson tüm dropLabel\'larla'
+          : 'Lemke-Howson (tek pivot zinciri)'
+        : 'Tüm dengeleri bul';
+  }
 
   function escapeHtml(s: string): string {
     return s
@@ -540,9 +605,11 @@ const softwareJsonLd = {
       showError(`A (${m}×${n}) ve B (${B.length}×${B[0]?.length ?? 0}) aynı boyutta olmalı.`);
       return;
     }
-    if (m + n > MAX_DIM_SUM) {
+
+    const algo = selectedAlgo();
+    if (algo === 'support' && m + n > MAX_DIM_SUM) {
       showError(
-        `Boyut sınırı aşıldı: m + n = ${m + n} (en çok ${MAX_DIM_SUM}). Support enumeration 2^m × 2^n destek çiftini tarıyor.`,
+        `Support enumeration boyut sınırı aşıldı: m + n = ${m + n} (en çok ${MAX_DIM_SUM}). 2^m × 2^n destek çifti taranır. Lemke-Howson algoritmasını deneyin.`,
       );
       return;
     }
@@ -553,36 +620,75 @@ const softwareJsonLd = {
     const colNames = colNamesRaw.length === n ? colNamesRaw : defaultNames('C', n);
 
     solveBtn.disabled = true;
+    const originalLabel = solveBtnLabel.textContent;
     solveBtnLabel.textContent = 'Aranıyor...';
 
     try {
-      const res = findNashEquilibria({ payoffA: A, payoffB: B });
-      output.hidden = false;
-
-      countReadout.textContent = String(res.equilibria.length);
-      const pureCount = res.equilibria.filter((e) => e.kind === 'pure').length;
-      const mixedCount = res.equilibria.length - pureCount;
-      countSub.textContent =
-        res.equilibria.length === 0
-          ? `${res.scanned} destek çifti tarandı, denge bulunamadı.`
-          : `${pureCount} saf, ${mixedCount} karışık · ${res.scanned} destek çifti tarandı.`;
-
-      /* Saf Nash hücrelerini matriste vurgulamak için set. */
-      const pureCells = new Set<string>();
-      for (const eq of res.equilibria) {
-        if (eq.kind === 'pure') {
-          pureCells.add(`${eq.supportRow[0]},${eq.supportCol[0]}`);
+      if (algo === 'support') {
+        const res = findNashEquilibria({ payoffA: A, payoffB: B });
+        output.hidden = false;
+        countReadout.textContent = String(res.equilibria.length);
+        const pureCount = res.equilibria.filter((e) => e.kind === 'pure').length;
+        const mixedCount = res.equilibria.length - pureCount;
+        countSub.textContent =
+          res.equilibria.length === 0
+            ? `${res.scanned} destek çifti tarandı, denge bulunamadı.`
+            : `${pureCount} saf, ${mixedCount} karışık · ${res.scanned} destek çifti tarandı (support enumeration).`;
+        const pureCells = new Set<string>();
+        for (const eq of res.equilibria) {
+          if (eq.kind === 'pure') pureCells.add(`${eq.supportRow[0]},${eq.supportCol[0]}`);
         }
+        renderPayoffTable(A, B, rowNames, colNames, pureCells);
+        renderEquilibria(res.equilibria, rowNames, colNames);
+      } else {
+        const tryAll = lemkeAllDrops.checked;
+        let equilibria: Equilibrium[];
+        let detail: string;
+        if (tryAll) {
+          const { equilibria: eqs, results } = lemkeHowsonAllDrops({ payoffA: A, payoffB: B });
+          equilibria = eqs;
+          const totalPivots = results.reduce((s, r) => s + r.pivots, 0);
+          const foundCount = results.filter((r) => r.status === 'found').length;
+          detail = `${foundCount}/${results.length} dropLabel denge buldu · ${totalPivots} pivot toplam (Lemke-Howson).`;
+        } else {
+          const dropLabelRaw = Number(lemkeDrop.value);
+          const totalLabels = m + n;
+          let drop = Math.floor(dropLabelRaw);
+          if (!Number.isFinite(drop) || drop < 1) drop = 1;
+          if (drop > totalLabels) drop = totalLabels;
+          const res: LemkeResult = lemkeHowson({ payoffA: A, payoffB: B, dropLabel: drop });
+          equilibria = res.status === 'found' && res.equilibrium ? [res.equilibrium] : [];
+          if (res.status === 'found') {
+            detail = `dropLabel ${drop} · ${res.pivots} pivot adımı (Lemke-Howson).`;
+          } else if (res.status === 'degenerate') {
+            detail = `dropLabel ${drop} dejenere geri dönüş yaptı; farklı bir dropLabel deneyin.`;
+          } else {
+            detail = `dropLabel ${drop} pivot üst sınırına ulaştı (${res.pivots}).`;
+          }
+        }
+        output.hidden = false;
+        countReadout.textContent = String(equilibria.length);
+        const pureCount = equilibria.filter((e) => e.kind === 'pure').length;
+        const mixedCount = equilibria.length - pureCount;
+        countSub.textContent =
+          equilibria.length === 0
+            ? detail
+            : `${pureCount} saf, ${mixedCount} karışık · ${detail}`;
+        const pureCells = new Set<string>();
+        for (const eq of equilibria) {
+          if (eq.kind === 'pure') pureCells.add(`${eq.supportRow[0]},${eq.supportCol[0]}`);
+        }
+        renderPayoffTable(A, B, rowNames, colNames, pureCells);
+        renderEquilibria(equilibria, rowNames, colNames);
       }
-      renderPayoffTable(A, B, rowNames, colNames, pureCells);
-      renderEquilibria(res.equilibria, rowNames, colNames);
       saveState();
     } catch (err) {
-      if (err instanceof BimatrixError) showError(err.message);
+      if (err instanceof BimatrixError || err instanceof LemkeError) showError(err.message);
       else showError(err instanceof Error ? err.message : String(err));
     } finally {
       solveBtn.disabled = false;
-      solveBtnLabel.textContent = 'Tüm dengeleri bul';
+      solveBtnLabel.textContent = originalLabel ?? 'Tüm dengeleri bul';
+      refreshAlgoUI();
     }
   }
 
@@ -609,6 +715,9 @@ const softwareJsonLd = {
   [rowsInput, colsInput, payoffAInput, payoffBInput].forEach((el) =>
     el.addEventListener('input', () => saveState()),
   );
+  for (const r of algoRadios) r.addEventListener('change', refreshAlgoUI);
+  lemkeAllDrops.addEventListener('change', refreshAlgoUI);
 
   loadState();
+  refreshAlgoUI();
 </script>

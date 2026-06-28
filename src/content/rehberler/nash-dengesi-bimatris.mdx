@@ -26,8 +26,8 @@ faq:
     answer: "Saf Nash: her oyuncu deterministik bir strateji oynar (x_i* = 1, diğerleri 0). Karışık Nash: en az bir oyuncu olasılıklarla rastgeleleştirir (0 < x_i* < 1). Bir oyunda saf Nash olmayabilir (matching pennies, taş-kağıt-makas), tek saf Nash olabilir (Tutuklu Açmazı), çoklu saf Nash olabilir (Cinsiyet Savaşı, Stag Hunt). Gerçek hayatta saf Nash 'odak noktası' (focal point) varsa uygulanır — kültürel sözleşmeler, eski deneyim. Karışık Nash, rakibin sizi okumasını engellemek için kasıtlı belirsizlik (sportif penaltı yönü, askeri pozisyon, çift sayım denetimi). Birinde diğeri seçilince oyuncuların çoklu denge arasından seçim mekanizması (Pareto baskınlığı, risk dominans) ayrı bir konudur."
   - question: "Support enumeration algoritması nasıl çalışır?"
     answer: "Support enumeration, tüm karışık Nash dengelerini bulmak için kullanılan kavramsal olarak en açık algoritmadır. Şapley lemma (nondejenere oyunlarda): bir karışık Nash dengesinde |supp(x*)| = |supp(y*)| — yani R ve C'nin pozitif olasılıkla oynadığı strateji sayıları eşittir. Algoritma: her k = 1, 2, ..., min(m,n) için her (S₁ ⊆ {1..m}, S₂ ⊆ {1..n}) ile |S₁| = |S₂| = k destek çifti dene. Her çift için lineer sistemi çöz: A_{S₁,S₂} y_{S₂} = u·1 (k denklem), Σ y_{S₂} = 1 (1 denklem) ⇒ (k+1) bilinmeyen, (k+1) denklem. Benzer şekilde x. Sonra off-support best-response (i ∉ S₁: (Ay)_i ≤ u) doğrula. Geçenler liste başına eklenir. Karmaşıklık: O(2^m · 2^n · poly(m,n)) — küçük oyunlarda hızlı, m+n > ~16'da patlar. Aracımızın limiti m+n ≤ 12."
-  - question: "Lemke-Howson algoritması ile fark nedir, neden support enumeration seçildi?"
-    answer: "Lemke-Howson (1964) tek bir Nash dengesi bulmak için pivot tabanlı bir algoritmadır — lineer komplementarite problemi (LCP) formülasyonu üzerinde Lemke'nin tamamlayıcı pivot şemasını kullanır. Avantaj: kötü-halde-üstel olmasına rağmen pratikte çok hızlıdır ve büyük oyunlara ölçeklenir. Dezavantaj: sadece bir denge döndürür, başlangıç 'missing label' k seçimine bağlı olarak hangi dengeyi bulduğu deterministik ama hangisinin bulunduğunu kontrol etmek zor. Support enumeration: TÜM dengeleri bulur ki bu eğitim ve OR pratiği için daha bilgi verici (örnek: Cinsiyet Savaşı'nın 3 dengesi — 2 saf + 1 karışık — birlikte görülünce 'koordinasyon problemi'nin neden zor olduğu anlaşılır). Küçük matriste her ikisi de hızlı; eğitsel netlik için support enumeration tercih edildi."
+  - question: "Lemke-Howson algoritması ile fark nedir, hangisini ne zaman seçmeli?"
+    answer: "Lemke-Howson (1964) tek Nash dengesi bulan pivot tabanlı LCP çözücüsüdür. Pratikte hızlıdır ve m + n > 12 büyük oyunlara ölçeklenir (support enumeration'ın sınırının üzerinde). Dezavantajı: sadece bir denge döndürür, başlangıç 'dropLabel' k ∈ {1..m+n} seçimine bağlı olarak hangi dengeyi bulduğu önceden öngörülemez. Support enumeration tüm dengeleri bulur, OR eğitiminde tam panorama gerekir — Cinsiyet Savaşı'nın 3 dengesi yan yana görülünce koordinasyon problemi netleşir. Araç her iki algoritmayı sunar: küçük m + n ≤ 12 oyunlarda support; büyük ya da tek denge yeterliyse Lemke-Howson. 'Tüm dropLabel'ları dene' k = 1..m+n için art arda çalıştırır (garanti yok)."
   - question: "Tutuklu Açmazı (Prisoner's Dilemma) neden Nash teorisinin klasiği?"
     answer: "İki tutuklu, ihanet (D) ya da işbirliği (C) seçimi. A (R'a kazanç): [(C,C)=3, (C,D)=0; (D,C)=5, (D,D)=1]. B (C'ye kazanç) simetrik. Strictly dominant strateji: D her durumda C'ye baskın (5>3, 1>0 R için; 5>3, 1>0 C için). Tek Nash: (D, D) = (1, 1). Ama (C, C) = (3, 3) Pareto-baskın olur! Sosyal-optimum işbirliği oyunun kararlı dengesi değil — bireysel rasyonellik kolektif felaketi getirir. Bu paradox, kamu malları, çevre kirliliği, silahlanma yarışı, fiyat savaşı ve tüm sosyal kooperasyon problemlerinin matematiksel iskeletidir. Tekrarlı oyunlarda 'işbirliği eğilimi' (Axelrod 1984) ortaya çıkar; tek seferlik oyunda saf D-D kaçınılmazdır. Bimatris çözücümüz bu tek dengeyi doğrudan gösterir."
   - question: "Cinsiyet Savaşı ve Stag Hunt — koordinasyon oyunlarında çoklu denge nasıl?"
@@ -228,22 +228,32 @@ $B = \begin{pmatrix} 0 & 1 \\ -1 & -10 \end{pmatrix}$.
 tersi + bir karışık. Sapma cesareti olan kazanır — "bağlanma" stratejisi
 (Schelling 1960) güçlü.
 
-## Lemke-Howson alternatifi
+## Lemke-Howson alternatifi (araçta seçilebilir)
 
-Lemke-Howson (1964): tek bir Nash bulan pivot-tabanlı LCP çözücüsü. LP
-$x^T B + r = 1$ (C'nin slack) ve $A y + s = 1$ (R'ın slack)
-formülasyonundan $x_i r_i = 0$, $y_j s_j = 0$ tamamlayıcılığı kurulur.
-Her vertex çifti $(x, y)$ kombinatoryel olarak **etiketlenir**: etiket $i$
-"R, satır $i$'yi oynamıyor" ya da "C, satır $i$'nin best response
-constraint'i sıkı" demektir. Algoritma artificial vertex'ten başlar, bir
-$k$ etiketini "missing" yapar, tamamlayıcı pivot şemasıyla komşu vertex'e
-geçer; missing label döndüğünde Nash dengesi bulunur.
+Lemke-Howson (1964): tek bir Nash bulan pivot-tabanlı LCP çözücüsü. İki
+"en-iyi-yanıt poliyedrası" $P = \{x \ge 0 : B^\top x \le 1\}$ ve
+$Q = \{y \ge 0 : A y \le 1\}$ kurulur (gerekirse $A$, $B$ kesin pozitife
+kaydırılır — denge stratejisi değişmez). Her tepe kombinatoryel olarak
+$\{1, \dots, m + n\}$ etiketleriyle damgalanır:
+
+- $P$'de etiket $i \in [1, m]$: $x_i = 0$ (R, $i$. satırı oynamıyor)
+- $P$'de etiket $m + j$: $(B^\top x)_j = 1$ (C, $j$. sütunun en-iyi-yanıtı sıkı)
+- $Q$'de etiket $i$: $(A y)_i = 1$ (R'ın $i$. en-iyi-yanıtı sıkı)
+- $Q$'de etiket $m + j$: $y_j = 0$
+
+Yapay $(0, 0)$ tepesi tüm etiketleri kapsar. Algoritma bir
+$k \in \{1, \dots, m + n\}$ etiketini düşürür ve tamamlayıcı pivot
+zinciri ile **duplicate** etiket $= k$ olduğu komşu tepe çifti
+yakalanana kadar yürür. Vardığı tepe çifti, normalize edildiğinde
+Nash dengesi verir.
 
 **Avantajları:** pratikte hızlı, büyük oyunlara ölçeklenir ($m, n \le 100$
 makul). **Dezavantajı:** sadece bir denge döndürür ve hangisi olduğunu
-kontrol etmek (missing label seçimine bağlı) eğitim için netlik
-azaltır. Bizim aracımız **support enumeration** ile bütünü tarar —
-küçük oyunlarda (klasik OR ders örnekleri) tam panorama görmek esastır.
+kontrol etmek $k$ seçimine bağlı. Bizim araç her iki algoritmayı sunar:
+form üstünde "Algoritma: Support enumeration / Lemke-Howson" ile geçiş
+yapılır. Lemke-Howson seçildiğinde "Tüm dropLabel'ları dene" çalıştırması
+$k = 1, \dots, m + n$ için art arda çalıştırarak deduplike edilmiş denge
+kümesini döndürür — pratikte çoğu denge yakalanır.
 
 ## Algoritma karşılaştırması
 
