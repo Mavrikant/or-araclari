@@ -21,7 +21,7 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 
 **Kalite kapıları:** check ✓ (0 hata, 0 hint, **111 dosya**) · test ✓ (**558/558**, +20 yeni JPS testi, 29 dosya) · build ✓ (**60 sayfa**, 5.20s — aynı sayfa sayısı, sadece lib + script + rehber genişledi) · Lighthouse — mevcut A* sayfası birebir korundu, sadece +1 radyo grubu + fuşya halka overlay + ~55 script satırı; mobil yerleşim aynı Tailwind desenleriyle (`space-y-2` fieldset, `text-sm` label), ≥95 beklenir.
 
-**Yayın:** ⏳ PR açılacak.
+**Yayın:** PR #60 squash-merge edildi (cec21ec). Deploy run 28640962494 → completed/success (8s deploy job). Canlı: <https://karaman.dev/or-araclari/araclar/a-star-grid-cozucu>.
 
 **İşaret:** yok (sırf 🟢 yeşil — mevcut aracı ikinci algoritma ile genişletti; F-LEMKE, F-SHORTEST-PATH ve F-MST'nin "iki algoritma, tek araç" desenini birebir tekrarlar).
 
