@@ -249,10 +249,10 @@ export const TOOLS: readonly Tool[] = [
   },
   {
     slug: 'a-star-grid-cozucu',
-    title: 'A* (A-yıldız) Izgara Yol Bulucu',
-    shortTitle: 'A* Yol Bulucu',
+    title: 'A* (A-yıldız) & JPS Izgara Yol Bulucu',
+    shortTitle: 'A* / JPS Yol Bulucu',
     description:
-      '2D ızgara üzerinde bir başlangıç hücresinden hedefe en kısa yolu A* (A-yıldız) sezgisel arama ile tarayıcıda anlık bul. Manhattan, Octile, Euclidean, Chebyshev veya sıfır heuristic; 4 ya da 8 bağlantı (kardinal 1, çapraz √2); köşe kesme yasak/serbest seçeneği. Görsel ızgarada tıklayarak engelleri çiz; yolun her hücresi, açılan kapalı küme ve sezginin iyiliği aynı anda görselleştirilir. Oyun yapay zekâsı, robotik ve harita rotalamanın temel algoritması.',
+      '2D ızgara üzerinde bir başlangıç hücresinden hedefe en kısa yolu A* (A-yıldız) sezgisel arama ya da JPS (Jump Point Search) ile tarayıcıda anlık bul. Manhattan, Octile, Euclidean, Chebyshev veya sıfır heuristic; 4 ya da 8 bağlantı (kardinal 1, çapraz √2); köşe kesme yasak/serbest seçeneği. JPS 8-bağlantı eş-maliyetli ızgaralarda A*\'ın simetrisini kırıp jump point\'lere odaklanarak dramatik biçimde daha az heap-pop yapar. Görsel ızgarada tıklayarak engelleri çiz; yolun her hücresi, açılan kapalı küme ve sezginin iyiliği aynı anda görselleştirilir.',
     category: 'graf',
     status: 'ready',
     guideSlug: 'a-star-grid-heuristik',
