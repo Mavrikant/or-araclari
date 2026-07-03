@@ -23,7 +23,6 @@ Durum: open · in-progress · blocked · done
 
 | id | başlık | tür | değer | efor | durum |
 |---|---|---|---|---|---|
-| F-JPS | Jump Point Search — A*'ın eş-maliyetli ızgaralarda dramatic hızlanması (Harabor & Grastien 2011); F-ASTAR'ın doğal uzantısı, büyük açık alanda 10×+ hız | feature | L | M | open |
 
 ---
 
@@ -55,3 +54,4 @@ Durum: open · in-progress · blocked · done
 | F-ASTAR | A* (A-yıldız) Izgara Yol Bulucu — f = g + h, Manhattan/Octile/Euclidean/Chebyshev/Zero heuristic, 4/8 bağlantı, corner-cutting yasak/serbest, görsel ızgarada tıkla-engel/start/goal editörü, açılan kapalı küme görselleştirmesi; labirent + odalar + açık alan örnekleri; +20 vitest | #24 |
 | F-STEINER | Steiner Ağacı Çözücü (KMB 2-yaklaşım) — her terminalden Dijkstra → metrik kapanış tam grafı → Kruskal MST → orijinal yollara genişletme + paralel kenar dedup → alt graf MST → terminal olmayan yaprak ardışık kırpma; Y-yıldız (hub seçimi) + ızgara 4 köşe + saplama-kırpma örnekleri; tüm grafın MST karşılaştırması; +23 vitest | #25 |
 | F-LEMKE | Lemke-Howson (1964) tamamlayıcı pivot — F-GAME-NASH bimatris aracına ikinci algoritma olarak eklendi (m + n > 12 büyük oyunlarda çalışır); iki en-iyi-yanıt poliyedrası P/Q tableau, pozitiflik kaydırması, Bland kuralı anti-cycling, ray-termination dejenere statüsü; "Tüm dropLabel'ları dene" k=1..m+n art arda deduplike denge kümesi; +21 vitest | #26 |
+| F-JPS | Jump Point Search — A* araç sayfasına ikinci algoritma olarak eklendi (Harabor & Grastien 2011); 8-bağlantı eş-maliyetli ızgarada `jump(dx,dy)` iteratif yön-atlama, doğal + zorunlu komşu ayrımı, `prunedDirections` (parent yönüne göre 8 → 3–5 daralma), corner-cutting A* semantiği ile aynı, aynı UI'da radio ile seçim (JPS'te bağlantı 8'e sabitlenir), jump point'ler fuşya halka ile vurgulanır; +20 vitest, A* ile bit-bit optimum kimliği doğrulanır | #27 |

@@ -42,11 +42,12 @@ const softwareJsonLd = {
     </h1>
     <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
       2D ızgarada bir başlangıç hücresinden hedefe en kısa yolu
-      <strong>A* (A-yıldız)</strong> ile bul. f(n) = g(n) + h(n) — g
-      gerçek maliyet, h heuristic tahmin. Manhattan, Octile, Euclidean,
-      Chebyshev veya sıfır heuristic seç; 4 ya da 8 bağlantı, çapraz
-      köşe kesme yasak/serbest. Açılan hücre sayısı heuristic'in
-      iyiliğini ölçer.
+      <strong>A* (A-yıldız)</strong> ya da <strong>JPS (Jump Point Search)</strong>
+      ile bul. f(n) = g(n) + h(n) — g gerçek maliyet, h heuristic tahmin.
+      Manhattan, Octile, Euclidean, Chebyshev veya sıfır heuristic seç; 4 ya
+      da 8 bağlantı, çapraz köşe kesme yasak/serbest. JPS 8-bağlantı
+      eş-maliyetli ızgaralarda simetriyi kırarak A*'tan dramatik biçimde
+      daha az hücre açar.
       {guideHref && (
         <a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>
       )}
@@ -129,6 +130,25 @@ const softwareJsonLd = {
             Engel
           </button>
         </div>
+      </fieldset>
+
+      <fieldset class="space-y-2">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Algoritma
+        </legend>
+        <div class="flex flex-col gap-1.5 text-sm">
+          <label class="inline-flex items-center gap-2">
+            <input type="radio" name="algorithm" value="astar" checked class="text-brand-600 focus:ring-brand-500" />
+            <span>A* <span class="text-xs text-slate-500 dark:text-slate-400">(4 veya 8 bağlantı)</span></span>
+          </label>
+          <label class="inline-flex items-center gap-2">
+            <input type="radio" name="algorithm" value="jps" class="text-brand-600 focus:ring-brand-500" />
+            <span>JPS <span class="text-xs text-slate-500 dark:text-slate-400">(Jump Point Search — yalnızca 8 bağlantı)</span></span>
+          </label>
+        </div>
+        <p id="jps-note" hidden class="mt-1 rounded-md border border-sky-200 bg-sky-50/60 px-2 py-1 text-xs text-sky-800 dark:border-sky-800/60 dark:bg-sky-950/30 dark:text-sky-300">
+          JPS seçildi — bağlantı otomatik olarak 8'e sabitlendi (octile heuristic önerilir).
+        </p>
       </fieldset>
 
       <fieldset class="space-y-2">
@@ -222,6 +242,9 @@ const softwareJsonLd = {
           <span class="inline-flex items-center gap-1.5">
             <span class="inline-block h-3 w-3 rounded-sm bg-amber-200 dark:bg-amber-700/60"></span> Açılan
           </span>
+          <span id="legend-jp" hidden class="inline-flex items-center gap-1.5">
+            <span class="inline-block h-3 w-3 rounded-sm ring-2 ring-fuchsia-500 ring-inset bg-sky-400 dark:bg-sky-500"></span> Jump point
+          </span>
           <span class="inline-flex items-center gap-1.5">
             <span class="inline-block h-3 w-3 rounded-sm border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900"></span> Boş
           </span>
@@ -259,9 +282,12 @@ const softwareJsonLd = {
 </BaseLayout>
 
 <script>
-  import { solveAStar, AStarError, type AStarHeuristic, type AStarConnectivity, type AStarResult } from '../../lib/astar';
+  import { solveAStar, AStarError, type AStarHeuristic, type AStarConnectivity } from '../../lib/astar';
+  import { solveJps, type JpsResult } from '../../lib/jps';
 
   const STORAGE_KEY = 'astar-state-v1';
+
+  type Algorithm = 'astar' | 'jps';
 
   interface Sample {
     grid: string;
@@ -270,6 +296,7 @@ const softwareJsonLd = {
     heuristic: AStarHeuristic;
     connectivity: AStarConnectivity;
     cornerCut: boolean;
+    algorithm?: Algorithm;
   }
   const SAMPLE_MAZE: Sample = {
     grid: [
@@ -366,6 +393,7 @@ const softwareJsonLd = {
     heuristic?: AStarHeuristic;
     connectivity?: AStarConnectivity;
     cornerCut?: boolean;
+    algorithm?: Algorithm;
   };
 
   function getHeuristic(): AStarHeuristic {
@@ -384,6 +412,29 @@ const softwareJsonLd = {
     const radio = form.querySelector<HTMLInputElement>(`input[name="connectivity"][value="${v}"]`);
     if (radio) radio.checked = true;
   }
+  function getAlgorithm(): Algorithm {
+    const v = form.querySelector<HTMLInputElement>('input[name="algorithm"]:checked')?.value;
+    return (v as Algorithm) ?? 'astar';
+  }
+  function setAlgorithm(v: Algorithm): void {
+    const radio = form.querySelector<HTMLInputElement>(`input[name="algorithm"][value="${v}"]`);
+    if (radio) radio.checked = true;
+  }
+  const jpsNote = $('jps-note');
+  const connRadios = Array.from(
+    form.querySelectorAll<HTMLInputElement>('input[name="connectivity"]'),
+  );
+  function applyAlgorithmUiState(): void {
+    const algo = getAlgorithm();
+    if (algo === 'jps') {
+      setConnectivity('8');
+      for (const r of connRadios) r.disabled = true;
+      jpsNote.hidden = false;
+    } else {
+      for (const r of connRadios) r.disabled = false;
+      jpsNote.hidden = true;
+    }
+  }
 
   function saveState(): void {
     try {
@@ -396,6 +447,7 @@ const softwareJsonLd = {
           heuristic: getHeuristic(),
           connectivity: getConnectivity(),
           cornerCut: cornerCut.checked,
+          algorithm: getAlgorithm(),
         } satisfies SavedState),
       );
     } catch {
@@ -422,6 +474,8 @@ const softwareJsonLd = {
       if (s.heuristic) setHeuristic(s.heuristic);
       if (s.connectivity) setConnectivity(s.connectivity);
       if (typeof s.cornerCut === 'boolean') cornerCut.checked = s.cornerCut;
+      if (s.algorithm === 'astar' || s.algorithm === 'jps') setAlgorithm(s.algorithm);
+      applyAlgorithmUiState();
     } catch {
       applySample(SAMPLE_MAZE);
     }
@@ -435,6 +489,8 @@ const softwareJsonLd = {
     setHeuristic(s.heuristic);
     setConnectivity(s.connectivity);
     cornerCut.checked = s.cornerCut;
+    setAlgorithm(s.algorithm ?? 'astar');
+    applyAlgorithmUiState();
     saveState();
     clearError();
     runSolve();
@@ -458,7 +514,12 @@ const softwareJsonLd = {
     errorBox.textContent = '';
   }
 
-  function renderGrid(result: AStarResult | null, rawGrid: string[]): void {
+  interface RenderResult {
+    path: { row: number; col: number }[];
+    expanded: { row: number; col: number }[];
+    jumpPoints?: { row: number; col: number }[];
+  }
+  function renderGrid(result: RenderResult | null, rawGrid: string[]): void {
     const rows = rawGrid.length;
     const cols = rows > 0 ? rawGrid[0].length : 0;
     if (rows === 0 || cols === 0) {
@@ -473,9 +534,13 @@ const softwareJsonLd = {
     /* Yol ve açılan hücreleri set'lere koy — O(1) bakış için. */
     const pathSet = new Set<number>();
     const expandedSet = new Set<number>();
+    const jpSet = new Set<number>();
     if (result) {
       for (const c of result.path) pathSet.add(c.row * cols + c.col);
       for (const e of result.expanded) expandedSet.add(e.row * cols + e.col);
+      if (result.jumpPoints) {
+        for (const j of result.jumpPoints) jpSet.add(j.row * cols + j.col);
+      }
     }
     const sR = Number(startRow.value);
     const sC = Number(startCol.value);
@@ -495,6 +560,7 @@ const softwareJsonLd = {
         const isGoal = idx === gIdx;
         const isPath = pathSet.has(idx) && !isStart && !isGoal;
         const isExp = expandedSet.has(idx) && !isPath && !isStart && !isGoal;
+        const isJp = jpSet.has(idx) && !isStart && !isGoal;
         const cell = document.createElement('button');
         cell.type = 'button';
         cell.dataset.row = String(r);
@@ -510,6 +576,7 @@ const softwareJsonLd = {
         else if (wall) cls += 'bg-slate-700 dark:bg-slate-300';
         else if (isExp) cls += 'bg-amber-200 dark:bg-amber-700/60';
         else cls += 'bg-white border border-slate-200 dark:bg-slate-900 dark:border-slate-700';
+        if (isJp) cls += ' ring-2 ring-fuchsia-500 ring-inset';
         cell.className = cls;
         frag.appendChild(cell);
       }
@@ -577,29 +644,62 @@ const softwareJsonLd = {
       return;
     }
     try {
-      const result = solveAStar({
-        grid,
-        start: { row: Number(startRow.value), col: Number(startCol.value) },
-        goal: { row: Number(goalRow.value), col: Number(goalCol.value) },
-        heuristic: getHeuristic(),
-        connectivity: getConnectivity(),
-        allowCornerCutting: cornerCut.checked,
-      });
-      renderGrid(result, grid);
-      if (result.reachable) {
-        resultCard.hidden = false;
-        unreachableCard.hidden = true;
-        pathCostEl.textContent = fmt(result.pathCost, 4);
-        resultMeta.textContent =
-          `${result.path.length - 1} adım · ${result.expandedCount} hücre açıldı · ` +
-          `başlangıç heuristic'i ${fmt(result.initialHeuristic, 3)} · ` +
-          `${result.heuristic} / ${result.connectivity}-bağlantı.`;
+      const algo = getAlgorithm();
+      const start = { row: Number(startRow.value), col: Number(startCol.value) };
+      const goal = { row: Number(goalRow.value), col: Number(goalCol.value) };
+      const jpLegend = $('legend-jp');
+      if (algo === 'jps') {
+        const result: JpsResult = solveJps({
+          grid,
+          start,
+          goal,
+          heuristic: getHeuristic(),
+          allowCornerCutting: cornerCut.checked,
+        });
+        renderGrid(result, grid);
+        jpLegend.hidden = false;
+        if (result.reachable) {
+          resultCard.hidden = false;
+          unreachableCard.hidden = true;
+          pathCostEl.textContent = fmt(result.pathCost, 4);
+          resultMeta.textContent =
+            `JPS · ${result.path.length - 1} adım · ${result.jumpPointCount} jump point · ` +
+            `${result.expandedCount} heap-pop · ` +
+            `başlangıç heuristic'i ${fmt(result.initialHeuristic, 3)} · ` +
+            `${result.heuristic} / 8-bağlantı.`;
+        } else {
+          resultCard.hidden = true;
+          unreachableCard.hidden = false;
+          unreachableMeta.textContent =
+            `${result.expandedCount} jump point tarandı; hedefe giden bir yol yok — ` +
+            `duvarları kontrol et ya da köşe kesme (corner-cutting) seçeneğini aç.`;
+        }
       } else {
-        resultCard.hidden = true;
-        unreachableCard.hidden = false;
-        unreachableMeta.textContent =
-          `${result.expandedCount} hücre açıldı; tüm erişilebilir alan tarandı. ` +
-          `Hedef hücreye giden bir yol yok — duvarları kontrol et ya da bağlantıyı 8'e çevir.`;
+        const result = solveAStar({
+          grid,
+          start,
+          goal,
+          heuristic: getHeuristic(),
+          connectivity: getConnectivity(),
+          allowCornerCutting: cornerCut.checked,
+        });
+        renderGrid(result, grid);
+        jpLegend.hidden = true;
+        if (result.reachable) {
+          resultCard.hidden = false;
+          unreachableCard.hidden = true;
+          pathCostEl.textContent = fmt(result.pathCost, 4);
+          resultMeta.textContent =
+            `A* · ${result.path.length - 1} adım · ${result.expandedCount} hücre açıldı · ` +
+            `başlangıç heuristic'i ${fmt(result.initialHeuristic, 3)} · ` +
+            `${result.heuristic} / ${result.connectivity}-bağlantı.`;
+        } else {
+          resultCard.hidden = true;
+          unreachableCard.hidden = false;
+          unreachableMeta.textContent =
+            `${result.expandedCount} hücre açıldı; tüm erişilebilir alan tarandı. ` +
+            `Hedef hücreye giden bir yol yok — duvarları kontrol et ya da bağlantıyı 8'e çevir.`;
+        }
       }
     } catch (err) {
       const msg = err instanceof AStarError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
@@ -625,6 +725,13 @@ const softwareJsonLd = {
   });
   form.querySelectorAll<HTMLInputElement>('input[name="heuristic"], input[name="connectivity"]').forEach((el) =>
     el.addEventListener('change', () => {
+      saveState();
+      runSolve();
+    }),
+  );
+  form.querySelectorAll<HTMLInputElement>('input[name="algorithm"]').forEach((el) =>
+    el.addEventListener('change', () => {
+      applyAlgorithmUiState();
       saveState();
       runSolve();
     }),

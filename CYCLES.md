@@ -5,6 +5,30 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 
 ---
 
+## DÖNGÜ #27 — 2026-07-03
+
+**Yapılan:** F-JPS — A* (A-yıldız) Izgara Yol Bulucu sayfasına ikinci algoritma olarak Jump Point Search (Harabor & Grastien, AAAI 2011) eklendi. Eş-maliyetli 8-bağlantı ızgaralarda A*'ın çapraz-kardinal simetrisini kırar; heap-pop sayısını dramatik biçimde düşürerek aynı optimum yolu bulur. F-LEMKE/F-SHORTEST-PATH/F-MST desenine uygun "iki algoritma, tek araç" yapısı.
+
+**Detay:**
+- `src/lib/jps.ts` (+455) — saf algoritma: `solveJps({grid, start, goal, heuristic?, allowCornerCutting?})`; `AStarCell`/`AStarHeuristic` tiplerini `astar.ts`'den yeniden kullanır, `AStarError`'ı ortak hata sınıfı yapar. `walkable` O(1) `Uint8Array` bit-lookup, `canDiagonalStep` corner-cutting A* semantiğiyle birebir eşleşir. `jump(parentR, parentC, dx, dy)`: iteratif yön-atlama, çapraz adımda `walkable` + `canDiagonalStep`, hedef algılama, zorunlu komşu (forced neighbor) kontrolü (çapraz: parent-tersi kardinal blocked + çaprazı açık — 2 kontrol; kardinal: yan kardinal blocked + karşı çaprazı açık — 2 kontrol), çapraz recursive: komponent kardinallerinden biri jump point bulursa burada dur. `prunedDirections(nodeR, nodeC, parentR, parentC)`: 8 komşuyu parent yönüne göre 3 (kardinal doğal) veya 5 (çapraz doğal 3 + zorunlu 2)'e düşürür; start düğümü tüm 8 yönü. Ana döngü A* iskeletiyle özdeş: `MinHeap` (f, h tie-break), `Float64Array gScore`, `Int32Array pred`, `Uint8Array closed`. Predecessor zincirinden jump point listesi kurulur, komşu jump point'ler arası tek yönde straight-line interpolasyon ile tam yol dolar. 80×80 hücre üst sınırı A* ile aynı.
+- `src/lib/jps.test.ts` (+290, **20 vitest**) — boş 8-bağlantı ızgarada JPS ile A* octile optimum kimliği (4·√2 + 5), 12×12 boş açık alan `expandedCount(JPS) ≤ expandedCount(A*)` + `jumpPointCount ≤ 3` (start + goal yeterli), aynı satırda tek jump point = hedef, çapraz hat üzerinde tek jump point + interpolasyon her adımda (i,i), tek duvar örneği optimum kimliği, kapalı hedef `reachable=false` + boş yol + Infinity maliyet, corner-cutting yasak/serbest 2×2 köşe kontrolü, bir komşu açıksa yasak modda yine çapraz izinli, engel-üstü jump point testi (5×7), 4 rastgele mini ızgara ile A* karşılaştırması (`pathCost` bitpari + `expandedCount ≤` monotonluk), 10×10 zorlu labirentte optimum + yol adımlarının 1 ya da (1,1) sınırlaması (kardinal/çapraz), yol rekonstrüksiyonu: `jumpPoints ⊂ path` + endpoint'ler dahil, tüm yol adımı 1-hop, `initialHeuristic = octile(dr, dc)` doğrulaması, validation: boş ızgara / dışında start / engel-üstü / start === goal / ragged satırlar.
+- `src/pages/araclar/a-star-grid-cozucu.astro` (+70/-10) — "Algoritma" fieldset (A* varsayılan / JPS radyo) + JPS seçildiğinde "bağlantı otomatik 8'e sabitlendi (octile heuristic önerilir)" sky-tonlu bildirim paneli + connectivity radyoları `disabled` moduna geçer + kayıtlı state (`algorithm` alanı) `localStorage`'a yazılır. `runSolve()` iki dala ayrılır: JPS için `solveJps` çağrısı, `RenderResult` arayüzü ortaklaştırıldı, `jumpPoints` fuşya `ring-2 ring-fuchsia-500 ring-inset` overlay ile vurgulanır, legend "Jump point" pill'i JPS modunda görünür olur. Result meta algoritma-spesifik metin döner (`"JPS · N adım · M jump point · K heap-pop · ..."` vs `"A* · N adım · M hücre açıldı · ..."`).
+- `src/data/tools.ts` (+2/-2) — tool başlığı `"A* (A-yıldız) & JPS Izgara Yol Bulucu"`, kısa başlık `"A* / JPS Yol Bulucu"`, description JPS'i vurgulayacak biçimde genişletildi.
+- `src/content/rehberler/a-star-grid-heuristik.mdx` (+45) — "JPS — Jump Point Search: A*'ın simetri kırma varyantı" bölümü: anahtar fikir + doğal/zorunlu/budanabilir komşular + `jump(dx,dy)` prosedürü + optimumluk gerekçesi + sınırlar (uniform-cost only) + aracımızda kullanım. Yeni FAQ item'ı (JPS ne zaman seçmeli).
+- `public/og/a-star-grid-cozucu.png` — `npm run og` ile başlık güncellemesi (81.5 KB); diğer 19 OG kartı byte-identical (deterministik render).
+
+**Tasarım notu:** A* ve JPS aynı `AStarCell` / `AStarHeuristic` tiplerini paylaşırken JPS `AStarError`'ı yeniden kullanarak tek hata sınıfı hattı sürdürür. `runSolve()` içinde `RenderResult` yapısı sadece `path` + `expanded` + opsiyonel `jumpPoints` içerdiği için render fonksiyonu iki algoritmayı ayrı bilmek zorunda değil. JPS modunda `connectivity` radyoları `disabled` — kayıt sırasında `input:disabled` state okuma sorununu önlemek için 8'e `setConnectivity`'yi radyoyu disable etmeden önce çağırıyoruz. Corner-cutting checkbox JPS modunda da aktif; `canDiagonalStep` A*'ın aynı davranışını üretir, sonuç kimliği doğrulanmış.
+
+**Kalite kapıları:** check ✓ (0 hata, 0 hint, **111 dosya**) · test ✓ (**558/558**, +20 yeni JPS testi, 29 dosya) · build ✓ (**60 sayfa**, 5.20s — aynı sayfa sayısı, sadece lib + script + rehber genişledi) · Lighthouse — mevcut A* sayfası birebir korundu, sadece +1 radyo grubu + fuşya halka overlay + ~55 script satırı; mobil yerleşim aynı Tailwind desenleriyle (`space-y-2` fieldset, `text-sm` label), ≥95 beklenir.
+
+**Yayın:** ⏳ PR açılacak.
+
+**İşaret:** yok (sırf 🟢 yeşil — mevcut aracı ikinci algoritma ile genişletti; F-LEMKE, F-SHORTEST-PATH ve F-MST'nin "iki algoritma, tek araç" desenini birebir tekrarlar).
+
+**Sıradaki:** Q-AUDIT-YAML (M efor, yaml-language-server zinciri, breaking-change riski) ya da yeni araç fikri. Backlog'da yeni araç item'ı kalmadı; keşif turu (ör. simplex tabloları, Hungarian algoritması varyantları, TSP metasezgisel) ya da mevcut araçların derinleşmesi bir sonraki döngüde gündem olacak.
+
+---
+
 ## DÖNGÜ #26 — 2026-06-28
 
 **Yapılan:** F-LEMKE — F-GAME-NASH Bimatris Nash Çözücü'ne ikinci algoritma olarak Lemke-Howson (1964) tamamlayıcı pivot algoritması eklendi. Support enumeration m + n ≤ 12 sınırının üzerine çıkar; tek denge yeterli olduğunda büyük oyunlarda hızlı sonuç verir. MST (Prim + Kruskal) ve Shortest Path (Dijkstra + Bellman-Ford) desenine uygun "iki algoritma, tek araç" yapısı.

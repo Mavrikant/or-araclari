@@ -36,6 +36,8 @@ faq:
     answer: "(1) Bellek — A* tüm açtığı düğümleri saklar; büyük durum uzaylarında bellek tükenebilir. IDA* (iterative deepening) ve SMA* (memory-bounded) alternatiftir. (2) Heuristic kalitesi — kötü heuristic A*'ı Dijkstra'ya yaklaştırır, hız avantajı kaybolur; heuristic tasarımı problemin kalbidir (pattern database, relaxation, deep learning ile öğrenilmiş heuristic aktif araştırma alanı). (3) Dinamik ortam — engeller hareket ediyorsa A* yeniden çalıştırılmalı; D*, D* Lite, LPA* inkremental varyantlar değişiklikleri tekrar başlatmadan günceller. (4) Çoklu ajan — standart A* tek başlangıç-tek hedef varsayar; Conflict-Based Search (CBS) gibi uzantılar gerekir. (5) Süreklilik — ızgara yaklaşık temsil; Theta*, Field D* gibi 'any-angle' varyantlar daha düzgün yol üretir."
   - question: "Bizim aracımız hangi varyantı uyguluyor?"
     answer: "Klasik (vanilla) A*: f = g + h önceliği ile min-heap, kapatılan düğümleri Uint8Array ile O(1) işaretler, predecessor'ı Int32Array ile saklar — O((V+E) log V) zaman, O(V) bellek. Tie-breaking heap'te (eşit f) h'ya göre yapılır; pratikte hedefe yakın düğümleri tercih ederek cephe dar tutulur. Maksimum ızgara 80×80 (= 6400 hücre). 8 bağlantıda corner-cutting yasak varsayılan; checkbox ile serbest. Heuristic seçimi kullanıcıda — 'zero' ile A*'ın Dijkstra'ya nasıl döndüğünü gözle görmek mümkün. Saf JS, WASM bağımlılığı yok — tüm hesaplama anlık ve tamamen tarayıcıda."
+  - question: "JPS (Jump Point Search) A*'tan neyle farklı, ne zaman seçmeli?"
+    answer: "JPS (Harabor & Grastien, AAAI 2011), eş-maliyetli 8-bağlantılı ızgaralarda A*'ın çapraz-kardinal simetrisini kırar: her adımda 8 komşuyu heap'e itmek yerine, verilen yönde 'jump point' bulunana kadar geniş adımlar atlar. Jump point yalnızca hedef, zorunlu komşulu (forced neighbor) hücre ya da (çapraz için) komponent kardinallerinden birinin jump point bulduğu hücredir. Optimum garanti A* ile aynıdır (octile heuristic admissible olduğu için). Büyük açık alanlarda 10× ve üzeri hızlanma tipiktir; dar labirentlerde fark azalır. Aracımızda 'Algoritma' blokundan JPS seçilebilir — bağlantı otomatik 8'e sabitlenir, jump point'ler yol üzerinde fuşya bir halka ile işaretlenir. 4-bağlantı seçtiysen JPS bir kazanç sağlamaz — A* aynı iş yapar."
 ---
 
 import { withBase } from '../../data/site';
@@ -223,6 +225,53 @@ simülasyonlar için checkbox ile serbest bırakılabilir.
   sayısı".
 - **Otomatik planlama (STRIPS, PDDL)**: hedef duruma giden minimum eylem
   dizisi. Modern planlayıcılar (FF, Fast Downward) hâlâ A* tabanlı.
+
+## JPS — Jump Point Search: A*'ın simetri kırma varyantı
+
+Boş ya da az engelli bir 8-bağlantılı ızgarada A*'ı çalıştırıp "Açılan"
+sayısına baktığında dikkat çekici bir şey görürsün: aynı yol maliyetine
+farklı çapraz-kardinal sıralarıyla ulaşan yüzlerce eşdeğer düğüm
+açılıyor — kısacası **simetri**. **JPS (Jump Point Search)** (Harabor &
+Grastien, AAAI 2011), tam olarak bu simetriyi tanıyıp geniş adımlar
+atlar. Sonuç: aynı optimum yol, çok daha az heap-pop.
+
+**Anahtar fikir.** JPS, parent → child yönünden gelirken komşuları üç
+kategoriye ayırır:
+
+- **Doğal (natural) komşular** — o yönün "devamı". Örneğin sağa
+  yürüyorsan yalnızca sağdaki hücre doğal.
+- **Zorunlu (forced) komşular** — bir engel nedeniyle yolun sapmak
+  zorunda olduğu, aksi hâlde ihmal edilebilecek komşular. Örneğin sağa
+  yürüyor ve tam üstünde engel varsa, sağ-üst çapraz "zorunlu" olur:
+  oraya A*'ta başka türlü ulaşılamaz.
+- **Budanabilir (pruned) komşular** — parent üzerinden zaten daha kısa
+  ya da eşdeğer erişilebildiği için atlanır.
+
+**`jump(dx, dy)`.** Verilen yönde yürüyerek durup heap'e konacak bir
+**jump point** bulunana kadar ilerler: hedefe, zorunlu komşulu bir
+hücreye, ya da (çapraz hareketse) komponent kardinal yönlerden birinin
+jump point bulmasına kadar. Duvara ya da ızgara dışına düşerse `null`.
+Bu prosedür, A*'ın "ilerledikçe her adımda 8 komşu"yu heap'e ittiği
+kalıbı, "yalnızca ilginç noktaları ekle" kalıbına dönüştürür.
+
+**Optimumluk.** Zorunlu-komşu tanımı, budanan komşuları A*'ın açması
+gerektiği en kısa yola başka bir yol üzerinden de ulaşacağını garanti
+eder. Octile heuristic admissible olduğundan JPS aynı optimum maliyeti
+bulur — sadece daha az düğümle. Küçük labirentlerde ve dar
+koridorlarda A* ile jump point sayıları benzer olabilir; büyük açık
+alanlarda 10× ve üzeri hızlanma tipiktir.
+
+**Sınırlar.** JPS, eş-maliyetli (uniform-cost) 8-bağlantılı ızgaralar
+için tanımlıdır. Ağırlıklı hücrelerde (farklı zemin maliyetleri) klasik
+JPS bozulur; ağırlıklı varyant için Weighted JPS ve JPS+ araştırılır.
+4-bağlantı kullanmıyorsan JPS'i seçmenin bir anlamı yok — zorunlu komşu
+kavramı boşalır ve A* aynı işi yapar. Corner-cutting kuralı A* ile
+aynıdır: yasak modda çapraz iki duvar arasından geçemez.
+
+**Aracımızda.** "Algoritma" bloğundan **JPS**'i seç — bağlantı
+otomatik olarak 8'e sabitlenir, jump point'ler yol üzerinde fuşya bir
+halka ile işaretlenir. Açık alan örneğinde A*'a göre heap-pop sayısının
+düşüşünü doğrudan göreceksin.
 
 ## Aracı kullanırken pratik notlar
 
