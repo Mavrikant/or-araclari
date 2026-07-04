@@ -16,8 +16,7 @@ Durum: open · in-progress · blocked · done
 | id | başlık | tür | değer | efor | durum |
 |---|---|---|---|---|---|
 | Q-CI-CHECK | CI workflow'una `npm run check` + `npm run test` adımları ekle (şu an sadece `astro build` çalışıyor) — 🔴 KIRMIZI: workflow değişikliği insan onayı ister | infra | H | S | blocked |
-| Q-AUDIT-YAML | `npm audit` kalan 5 moderate zafiyet `yaml-language-server → volar-service-yaml → @astrojs/language-server → @astrojs/check` zincirinde; fix `--force` (breaking) ister — Astro/check uyumluluğunu doğrulayarak yükselt | chore | M | M | open |
-| Q-AUDIT-ESBUILD | `npm audit` 4 high `esbuild ≤ 0.28.0` zincirinde (esbuild → vite → astro → @astrojs/mdx); fix `--force` Astro 2.4.5'e downgrade ister, breaking-change. Astro 7.x'e yükselterek esbuild ≥ 0.28.1 ile uyumluluğu kontrol et — 🔴 KIRMIZI: major Astro upgrade insan onayı ister | chore | H | L | blocked |
+| Q-AUDIT-ESBUILD | `npm audit` kalan 3 low zafiyet `esbuild ≤ 0.28.0 → astro → @astrojs/mdx` zincirinde; fix `--force` **Astro 7.0.6** major upgrade ister — 🔴 KIRMIZI: major Astro upgrade insan onayı ister (Astro 6 → 7 breaking changes: content collections API, integration API) | chore | M | L | blocked |
 
 ## Yeni Araç Fikirleri (sıra dışı, fırsat olursa)
 
@@ -30,6 +29,7 @@ Durum: open · in-progress · blocked · done
 
 | id | başlık | döngü |
 |---|---|---|
+| Q-AUDIT-YAML | `npm audit fix` (no `--force`) ile vite 7.3.2 → 7.3.6 + yaml-language-server zinciri güncellendi; 2× high + 5× moderate kapandı (8 → 3 low). package.json değişmedi | #28 |
 | Q-TYPECHECK | `npm run check` 4 TypeScript hatasını gider | #1 |
 | Q-README-LP | README "Faz 5" LP notu güncellendi, Faz 6 satırı eklendi | #2 |
 | Q-UNUSED | 3 kullanılmayan değişken/tip (`Schedule`, `ys`, `slackPanel`) temizlendi | #3 |

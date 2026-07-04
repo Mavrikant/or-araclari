@@ -4,6 +4,20 @@ Kırılan her şey: belirti, kök neden, düzeltme, önlem.
 
 ---
 
+## 2026-07-03 — Deploy run 28641032194 (döngü #27 docs commit) `actions/deploy-pages@v5` geçici hatası
+
+**Belirti:** `docs(ajan): döngü #27 kaydı — JPS PR #60 yayınlandı (#61)` push'unun Deploy to GitHub Pages workflow'u "Deploy" adımında `##[error]Deployment failed, try again later.` verdi (build + upload adımları yeşildi). Öncesindeki JPS deploy'u (28640962494) ve sonrasındaki audit-fix deploy'u (28641176649) sağlıklı; aynı içerik (75ab079 SHA'sı sonraki push'la etkin oldu).
+
+**Kök neden:** GitHub Pages tarafında geçici bir dağıtım kesintisi; artifact başarıyla yüklendi, deployment API zaman aşımı verdi. Kod, workflow ya da içerik sorunu değil.
+
+**Düzeltme:** Bir sonraki push (döngü #28, `chore(deps): npm audit fix`, 2bb19f6) aynı içeriği + lock güncellemesini birlikte deploy etti; canlı taze.
+
+**Önlem:**
+- Deploy fail olduğunda önce `gh run view <id> --log-failed` çıkarımı: hata `actions/deploy-pages` içindeyse (bizim iş adımı değil) → geçici Pages hatası varsay, `gh workflow run "Deploy to GitHub Pages" --ref main` ile yeniden tetikle.
+- Docs-only commit'lerde deploy hatası kritik değil; bir sonraki içerik push'u tarafından örtülür. Kayıt için yeter.
+
+---
+
 ## 2026-06-19 — Döngü #22 docs PR'ı (PR #51) merge edilmeden conflict'e düştü; cycle #22 kaydı CYCLES.md'de eksik kaldı
 
 **Belirti:** Döngü #24 başlangıcında `gh pr list --state open` PR #51'i `cycle/22-log` dalında DIRTY/CONFLICTING gösterdi. CYCLES.md tarama: #23, #21, #20 var; **#22 yok**. Yani döngü #22 (F-SHORTEST-PATH) F-MST'den önce yayınlanmış ama docs kaydı PR olarak açılıp merge edilmemiş, ardından döngü #23 ayrı bir docs PR'ı (#53) ile main'e ekleme yaptığı için #51 conflict'e düşmüştü.
