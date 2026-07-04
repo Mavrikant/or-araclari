@@ -5,6 +5,29 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 
 ---
 
+## DÖNGÜ #28 — 2026-07-03
+
+**Yapılan:** Q-AUDIT güvenlik hijyeni — `npm audit fix` (no `--force`) ile transitive bağımlılık zaafiyetleri **8 (1 low / 5 moderate / 2 high) → 3 low**'a indirildi. `package.json` değişmedi, yalnızca `package-lock.json`.
+
+**Detay:**
+- `vite 7.3.2 → 7.3.6` — 2× high kapandı: `launch-editor` NTLMv2 hash disclosure (Windows), `server.fs.deny` bypass (Windows).
+- `yaml-language-server / volar-service-yaml / @astrojs/language-server` zinciri güncellendi — 5× moderate kapandı: `yaml` stack-overflow DoS (GHSA-48c2-rrv3-qjmp), `js-yaml` merge-key quadratic (GHSA-h67p-54hq-rp68). Backlog Q-AUDIT-YAML `--force` gerekir sanıyordu; güncel npm audit `--force`-siz fix'i çıkardı — item düştü.
+- Kalan **3 low** sadece `esbuild ≤ 0.28.0 → astro 7.0.6` major upgrade (`--force`) ile giderilir; 🔴 KIRMIZI (backlog Q-AUDIT-ESBUILD), insan onayı bekler.
+
+**Tasarım notu:** Bu bir üretim koduna dokunmayan tarama-güncellemesi; ürün davranışı değişmedi. Lock-only değişiklik olduğu için Lighthouse yeniden ölçülmedi.
+
+**Kalite kapıları:** check ✓ (0 hata, 0 warning, 0 hint, 111 dosya) · test ✓ (**558/558**, 29 dosya) · build ✓ (**60 sayfa**, 5.21s) · Lighthouse — kod değişikliği yok, ölçüm gereksiz.
+
+**Yayın:** PR [#62](https://github.com/Mavrikant/or-araclari/pull/62) squash-merge edildi (2bb19f6). Deploy run 28641176649 → completed/success (9s deploy job). Canlı: <https://karaman.dev/or-araclari/>.
+
+**İşaret:** 🟡 SARI — yaklaşık 30 transitive dev-tooling paketi güncellendi (astro/language-server 2.16.7 → 2.16.11 vb., volar-service-yaml 0.0.70 → 0.0.71, prettier 3.3.1 → 3.3.2 dahil). Hepsi patch/minor; `astro check` + tüm test + build yeşil. Direkt bağımlılık yükseltmesi (package.json) yok.
+
+**Sıradaki:** Backlog'da açık 🟢 yeşil iş kalmadı (Q-AUDIT-ESBUILD, Q-CI-CHECK 🔴 blocked). Yeni araç fikri turu ya da mevcut araçların derinleşmesi bir sonraki döngüde gündemde. Bu döngü **DUR koşulu §8/6'ya** yaklaşıyor — yeni araç fikri üretilecek.
+
+**Ekstra (INCIDENTS):** Deploy run 28641032194 (döngü #27 CYCLES.md commit'i, 75ab079) `actions/deploy-pages@v5` adımında `Deployment failed, try again later` verdi — geçici GitHub Pages hatası; bir sonraki push (bu döngünün 2bb19f6'sı) sağlıklı deploy oldu, aynı içerik canlıya çıktı. Kod ya da workflow sorunu değil.
+
+---
+
 ## DÖNGÜ #27 — 2026-07-03
 
 **Yapılan:** F-JPS — A* (A-yıldız) Izgara Yol Bulucu sayfasına ikinci algoritma olarak Jump Point Search (Harabor & Grastien, AAAI 2011) eklendi. Eş-maliyetli 8-bağlantı ızgaralarda A*'ın çapraz-kardinal simetrisini kırar; heap-pop sayısını dramatik biçimde düşürerek aynı optimum yolu bulur. F-LEMKE/F-SHORTEST-PATH/F-MST desenine uygun "iki algoritma, tek araç" yapısı.
