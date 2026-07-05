@@ -1,0 +1,296 @@
+---
+title: "PERT / CPM: Kritik Yol, Slack ve Proje Süresi"
+description: "Aktivite ağında ileri ve geri pas ile ES, EF, LS, LF ve slack hesaplamak: CPM'in matematiği, PERT'in üç-tahmin varyansı, kritik yolun anlamı ve Gantt yorumu. Sayısal örneklerle."
+pubDate: 2026-07-05
+relatedTool: "pert-cpm-kritik-yol"
+keywords:
+  - "kritik yol"
+  - "CPM"
+  - "PERT"
+  - "proje yönetimi"
+  - "aktivite ağı"
+  - "ileri pas"
+  - "geri pas"
+  - "slack"
+  - "float"
+  - "Gantt"
+  - "topolojik sıralama"
+readingMinutes: 12
+faq:
+  - question: "CPM ile PERT arasında pratik fark ne?"
+    answer: "CPM (Critical Path Method) ve PERT (Program Evaluation and Review Technique) neredeyse aynı anda (1957 DuPont, 1958 ABD Donanması Polaris) doğdu ve modern kullanımda çoğu zaman ayırt edilmez. Klasik fark şudur: CPM aktivite sürelerini tek bir kesin değer (deterministik) alır ve maliyet-süre ödünleşimine odaklanır (crash cost). PERT süreleri belirsiz kabul eder — her aktiviteye iyimser (a), en olası (m), kötümser (b) üç tahmin verilir, beklenen süre te = (a + 4m + b) / 6 ve varyans σ² = ((b − a) / 6)² Beta yaklaşımıyla hesaplanır. Kritik yol ve slack hesabı ise iki yöntemde de aynı ileri/geri pas algoritmasıdır. Aracımız CPM formunda tek süre alır; belirsizlik istiyorsanız her aktiviteye PERT'in te'sini girip aynı algoritmayı çalıştırırsınız."
+  - question: "Kritik yol tam olarak nedir, neden 'kritik'?"
+    answer: "Kritik yol projenin başlangıcından bitişine giden ve toplam süresi maksimum olan aktivite dizisidir. Bu dizideki her aktivitenin slack'i (bolluğu) sıfırdır — yani gecikmesine izin yoktur. 'Kritik' kelimesi buradan gelir: bir kritik aktivite bir gün gecikirse proje süresi bir gün uzar, doğrudan. Kritik olmayan aktivitelerin slack'i kadar oynama alanı vardır; slack tükenmedikçe proje bitişi etkilenmez. Bir projede birden fazla kritik yol olabilir (eş uzunluklu). Aracımız bunlardan bir tanesini vurgular; tablodaki 'slack = 0' satırlar tüm kritik aktivitelerdir. Yönetici gözünden ders: kaynakları önce kritik yol üzerinde koru; kritik olmayanı öncelikle sıkıştırmaya değmez."
+  - question: "İleri pas (forward pass) ve geri pas (backward pass) ne yapar?"
+    answer: "İleri pas her aktivitenin en erken başlama (ES) ve en erken bitiş (EF) zamanlarını topolojik sırayla hesaplar. ES(a) = max ES/EF öncellerin — yani aktivite ancak tüm öncelleri bittikten sonra başlayabilir. EF(a) = ES(a) + duration(a). Proje süresi = max EF. Geri pas ise en geç bitiş (LF) ve en geç başlama (LS) zamanlarını topolojik sıranın tersinden hesaplar; her aktivite proje süresini aşmadan olabildiğince geç başlar. LF(a) = min LS/LF ardıllarının; ardılı yoksa LF = proje süresi. LS(a) = LF(a) − duration(a). Slack(a) = LS(a) − ES(a) = LF(a) − EF(a); ikisi de aynı sayıyı verir. Slack sıfırsa aktivite kritiktir."
+  - question: "Slack (bolluk) türleri: toplam slack, serbest slack, arayüz slack?"
+    answer: "Aracımız 'toplam slack' (total float) hesaplar: bir aktivitenin proje süresini uzatmadan geciktirilebileceği maksimum süre. Literatürde başka türler de vardır: (1) Serbest slack (free float) = min ES(ardılları) − EF(a): kendinden sonra gelen aktivitelerin ES'ini geciktirmeden gecikebileceği süre. Serbest slack ≤ toplam slack. Bir aktivite serbest slack kadar geciktirilebilir ve hiçbir başka aktivitenin planı bozulmaz. (2) Arayüz slack = toplam slack − serbest slack; bu aktivitenin gecikmesi ardıllarda tolerans yaratıp yaratmadığını gösterir. (3) Bağımsız slack: hem öncellerin en geç bitişini hem de ardılların en erken başlamasını dikkate alan en katı ölçü. Pratik projede toplam slack yeterli — hangi aktiviteyi acele etmek gerektiğini gösterir."
+  - question: "PERT'in üç-tahmin formülü nasıl kullanılır?"
+    answer: "PERT her aktiviteye üç süre tahmini ister — a (iyimser, en hızlı gerçekçi), m (en olası, mod), b (kötümser, en yavaş gerçekçi). Beta dağılımı yaklaşımıyla beklenen süre te = (a + 4m + b) / 6 ve varyans σ² = ((b − a) / 6)². Kritik yolu bulmak için her aktivitede te değerini kullanıp CPM algoritmasını çalıştırırsınız. Proje süresinin varyansı ise sadece kritik yol üzerindeki aktivitelerin varyanslarının toplamıdır (Merkezi Limit Teoremi ile normal yaklaşımı): σ²_proje = Σ σ²_i. 'Projeyi T gününde bitirme olasılığı' Z = (T − te_proje) / σ_proje standart normal skoruyla hesaplanır. Uyarı: bu Merkezi Limit varsayımı bağımsız aktiviteler ve tek kritik yol gerektirir; iki eş uzunluklu kritik yol varsa varyans olduğundan büyük tahmin edilir."
+  - question: "Aktivite ağı DAG olmalı — döngü olursa ne olur?"
+    answer: "CPM/PERT aktivite ağının yönlü çevrimsiz graf (Directed Acyclic Graph — DAG) olmasını zorunlu kılar. Döngü olursa 'A → B → A' gibi bir bağımlılık zinciri anlamlı değildir: A B'yi bekliyor, B A'yı bekliyor — kimse başlayamaz. Aracımız topolojik sıralamayı Kahn's algorithm ile yapar (giriş dereceli düğümleri sıraya alır); topolojik sıra oluşamıyorsa 'aktivite ağında döngü tespit edildi' hatası verir. Pratik hataların çoğu 'öncelim şu aktivite değil ardılım' karışıklığıdır — B → A yazmak istediğimizde A'nın önceli olarak B'yi listelemek yerine B'nin önceli olarak A yazılırsa döngü doğar. Aktivite ID'lerinin öncellerdeki geçtiği yer 'kendisinden önce bitmiş olması gereken' anlamındadır."
+  - question: "Gantt çizelgesindeki hafif renk barı neyi gösteriyor?"
+    answer: "Aracımızın Gantt çizelgesinde her kritik olmayan aktivite iki katmanlı çizilir: renkli iç bar aktivitenin en erken başlama (ES) ile en erken bitiş (EF) arasındaki 'baseline plan' — yani bugünkü en agresif plan — ve gri hafif bar EF ile LF arasındaki 'slack koridoru'. Bu koridor kadar aktivite geciktirilse proje süresi değişmez. Kritik aktivitelerde slack = 0 olduğu için gri bar yoktur; bar emerald renkte kritik yol vurgusuyla çizilir. Yöneticiler bu görsele bakarak 'hangi aktivitenin gerçek zaman baskısı altında olduğunu' ve 'hangisinde nefes payı bulunduğunu' bir bakışta ayırt edebilir."
+  - question: "Kaynak çakışması ve kaynak dengelemesi (resource leveling) CPM'de var mı?"
+    answer: "Saf CPM/PERT sadece öncelik bağımlılıklarını modeller; iki aktivite aynı zamanda aynı ekibi kullanamıyor olabilir ama algoritma bunu bilmez. Aracımız da bu saf modeli izler — kaynak kısıtları girdi değildir. İki tamamlayıcı teknik gerekir: (1) Kaynak dengelemesi — kritik olmayan aktiviteleri slack'leri içinde kaydırıp kaynak talebini düzleştirme; proje süresi değişmez. (2) Kaynak sınırlı çizelgeleme (RCPSP) — kaynak yetersizse aktiviteler geciktirilir ve proje süresi uzar; problem NP-zordur. Pratik ipucu: önce CPM ile kritik yolu bulun, sonra kritik olmayanları slack'leri içinde kaydırıp çakışmayı çözün; kritik yol bozulmadıkça proje bitişi güvende."
+  - question: "Aktiviteler süre 0 olabilir mi (dummy activity, kilometre taşı)?"
+    answer: "Evet — süre 0 aktivitesi CPM'de tamamen geçerlidir ve iki amaç için kullanılır. (1) Milestone (kilometre taşı): bir proje kilometre taşı — 'test aşaması başladı', 'tedarik onayı geldi' — süresi olmayan bir olaydır ama takvimde işaretlenmesi gerekir. Duration = 0, önceller olayı tetikleyen aktiviteler. (2) Dummy activity: klasik AoA (Activity-on-Arrow) diyagramlarında iki aktivitenin ortak öncelini modellemek için sanal 0-süreli oklar kullanılır. Aracımız AoN (Activity-on-Node) modelini izler — dummy aktivitelere ihtiyaç yoktur çünkü öncel listesi doğrudan verilir. Süre 0 aktivitesinin ES = EF olur; slack normal hesaplanır; kritik yolda geçebilir ve o yolun tam bir bileşenidir."
+---
+
+import { withBase } from '../../data/site';
+
+Proje yönetiminin en klasik iki tekniği — **CPM** (Critical Path Method) ve
+**PERT** (Program Evaluation and Review Technique) — aynı çekirdek fikri
+paylaşır: **öncelikli bağımlılıkları olan aktivitelerden oluşan bir ağda
+projenin ne kadar süreceğini ve hangi aktivitelerin gecikmeye tolerans
+tanımadığını hesaplamak.** Bu rehberde ileri ve geri pas algoritmasını,
+slack (bolluk) kavramını, PERT'in üç-tahmin varyansını ve Gantt yorumunu
+sayısal örneklerle inceliyoruz.
+
+## Tarihçe — DuPont fabrikası ve Polaris programı
+
+1957'de kimya devi **DuPont**, fabrika bakım kapatmalarını planlarken
+tek bir kaynağa (bakım personeli) ihtiyaç duyan onlarca birbirine
+bağımlı aktiviteyi ne sırayla yürüteceğini soruyordu. Morgan Walker ve
+James Kelley bunu **Critical Path Method** olarak formüle etti. Aynı
+yıllarda ABD Donanması, **Polaris denizaltı balistik füze programı**nda
+binlerce alt yüklenicinin süresi belirsiz aktivitelerini koordine etmek
+zorundaydı. Willard Fazar ve Booz Allen ekibi **PERT**'i geliştirdi;
+belirsizliği üç tahminle modelledi. İki yöntem hızla birleşti — modern
+proje yönetimi yazılımları (MS Project, Primavera, Asana, Linear,
+Jira'nın timeline görünümleri) aynı ileri/geri pas algoritmasını
+altta çalıştırır.
+
+## Aktivite ağı — DAG modeli
+
+Bir proje ağı **yönlü çevrimsiz graf (DAG)** olarak modellenir. İki
+gösterim vardır:
+
+- **AoN (Activity-on-Node):** düğümler aktiviteler, oklar bağımlılıklar.
+  Modern yazılımların standardıdır. Bizim aracımız da AoN'dur.
+- **AoA (Activity-on-Arrow):** oklar aktiviteler, düğümler olaylar.
+  Bazı klasik ders kitaplarında hâlâ görülür; süresi 0 "dummy" oklar
+  gerektirir.
+
+Her aktivite $i$ için üç bilgi vardır:
+
+- **Süre** $d_i$ — aktivitenin tamamlanması için gereken zaman.
+- **Önceller** $P_i$ — bu aktivite başlamadan önce bitmesi gereken
+  aktivitelerin ID kümesi.
+- **ID / etiket** — insan-okur kimliği.
+
+Ardıllar (successors) girdi olarak verilmez; önceller listesinden
+otomatik çıkarılır.
+
+## İleri pas — en erken başlama ve bitiş
+
+**Topolojik sıra** aktivitelerin öncellerinin kendisinden önce gelmesini
+garanti eden bir sıralamadır. Kahn's algorithm'i giriş derecesi 0 olan
+düğümlerden başlar ve her düğüm çıkarıldığında ardıllarının derecesini
+azaltır. Döngü varsa hepsi çıkarılamaz — hata verilir.
+
+Topolojik sırada her aktivite için:
+
+$$
+\mathrm{ES}(i) = \begin{cases}
+0, & P_i = \emptyset \\
+\max_{p \in P_i} \mathrm{EF}(p), & P_i \neq \emptyset
+\end{cases}
+$$
+
+$$
+\mathrm{EF}(i) = \mathrm{ES}(i) + d_i
+$$
+
+Proje süresi:
+
+$$
+T = \max_{i} \mathrm{EF}(i)
+$$
+
+Sezgi: bir aktivite ancak *tüm* öncelleri bittiğinde başlayabilir —
+en yavaş öncel darboğazdır (max).
+
+## Geri pas — en geç başlama ve bitiş
+
+Aynı topolojik sıra **ters yönde** yürütülür. Her aktivite için:
+
+$$
+\mathrm{LF}(i) = \begin{cases}
+T, & S_i = \emptyset \\
+\min_{s \in S_i} \mathrm{LS}(s), & S_i \neq \emptyset
+\end{cases}
+$$
+
+$$
+\mathrm{LS}(i) = \mathrm{LF}(i) - d_i
+$$
+
+Burada $S_i$, $i$'nin ardıllarıdır. Sezgi: bir aktivite en geç, tüm
+ardıllarının başlaması gereken zamandan kendi süresi kadar önce
+bitmelidir — en aceleci ardıl kısıttır (min).
+
+## Slack — bolluk ve kritik yol
+
+Her aktivite için **toplam slack** (total float):
+
+$$
+\mathrm{slack}(i) = \mathrm{LS}(i) - \mathrm{ES}(i) = \mathrm{LF}(i) - \mathrm{EF}(i)
+$$
+
+Bu iki fark daima eşittir; $\mathrm{LS} - \mathrm{ES} = (\mathrm{LF} - d) - (\mathrm{EF} - d) = \mathrm{LF} - \mathrm{EF}$.
+
+**Slack $= 0$ olan aktivite kritiktir.** Kritik aktivitelerin oluşturduğu
+zincire **kritik yol** denir. Bu yolda gecikmeye tolerans yoktur; bir
+aktivite bir birim gecikirse proje süresi bir birim uzar. Slack $> 0$
+olan aktiviteler bu bolluk içinde kaydırılabilir — proje süresi
+değişmez.
+
+Birden fazla kritik yol olabilir (eş uzunluklu). Aracımız
+"soldan-yukarıdan" gelen bir kritik yolu vurgular; tablodaki tüm
+`slack = 0` satırlar toplam kritik yol kümesini oluşturur.
+
+## Sayısal örnek — 6 aktivite
+
+Aracımızın örnek verisi altı aktiviteli klasik proje şablonudur:
+
+| ID | Etiket | Süre | Önceller |
+|---|---|---|---|
+| A | Tasarım | 3 | — |
+| B | Yazılım | 5 | A |
+| C | Donanım | 4 | A |
+| D | Test | 2 | B, C |
+| E | Eğitim | 3 | B |
+| F | Devreye alma | 1 | D, E |
+
+**İleri pas.** Topolojik sıra A, B, C, E, D, F (veya A, C, B, E, D, F —
+eşdeğer).
+
+- A: ES=0, EF=3.
+- B: ES=max(EF(A))=3, EF=3+5=8.
+- C: ES=3, EF=3+4=7.
+- E: ES=8, EF=8+3=11.
+- D: ES=max(8, 7)=8, EF=8+2=10.
+- F: ES=max(10, 11)=11, EF=11+1=12.
+
+Proje süresi $T = 12$.
+
+**Geri pas.**
+
+- F: LF=12, LS=12−1=11.
+- E: LF=min(LS(F))=11, LS=11−3=8.
+- D: LF=11, LS=11−2=9.
+- C: LF=min(LS(D))=9, LS=9−4=5.
+- B: LF=min(LS(D), LS(E))=min(9, 8)=8, LS=8−5=3.
+- A: LF=min(LS(B), LS(C))=min(3, 5)=3, LS=3−3=0.
+
+**Slack tablosu.**
+
+| ID | ES | EF | LS | LF | Slack | Kritik? |
+|---|---|---|---|---|---|---|
+| A | 0 | 3 | 0 | 3 | **0** | ✓ |
+| B | 3 | 8 | 3 | 8 | **0** | ✓ |
+| C | 3 | 7 | 5 | 9 | 2 | — |
+| D | 8 | 10 | 9 | 11 | 1 | — |
+| E | 8 | 11 | 8 | 11 | **0** | ✓ |
+| F | 11 | 12 | 11 | 12 | **0** | ✓ |
+
+**Kritik yol:** A → B → E → F, toplam süre 3+5+3+1 = **12** ✓.
+
+C ve D birleşik zinciri (A → C → D → F) toplamı 3+4+2+1 = 10; kritik
+yoldan 2 birim kısa. C'nin slack'i 2, D'nin slack'i 1 — bu bolluk
+proje süresini uzatmadan kaydırılabilir. Ama dikkat: **C ve D
+paylaşılan slack**tir — C 2 birim geciktirilirse D'nin slack'i tükenir.
+Toplam slack aynı zincirdeki aktivitelerde ortaktır.
+
+## PERT — belirsizlik altında süre
+
+PERT her aktiviteye tek süre değil, **üç** süre tahmini ister:
+
+- $a$: iyimser — her şey planlandığı gibi giderse en hızlı süre
+- $m$: en olası — deneyimden gelen modal tahmin
+- $b$: kötümser — makul aksiliklerle en yavaş süre
+
+Beta dağılımı yaklaşımıyla:
+
+$$
+t_e = \frac{a + 4m + b}{6}, \qquad \sigma^2 = \left(\frac{b - a}{6}\right)^2
+$$
+
+CPM algoritmasına $t_e$ giriyor. Proje süresinin varyansı sadece kritik
+yol üzerindeki varyansların toplamıdır:
+
+$$
+\sigma^2_{\text{proje}} = \sum_{i \in \text{kritik yol}} \sigma^2_i
+$$
+
+Merkezi Limit Teoremi'ne göre proje süresi yaklaşık normaldir
+$\mathcal{N}(T, \sigma^2_{\text{proje}})$. Projeyi belirli bir hedef
+tarih $T_{\text{hedef}}$'e kadar bitirme olasılığı:
+
+$$
+P(T_{\text{proje}} \leq T_{\text{hedef}}) = \Phi\!\left(\frac{T_{\text{hedef}} - T}{\sigma_{\text{proje}}}\right)
+$$
+
+Aracımız tek süre değeri alır. Belirsizlik istiyorsanız her aktiviteye
+$t_e$'yi hesaplayıp girin; $\sigma^2$'yi elle toplayıp normal
+yaklaşımıyla olasılığı bulun.
+
+**Uyarı.** PERT'in normal yaklaşımı iki varsayıma dayanır: (1)
+aktiviteler bağımsız (paylaşılan kaynak yok), (2) tek dominant kritik
+yol var. İki eş uzunluklu kritik yol varsa gerçek varyans hesaplananın
+altında, gerçek "hedef tarihte bitirme" olasılığı da düşüktür — model
+iyimserlik yönünde saparlı.
+
+## Gantt çizelgesi ve slack koridoru
+
+Aracımızın Gantt çizelgesi her aktiviteyi iki katmanlı çizer:
+
+- **Renkli iç bar** ES ile EF arasında — en agresif plan (proje bugün
+  başlarsa aktivite ne zaman biter).
+- **Gri hafif bar** EF ile LF arasında — slack koridoru. Aktivite bu
+  koridor içinde kaydırılabilir, proje süresi değişmez.
+
+Kritik aktivitelerde slack = 0 olduğu için gri koridor yoktur; bar
+emerald renkte kritik yol vurgusuyla çizilir. Bu görsel, yönetici
+gözünden "hangi aktivitede zaman baskısı gerçek, hangisinde nefes payı
+var" sorusunu bir bakışta yanıtlar.
+
+## Kaynak dengelemesi ve CPM'in sınırları
+
+Saf CPM/PERT sadece **öncelik** bağımlılıklarını modeller. Aynı ekibin
+iki aktivitede paralel çalışamaması gibi **kaynak çakışması** kısıtları
+model dışıdır. Pratikte iki tamamlayıcı teknik gerekir:
+
+1. **Kaynak dengelemesi (resource leveling).** Kritik olmayan
+   aktiviteleri slack'leri içinde kaydırıp kaynak talebini düzleştirmek.
+   Proje süresi değişmez; kaynak profili iyileşir.
+2. **Kaynak sınırlı çizelgeleme (RCPSP).** Kaynak yetersizse aktiviteler
+   geciktirilmek zorunda kalınırsa proje süresi uzar. Bu problem
+   NP-zordur; heuristikler (priority rules, tabu search) ya da
+   MIP formülasyonu gerekir.
+
+Basit "ekibim çakışıyor" senaryosu için: önce CPM ile kritik yolu bulun,
+sonra kritik olmayan aktiviteleri slack'lerine göre geriye/ileriye
+kaydırıp çakışmayı çözün. Kritik yolu bozmadıkça proje süresi güvende.
+
+## Aracımızın matematik özeti
+
+<a href={withBase('/araclar/pert-cpm-kritik-yol')}>PERT / CPM
+Kritik Yol Analizci</a> tarayıcıda saf JavaScript'te çalışır:
+
+- **Doğrulama** — ID benzersizliği, süre ≥ 0, öncellerin var oluşu,
+  öz-öncel (self-loop) yasağı.
+- **Topolojik sıralama** — Kahn's algorithm; döngü varsa hata.
+- **İleri pas** — ES/EF, projesüresi.
+- **Geri pas** — LF/LS.
+- **Slack ve kritik yol** — slack = LS − ES; sıfır slack'li aktiviteler
+  kritik. Kritik olmayan öncelli kritik aktiviteden başlayarak kritik
+  ardıllara zincirle yürünür.
+- **Sonuç** — aktivite tablosu (renkli slack sütunu), proje süresi,
+  Gantt (iç bar EF, gri koridor LF).
+
+Örnek verisi ile "Örnek doldur" butonuna basıp çıktıyı görebilirsiniz.
+Aktivite listesi `localStorage` içinde saklanır; sekmeyi kapatıp
+açtığınızda projeniz yerinde durur. Bu sürümde maksimum 100 aktivite
+desteklenir — anlık tepki için.

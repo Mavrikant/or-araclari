@@ -29,6 +29,7 @@ Durum: open · in-progress · blocked · done
 
 | id | başlık | döngü |
 |---|---|---|
+| Q-PERT-REHBER | PERT/CPM aracının eksik uzun-form Türkçe rehberi yazıldı (`pert-cpm-kritik-yol.mdx`, ~12 dk, 9 FAQ JSON-LD, ileri/geri pas + PERT üç-tahmin + slack türleri + Gantt slack koridoru); `tools.ts`'ye `guideSlug` bağlandı. HARD CONSTRAINT eksiği kapandı — artık tüm 26 aracın rehberi var | #29 |
 | Q-AUDIT-YAML | `npm audit fix` (no `--force`) ile vite 7.3.2 → 7.3.6 + yaml-language-server zinciri güncellendi; 2× high + 5× moderate kapandı (8 → 3 low). package.json değişmedi | #28 |
 | Q-TYPECHECK | `npm run check` 4 TypeScript hatasını gider | #1 |
 | Q-README-LP | README "Faz 5" LP notu güncellendi, Faz 6 satırı eklendi | #2 |
