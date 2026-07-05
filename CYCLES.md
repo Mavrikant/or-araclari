@@ -5,6 +5,26 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 
 ---
 
+## DÖNGÜ #29 — 2026-07-05
+
+**Yapılan:** Q-PERT-REHBER — PERT/CPM Kritik Yol Analizci aracının eksik uzun-form Türkçe rehberi yazıldı ve araç kaydına bağlandı. HARD CONSTRAINT (§1: "Her aracın yanında uzun-form Türkçe rehber içeriği bulunur") eksiği kapandı; artık site üzerindeki tüm 26 aracın rehberi mevcut.
+
+**Detay:**
+- `src/content/rehberler/pert-cpm-kritik-yol.mdx` (+253) — ~12 dk Türkçe rehber. Bölümler: (1) Tarihçe (DuPont 1957 + Polaris programı Fazar/Booz Allen 1958), (2) Aktivite ağı DAG modeli (AoN vs AoA), (3) İleri pas (Kahn topolojik sıra + ES/EF formülleri), (4) Geri pas (LS/LF), (5) Slack ve kritik yol tanımı (LS − ES = LF − EF eşitliği), (6) Sayısal örnek — aracın 6-aktivite örnek verisi (A → B → E → F kritik yolu = 12 birim, C ve D 2 ve 1 slack), (7) PERT üç-tahmin ($t_e = (a + 4m + b)/6$, Beta varyansı, Merkezi Limit ile Φ olasılığı), (8) Gantt slack koridoru (renkli iç bar EF, gri bar LF), (9) Kaynak dengelemesi ve RCPSP sınırları, (10) Aracın matematik özeti. **9 FAQ JSON-LD** (FAQPage rich result): CPM vs PERT farkı, kritik yolun anlamı, ileri/geri pas mekaniği, slack türleri (toplam/serbest/arayüz/bağımsız), PERT üç-tahmin uygulaması, DAG döngü hatası, Gantt gri koridor anlamı, kaynak dengelemesi RCPSP, süre 0 aktivitesi (milestone/dummy). Formüller KaTeX ile render, tablolar Markdown.
+- `src/data/tools.ts` (+1) — PERT/CPM tool kaydına `guideSlug: 'pert-cpm-kritik-yol'` eklendi. Araç sayfası zaten `guideHref` conditional pattern kullanıyor; guideSlug bağlanınca hero'da "Rehbere git →" linki + sayfanın altında "Konuyu derinleştir" kartı otomatik görünür oldu (kod değişikliği gerektirmedi).
+
+**Tasarım notu:** İlk yazımda FAQ #8 answer 800 char sınırını aştı (kaynak dengelemesi + RCPSP açıklaması); `astro check` içerik şemasından yakaladı. Kısaltarak korundu (yaklaşık 200 char kaydırıldı) — teknik detay korundu, pratik ipucu tek cümlede toplandı. Bu, Steiner rehberinde de yaşandı (döngü #26'nın Lemke rehberinde FAQ sıkıştırması); şablonun katı sınırı, ajanı özlü yazmaya zorluyor — özellik olarak iyi. Rehber içeriği kod-referanslı: `solveCpm` algoritma özeti aracın kaynağıyla birebir eşleşiyor (Kahn topo sıra, ileri/geri pas, `Math.abs(slack) < 1e-9` critical eşiği). Tarayıcıda 4 sekmeye kadar açık kalırsa `localStorage` state korunumu güvence altında (araç zaten yapıyor; rehber sadece raporluyor).
+
+**Kalite kapıları:** check ✓ (0 hata, 0 warning, 0 hint, **111 dosya**) · test ✓ (**558/558**, 29 dosya — algoritma değişmedi, yeni test gerekmedi) · build ✓ (**61 sayfa**, 5.41s — 60 → 61: yeni `/rehberler/pert-cpm-kritik-yol/index.html` sayfası) · Lighthouse — rehber sayfası mevcut MDX-tabanlı rehberlerle aynı `BaseLayout` + `Container` desenini izliyor (KaTeX + `remark-math` mevcut kurulumla, ek bağımlılık yok); mobil yerleşim aynı Tailwind desenleriyle, ≥95 beklenir.
+
+**Yayın:** PR açılacak · squash-merge sonrası Pages Deploy workflow'u çalışacak · canlı: <https://karaman.dev/or-araclari/rehberler/pert-cpm-kritik-yol>.
+
+**İşaret:** yok (sırf 🟢 yeşil — HARD CONSTRAINT eksiğinin kapatılması, tamamen içerik + tek satır tools.ts güncellemesi; kod/algoritma değişmedi, yeni bağımlılık yok).
+
+**Sıradaki:** Backlog'da açık 🟢 yeşil iş kalmadı (Q-CI-CHECK, Q-AUDIT-ESBUILD 🔴 blocked). Bir sonraki döngüde yeni araç fikri turu gündemde — güçlü adaylar: Wagner-Whitin dinamik lot boyutlandırma (envanter kategorisi, EOQ/EPQ ailesinin doğal DP uzantısı) · Newsvendor tek dönem stok modeli · Simulated Annealing / 2-opt animasyonu TSP aracına (ikinci algoritma deseni F-JPS/F-LEMKE gibi) · Simplex tableau adım-adım gösterici (LP aracına eğitici uzantı). Öncelik değerlendirmesi ve backlog'a kayıt bir sonraki döngüde.
+
+---
+
 ## DÖNGÜ #28 — 2026-07-03
 
 **Yapılan:** Q-AUDIT güvenlik hijyeni — `npm audit fix` (no `--force`) ile transitive bağımlılık zaafiyetleri **8 (1 low / 5 moderate / 2 high) → 3 low**'a indirildi. `package.json` değişmedi, yalnızca `package-lock.json`.
