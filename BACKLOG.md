@@ -22,6 +22,10 @@ Durum: open · in-progress · blocked · done
 
 | id | başlık | tür | değer | efor | durum |
 |---|---|---|---|---|---|
+| F-CDS-NEH | Johnson aracına m ≥ 4 makina için CDS (Campbell-Dudek-Smith 1970) + NEH (Nawaz-Enscore-Ham 1983) ikinci algoritma paneli — JPS'i A*'a eklediğim desenle, mevcut Gantt görselleştirmesi + U/V panelinin üzerine | feature | M | M | open |
+| F-ROP | Emniyet Stoğu / Yeniden Sipariş Noktası (ROP) hesaplayıcı — normal talep + tedarik süresi, servis seviyesi α → z, ROP = μL + zσL; EOQ + Newsvendor + Wagner-Whitin ile envanter dörtlüsünü tamamlar | feature | M | S | open |
+| F-BIN-PACKING | Bin Packing Sezgisel Çözücü — First-Fit-Decreasing + Best-Fit-Decreasing + Next-Fit, LP alt sınırı, kutu görselleştirme, Vazirani ders kitabı 1.5-yaklaşım analizi | feature | M | M | open |
+| F-INVENTORY-COMPARE | "Hangi envanter modeli ne zaman?" karar rehberi — EOQ / EPQ / Newsvendor / Wagner-Whitin / ROP dörtlü-beşlisini karşılaştıran meta rehber (yeni araç değil, cross-linked içerik) | content | M | S | open |
 
 ---
 
@@ -29,6 +33,7 @@ Durum: open · in-progress · blocked · done
 
 | id | başlık | döngü |
 |---|---|---|
+| F-JOHNSON | Johnson Kuralı 2/3 Makina Akış-Tipi Çizelgeleme Çözücü — F₂ ‖ Cmax için 1954 kapalı-form kuralı (U = { α ≤ β } α artan, V = { α > β } β azalan, sıra U + V); F₃ için Johnson-Bellman indirgemesi `min p₁ ≥ max p₂` VEYA `min p₃ ≥ max p₂` sağlanınca optimum, sağlanmazsa sezgisel (UI etikette exact/heuristic); iki-tarafın komşu-değiştirme kanıtı `min(a_i, b_j) ≤ min(a_j, b_i)` rehberde; Gantt SVG (M1/M2/M3 + Cmax dikey çizgi), U/V grup tablosu, M2 boş süresi ambar renkte; iki hazır örnek (Taha 5-iş F2, 3-makina koşul-sağlanan); +28 vitest (Taha Cmax=28 hand-verified, 12 seed brute-force birebir, invariantlar) + ~12 dk uzun-form Türkçe rehber (flow-shop/job-shop farkı, ikili-değiştirme ispatı, m ≥ 4 CDS/NEH/Palmer literatürü, Bellman/Nash/1954 tarih bağlamı, 9 FAQ) | #32 |
 | F-WAGNER-WHITIN | Wagner-Whitin Dinamik Lot Boyutlandırma Çözücü — çok-dönemli deterministik + zaman-değişken talep, kurulum ve taşıma maliyetleri altında forward DP O(T²); Zero Inventory Ordering ile ardışık lot bloklarına indirgeme; zaman-değişken K_t/h_t/c_t desteği; blok maliyeti kümülatif taşıma katsayısıyla; Silver-Meal (1973) sezgiseli aynı API ile karşılaştırma; iki hazır örnek (Nahmias 10-dönem, 6-dönem küçük) + localStorage state; +27 vitest (hand-verified 3-dönem, ZIO invariant, 5-period exhaustive 2^4 optimallik, WW ≤ Silver-Meal dominance) + ~12 dk uzun-form Türkçe rehber (ZIO ispat sezgisi, ileri DP formülasyonu, Nahmias sayısal, Silver-Meal/LUC/PPB/POQ/LFL karşılaştırma, rolling horizon + MRP nervousness, kapasiteli/multi-item/stokastik sınırlar, 9 FAQ) | #31 |
 | F-NEWSVENDOR | Newsvendor (Tek-Dönem Envanter) Çözücü — critical fractile F(Q*) = Cu/(Cu+Co) kapalı-form, normal + üniform talep, direct (Cu/Co) veya priced (p, c, s, g) maliyet modu, Beasley-Springer-Moro Φ⁻¹ + Abramowitz-Stegun Φ + standart normal kayıp L(z), E[eksik] · Cu + E[fazla] · Co + toplam U-eğrisi + Q\* dikey çizgi; servis seviyesi (Type I) + fill rate (Type II) + beklenen kâr; iki hazır örnek + localStorage state; +35 vitest + ~12 dk uzun-form Türkçe rehber (marjinal analiz türetimi, z-tablosu, sezonluk bot ucundan-uca örnek, EOQ karşılaştırması, yaygın 5 hata, Edgeworth → Arrow-Harris-Marschak tarihi + risk-averse/distribution-free uzantılar, 9 FAQ) | #30 |
 | Q-PERT-REHBER | PERT/CPM aracının eksik uzun-form Türkçe rehberi yazıldı (`pert-cpm-kritik-yol.mdx`, ~12 dk, 9 FAQ JSON-LD, ileri/geri pas + PERT üç-tahmin + slack türleri + Gantt slack koridoru); `tools.ts`'ye `guideSlug` bağlandı. HARD CONSTRAINT eksiği kapandı — artık tüm 26 aracın rehberi var | #29 |
