@@ -1,0 +1,489 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import { withBase, SITE } from '../../data/site';
+import { TOOLS } from '../../data/tools';
+
+const tool = TOOLS.find((t) => t.slug === 'wagner-whitin-cozucu')!;
+const guideHref = tool.guideSlug ? withBase(`/rehberler/${tool.guideSlug}`) : null;
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: tool.title,
+  applicationCategory: 'WebApplication',
+  operatingSystem: 'Any',
+  description: tool.description,
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'TRY' },
+  inLanguage: SITE.locale,
+  isAccessibleForFree: true,
+};
+---
+
+<BaseLayout
+  title={tool.title}
+  description={tool.description}
+  image={withBase(`/og/${tool.slug}.png`)}
+  imageAlt={`${tool.title} — OR Araçları`}
+>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+  </Fragment>
+
+  <Container as="section" size="wide" class="pt-12 sm:pt-16">
+    <p class="text-sm font-medium text-brand-600 dark:text-accent-400">
+      <a href={withBase('/araclar')} class="hover:underline">Araçlar</a>
+      <span class="text-slate-400 dark:text-slate-600"> / </span>
+      <span>Envanter & Tedarik</span>
+    </p>
+    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">
+      {tool.title}
+    </h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
+      Zamana bağlı değişken talep, kurulum ve taşıma maliyetleri altında
+      optimum üretim/sipariş çizelgesini Wagner-Whitin 1958 ileri dinamik
+      programlaması ile tarayıcıda anlık çöz. Silver-Meal sezgiseliyle
+      karşılaştırma otomatik.
+      {guideHref && (
+        <a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>
+      )}
+    </p>
+  </Container>
+
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,360px)_1fr] print:block">
+    <form id="ww-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="sample1-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Nahmias 10-dönem
+        </button>
+        <button type="button" id="sample2-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          6-dönem küçük örnek
+        </button>
+        <button type="button" id="reset-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+          Sıfırla
+        </button>
+      </div>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Talep serisi
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            d₁, d₂, … d_T <span class="text-slate-400">(virgül veya boşluk ile ayır)</span>
+          </span>
+          <textarea id="demand-input" rows="2" required placeholder="10, 62, 12, 130, 154, 129, 88, 52, 124, 160"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"></textarea>
+          <span class="mt-1 block text-[11px] text-slate-500 dark:text-slate-400" id="demand-info">0 dönem · toplam 0</span>
+        </label>
+      </fieldset>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Maliyetler
+        </legend>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Kurulum maliyeti K <span class="text-slate-400">(₺/sipariş; tek sayı ya da dönem başına virgüllü liste)</span>
+          </span>
+          <input type="text" id="setup-input" inputmode="decimal" required placeholder="100"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Taşıma maliyeti h <span class="text-slate-400">(₺/birim/dönem; sabit ya da liste)</span>
+          </span>
+          <input type="text" id="hold-input" inputmode="decimal" required placeholder="1"
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+            Birim üretim maliyeti c <span class="text-slate-400">(opsiyonel; boş = 0)</span>
+          </span>
+          <input type="text" id="unit-input" inputmode="decimal" placeholder=""
+            class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+      </fieldset>
+
+      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">
+        Çöz
+      </button>
+
+      <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
+    </form>
+
+    <section id="output" hidden aria-live="polite" class="space-y-6">
+      <div class="rounded-2xl border border-emerald-300 bg-emerald-50 p-5 dark:border-emerald-800/60 dark:bg-emerald-950/30">
+        <p class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+          Toplam maliyet (Wagner-Whitin optimum)
+        </p>
+        <p id="total-cost" class="mt-1 font-display text-4xl font-bold text-emerald-900 dark:text-emerald-100"></p>
+        <p id="setup-summary" class="mt-1 text-xs text-emerald-800 dark:text-emerald-300"></p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Kurulum</div>
+          <div id="m-setup" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Taşıma</div>
+          <div id="m-hold" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Üretim</div>
+          <div id="m-unit" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Silver-Meal karş.</div>
+          <div id="m-sm" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Lot yapısı
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Her yeşil blok bir üretim/sipariş lotudur; blok başındaki dönemde
+          kurulum yapılır ve blok içindeki tüm talep tek seferde karşılanır.
+        </p>
+        <div id="lot-strip" class="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40"></div>
+      </div>
+
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Lot çizelgesi
+        </h2>
+        <div id="lot-table" class="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800"></div>
+      </div>
+
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Dönem defteri
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Zero Inventory Ordering (ZIO): üretim yalnızca elde stok sıfır iken yapılır.
+        </p>
+        <div id="period-table" class="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800"></div>
+      </div>
+    </section>
+  </Container>
+
+  {guideHref && (
+    <Container as="section" size="wide" class="py-12 sm:py-16">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900/40">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">
+          Konuyu derinleştir
+        </p>
+        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          Wagner-Whitin ve dinamik lot boyutlandırma
+        </h2>
+        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+          Değişken talep altında sabit sipariş miktarı fikrinin neden yetersiz
+          kaldığı, Zero Inventory Ordering ilkesi, ileri DP formülasyonu ve
+          Silver-Meal / LUC sezgisellerinin ne zaman yanıldığı üzerine kapsamlı
+          Türkçe rehber.
+        </p>
+        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">
+          Rehberi oku →
+        </a>
+      </div>
+    </Container>
+  )}
+</BaseLayout>
+
+<script>
+  import { solveWagnerWhitin, solveSilverMeal, WagnerWhitinError } from '../../lib/wagner-whitin';
+
+  const STORAGE_KEY = 'wagner-whitin-state-v1';
+
+  interface SampleState {
+    demands: string;
+    setup: string;
+    holding: string;
+    unit: string;
+  }
+  const SAMPLE_1: SampleState = {
+    demands: '10, 62, 12, 130, 154, 129, 88, 52, 124, 160',
+    setup: '100',
+    holding: '1',
+    unit: '',
+  };
+  const SAMPLE_2: SampleState = {
+    demands: '30, 40, 50, 20, 60, 45',
+    setup: '80',
+    holding: '1',
+    unit: '',
+  };
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el as T;
+  };
+
+  function escapeHtml(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function fmt(n: number, decimals = 2): string {
+    if (!Number.isFinite(n)) return String(n);
+    if (Math.abs(n - Math.round(n)) < 1e-9) return String(Math.round(n));
+    return n.toFixed(decimals).replace(/\.?0+$/, '');
+  }
+  function fmtMoney(n: number): string {
+    return `₺${fmt(n, 2)}`;
+  }
+
+  function parseNumberList(raw: string): number[] {
+    return raw
+      .split(/[,;\s]+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+      .map((s) => Number(s));
+  }
+
+  const form = $<HTMLFormElement>('ww-form');
+  const dInput = $<HTMLTextAreaElement>('demand-input');
+  const kInput = $<HTMLInputElement>('setup-input');
+  const hInput = $<HTMLInputElement>('hold-input');
+  const cInput = $<HTMLInputElement>('unit-input');
+  const dInfo = $('demand-info');
+  const sample1Btn = $('sample1-btn');
+  const sample2Btn = $('sample2-btn');
+  const resetBtn = $('reset-btn');
+  const errorBox = $('error-box');
+  const output = $('output');
+  const totalCost = $('total-cost');
+  const setupSummary = $('setup-summary');
+  const mSetup = $('m-setup');
+  const mHold = $('m-hold');
+  const mUnit = $('m-unit');
+  const mSm = $('m-sm');
+  const lotStrip = $('lot-strip');
+  const lotTable = $('lot-table');
+  const periodTable = $('period-table');
+
+  function loadState(): void {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const s = JSON.parse(raw) as Partial<SampleState>;
+      if (typeof s.demands === 'string') dInput.value = s.demands;
+      if (typeof s.setup === 'string') kInput.value = s.setup;
+      if (typeof s.holding === 'string') hInput.value = s.holding;
+      if (typeof s.unit === 'string') cInput.value = s.unit;
+    } catch {
+      /* ignore */
+    }
+  }
+  function saveState(): void {
+    try {
+      const s: SampleState = { demands: dInput.value, setup: kInput.value, holding: hInput.value, unit: cInput.value };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function refreshDemandInfo(): void {
+    const nums = parseNumberList(dInput.value).filter((n) => Number.isFinite(n));
+    const total = nums.reduce((a, n) => a + n, 0);
+    dInfo.textContent = `${nums.length} dönem · toplam talep ${fmt(total, 2)}`;
+  }
+
+  loadState();
+  refreshDemandInfo();
+
+  function clearError(): void {
+    errorBox.hidden = true;
+    errorBox.textContent = '';
+  }
+  function showError(msg: string): void {
+    errorBox.textContent = msg;
+    errorBox.hidden = false;
+    output.hidden = true;
+  }
+
+  function parseCostField(raw: string, name: string, T: number): number | number[] {
+    const trimmed = raw.trim();
+    if (trimmed.length === 0) throw new WagnerWhitinError(`${name} boş olamaz.`);
+    const nums = parseNumberList(trimmed);
+    if (nums.length === 0 || nums.some((n) => !Number.isFinite(n))) {
+      throw new WagnerWhitinError(`${name} geçerli sayı(lar) içermeli.`);
+    }
+    if (nums.length === 1) return nums[0];
+    if (nums.length !== T) {
+      throw new WagnerWhitinError(`${name} tek sayı ya da ${T} elemanlı bir liste olmalı (${nums.length} verildi).`);
+    }
+    return nums;
+  }
+
+  function renderLotStrip(result: ReturnType<typeof solveWagnerWhitin>): void {
+    const T = result.periods.length;
+    const cellW = Math.max(28, Math.min(60, 720 / T));
+    const W = Math.max(360, cellW * T + 40);
+    const rowH = 44;
+    const H = rowH + 28;
+    const PL = 20;
+    const PT = 8;
+    const sx = (t: number) => PL + (t - 1) * cellW;
+
+    const lotBars = result.lots
+      .map((l) => {
+        const x = sx(l.startPeriod);
+        const w = cellW * (l.endPeriod - l.startPeriod + 1);
+        const label = `Q=${fmt(l.quantity, 1)}`;
+        return `<g>
+          <rect x="${x + 2}" y="${PT}" width="${w - 4}" height="${rowH - 12}" rx="4" class="fill-emerald-500/85 dark:fill-emerald-400/70" />
+          <text x="${x + w / 2}" y="${PT + (rowH - 12) / 2 + 4}" text-anchor="middle" class="fill-white text-[11px] font-semibold" pointer-events="none">${escapeHtml(label)}</text>
+          <circle cx="${x + cellW / 2}" cy="${PT + (rowH - 12) / 2}" r="4" class="fill-white stroke-emerald-800" stroke-width="1.5" />
+        </g>`;
+      })
+      .join('');
+
+    const ticks = Array.from({ length: T }, (_, i) => {
+      const t = i + 1;
+      const cx = sx(t) + cellW / 2;
+      return `<text x="${cx}" y="${rowH + 8}" text-anchor="middle" class="fill-slate-500 text-[10px] dark:fill-slate-400">${t}</text>
+        <text x="${cx}" y="${rowH + 20}" text-anchor="middle" class="fill-slate-400 text-[9px] tabular-nums dark:fill-slate-500">d=${fmt(result.periods[i].demand, 0)}</text>`;
+    }).join('');
+
+    const grid = Array.from({ length: T + 1 }, (_, i) => {
+      const x = PL + i * cellW;
+      return `<line x1="${x}" y1="${PT}" x2="${x}" y2="${rowH - 4}" class="stroke-slate-200 dark:stroke-slate-800" stroke-width="1" />`;
+    }).join('');
+
+    lotStrip.innerHTML = `<svg viewBox="0 0 ${W} ${H}" class="block w-full h-auto" role="img" aria-label="Lot yapısı çubuğu">
+      ${grid}
+      ${lotBars}
+      ${ticks}
+    </svg>`;
+  }
+
+  function renderLotTable(result: ReturnType<typeof solveWagnerWhitin>): void {
+    const hasUnit = result.totalUnitCost > 1e-9;
+    const rows = result.lots
+      .map(
+        (l, i) => `<tr class="border-t border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900/40">
+          <td class="px-3 py-2 font-mono text-xs font-semibold text-emerald-700 dark:text-emerald-300">${i + 1}</td>
+          <td class="px-3 py-2 text-sm text-slate-900 dark:text-slate-100">Dönem ${l.startPeriod}${l.endPeriod > l.startPeriod ? `–${l.endPeriod}` : ''}</td>
+          <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-900 dark:text-slate-100">${fmt(l.quantity, 2)}</td>
+          <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-700 dark:text-slate-300">${fmtMoney(l.setupCost)}</td>
+          <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-700 dark:text-slate-300">${fmtMoney(l.holdingCost)}</td>
+          ${hasUnit ? `<td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-700 dark:text-slate-300">${fmtMoney(l.unitCost)}</td>` : ''}
+          <td class="px-3 py-2 text-right font-mono text-xs tabular-nums font-semibold text-slate-900 dark:text-slate-100">${fmtMoney(l.totalCost)}</td>
+        </tr>`,
+      )
+      .join('');
+    lotTable.innerHTML = `<table class="w-full"><thead><tr class="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+        <th class="px-3 py-2">#</th>
+        <th class="px-3 py-2">Kapsanan dönem</th>
+        <th class="px-3 py-2 text-right">Miktar</th>
+        <th class="px-3 py-2 text-right">Kurulum</th>
+        <th class="px-3 py-2 text-right">Taşıma</th>
+        ${hasUnit ? '<th class="px-3 py-2 text-right">Üretim</th>' : ''}
+        <th class="px-3 py-2 text-right">Toplam</th>
+      </tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  function renderPeriodTable(result: ReturnType<typeof solveWagnerWhitin>): void {
+    const rows = result.periods
+      .map(
+        (p) => `<tr class="${p.isSetup ? 'bg-emerald-50 dark:bg-emerald-950/20' : 'bg-white dark:bg-slate-900/40'} border-t border-slate-100 dark:border-slate-800">
+          <td class="px-3 py-2 font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">${p.period}</td>
+          <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-900 dark:text-slate-100">${fmt(p.demand, 2)}</td>
+          <td class="px-3 py-2 text-right font-mono text-xs tabular-nums ${p.isSetup ? 'font-semibold text-emerald-700 dark:text-emerald-300' : 'text-slate-500 dark:text-slate-500'}">${p.produce > 0 ? fmt(p.produce, 2) : '—'}</td>
+          <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-700 dark:text-slate-300">${fmt(p.endingInventory, 2)}</td>
+          <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-700 dark:text-slate-300">${fmtMoney(p.holdingChargedHere)}</td>
+          <td class="px-3 py-2 text-center text-xs">${p.isSetup ? '<span class="rounded bg-emerald-200 px-1.5 py-0.5 font-semibold text-emerald-900 dark:bg-emerald-800 dark:text-emerald-100">kurulum</span>' : ''}</td>
+        </tr>`,
+      )
+      .join('');
+    periodTable.innerHTML = `<table class="w-full"><thead><tr class="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+        <th class="px-3 py-2">t</th>
+        <th class="px-3 py-2 text-right">Talep d</th>
+        <th class="px-3 py-2 text-right">Üretim</th>
+        <th class="px-3 py-2 text-right">Stok sonu</th>
+        <th class="px-3 py-2 text-right">Taşıma</th>
+        <th></th>
+      </tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clearError();
+    saveState();
+    try {
+      const demands = parseNumberList(dInput.value);
+      if (demands.length === 0) throw new WagnerWhitinError('Talep serisi boş olamaz.');
+      const T = demands.length;
+      const setupCost = parseCostField(kInput.value, 'Kurulum maliyeti', T);
+      const holdingCost = parseCostField(hInput.value, 'Taşıma maliyeti', T);
+      const unitRaw = cInput.value.trim();
+      const input = {
+        demands,
+        setupCost,
+        holdingCost,
+        ...(unitRaw.length > 0 ? { unitCost: parseCostField(unitRaw, 'Birim üretim maliyeti', T) } : {}),
+      };
+      const ww = solveWagnerWhitin(input);
+      const sm = solveSilverMeal(input);
+
+      totalCost.textContent = fmtMoney(ww.totalCost);
+      const gap = sm.totalCost - ww.totalCost;
+      const gapPct = ww.totalCost > 0 ? (gap / ww.totalCost) * 100 : 0;
+      setupSummary.textContent = `${ww.setupCount} kurulum · ${T} dönem · toplam üretim ${fmt(ww.periods.reduce((a, p) => a + p.produce, 0), 2)} birim`;
+
+      mSetup.textContent = fmtMoney(ww.totalSetupCost);
+      mHold.textContent = fmtMoney(ww.totalHoldingCost);
+      mUnit.textContent = ww.totalUnitCost > 1e-9 ? fmtMoney(ww.totalUnitCost) : '—';
+      mSm.textContent = gap < 1e-9
+        ? 'aynı'
+        : `+${fmtMoney(gap)} (%${fmt(gapPct, 1)})`;
+
+      renderLotStrip(ww);
+      renderLotTable(ww);
+      renderPeriodTable(ww);
+
+      output.hidden = false;
+      output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      const msg = err instanceof WagnerWhitinError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
+      showError(msg);
+    }
+  });
+
+  [dInput, kInput, hInput, cInput].forEach((el) => {
+    el.addEventListener('input', () => {
+      saveState();
+      if (el === dInput) refreshDemandInfo();
+    });
+  });
+
+  function applySample(s: SampleState): void {
+    dInput.value = s.demands;
+    kInput.value = s.setup;
+    hInput.value = s.holding;
+    cInput.value = s.unit;
+    saveState();
+    refreshDemandInfo();
+    clearError();
+  }
+  sample1Btn.addEventListener('click', () => applySample(SAMPLE_1));
+  sample2Btn.addEventListener('click', () => applySample(SAMPLE_2));
+
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('Form sıfırlanacak. Devam edilsin mi?')) return;
+    form.reset();
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    output.hidden = true;
+    clearError();
+    refreshDemandInfo();
+  });
+</script>
