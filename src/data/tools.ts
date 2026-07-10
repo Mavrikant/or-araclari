@@ -309,6 +309,16 @@ export const TOOLS: readonly Tool[] = [
     guideSlug: 'wagner-whitin-dinamik-lot',
   },
   {
+    slug: 'bin-packing-cozucu',
+    title: 'Bin Packing (Kutu Paketleme) Çözücü',
+    shortTitle: 'Bin Packing',
+    description:
+      'n adet ögenin boyutunu ve kutu kapasitesini gir; Next Fit, First Fit, First Fit Decreasing, Best Fit ve Best Fit Decreasing sezgiselleri en az kutuyla paketlesin. L₁ = ⌈Σsᵢ/B⌉ hacim ve L₂ = |sᵢ > B/2| büyük öge alt sınırlarıyla çözümün optimuma yakınlığı raporlanır; kutu içeriği renkli SVG bloklarında görselleştirilir. NP-zor problemin klasik yaklaşım analizi (FFD 11/9·OPT, FF 17/10·OPT) rehberde.',
+    category: 'kombinatoryel',
+    status: 'ready',
+    guideSlug: 'bin-packing-sezgiselleri',
+  },
+  {
     slug: 'rop-emniyet-stogu',
     title: 'Yeniden Sipariş Noktası & Emniyet Stoğu (ROP · SS)',
     shortTitle: 'ROP / Emniyet Stoğu',

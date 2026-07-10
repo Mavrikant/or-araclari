@@ -1,0 +1,409 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import { withBase, SITE } from '../../data/site';
+import { TOOLS } from '../../data/tools';
+
+const tool = TOOLS.find((t) => t.slug === 'bin-packing-cozucu')!;
+const guideHref = tool.guideSlug ? withBase(`/rehberler/${tool.guideSlug}`) : null;
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: tool.title,
+  applicationCategory: 'WebApplication',
+  operatingSystem: 'Any',
+  description: tool.description,
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'TRY' },
+  inLanguage: SITE.locale,
+  isAccessibleForFree: true,
+};
+---
+
+<BaseLayout
+  title={tool.title}
+  description={tool.description}
+  image={withBase(`/og/${tool.slug}.png`)}
+  imageAlt={`${tool.title} — OR Araçları`}
+>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+  </Fragment>
+
+  <Container as="section" size="wide" class="pt-12 sm:pt-16">
+    <p class="text-sm font-medium text-brand-600 dark:text-accent-400">
+      <a href={withBase('/araclar')} class="hover:underline">Araçlar</a>
+      <span class="text-slate-400 dark:text-slate-600"> / </span>
+      <span>Kombinatoryel</span>
+    </p>
+    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">{tool.title}</h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
+      Öge boyutlarını ve kutu kapasitesini gir; Next Fit, First Fit, First Fit
+      Decreasing, Best Fit ve Best Fit Decreasing sezgiselleri en az kutuyla
+      paketlesin. L₁ hacim ve L₂ büyük öge alt sınırlarıyla çözümün optimuma
+      ne kadar yakın olduğunu gör.
+      {guideHref && (<a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>)}
+    </p>
+  </Container>
+
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,360px)_1fr]">
+    <form id="bp-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40" novalidate>
+      <fieldset class="space-y-3">
+        <div class="flex items-center justify-between">
+          <label for="items" class="block font-display text-sm font-semibold text-slate-900 dark:text-white">Ögeler</label>
+          <span id="item-count" class="text-xs text-slate-500 dark:text-slate-400" aria-live="polite">0 öge</span>
+        </div>
+        <textarea id="items" name="items" rows="10" required autocomplete="off" spellcheck="false"
+          class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+          placeholder="Her satıra bir öge. İki biçim kabul edilir:&#10;  1) sadece boyut  → örn. 6&#10;  2) ad<TAB>boyut → örn. Sandık A	6&#10;Türkçe ondalık (0,7) desteklenir."></textarea>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" data-sample="johnson" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">Johnson klasik</button>
+          <button type="button" data-sample="hard" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">Zor instans</button>
+          <button type="button" id="clear-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">Temizle</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <label class="block">
+          <span class="font-display text-sm font-semibold text-slate-900 dark:text-white">Kutu kapasitesi (B)</span>
+          <input type="number" id="capacity" name="capacity" min="0.001" step="0.1" value="10" required
+            class="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">Algoritma</legend>
+        <div class="mt-3 space-y-2">
+          <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
+            <input type="radio" name="algorithm" value="first-fit-decreasing" checked class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
+            <span class="flex-1">
+              <span class="block text-sm font-medium text-slate-900 dark:text-white">First Fit Decreasing (FFD)</span>
+              <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Azalan sırala, sığdıran ilk kutuya. 11/9·OPT.</span>
+            </span>
+          </label>
+          <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
+            <input type="radio" name="algorithm" value="best-fit-decreasing" class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
+            <span class="flex-1">
+              <span class="block text-sm font-medium text-slate-900 dark:text-white">Best Fit Decreasing (BFD)</span>
+              <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Azalan sırala, en dolu kutuya. 11/9·OPT.</span>
+            </span>
+          </label>
+          <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
+            <input type="radio" name="algorithm" value="first-fit" class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
+            <span class="flex-1">
+              <span class="block text-sm font-medium text-slate-900 dark:text-white">First Fit (FF)</span>
+              <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Verilen sırayla, ilk sığan kutuya. 17/10·OPT.</span>
+            </span>
+          </label>
+          <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
+            <input type="radio" name="algorithm" value="best-fit" class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
+            <span class="flex-1">
+              <span class="block text-sm font-medium text-slate-900 dark:text-white">Best Fit (BF)</span>
+              <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Verilen sırayla, en dolu kutuya. 17/10·OPT.</span>
+            </span>
+          </label>
+          <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50 dark:border-slate-800 dark:bg-slate-900/40 dark:has-[:checked]:border-accent-500 dark:has-[:checked]:bg-slate-900">
+            <input type="radio" name="algorithm" value="next-fit" class="mt-0.5 size-4 border-slate-300 text-brand-600 focus:ring-brand-500" />
+            <span class="flex-1">
+              <span class="block text-sm font-medium text-slate-900 dark:text-white">Next Fit (NF)</span>
+              <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">Yalnızca son kutuya bakar. 2·OPT.</span>
+            </span>
+          </label>
+        </div>
+      </fieldset>
+
+      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">Paketle</button>
+
+      <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
+    </form>
+
+    <section id="output" hidden aria-live="polite" class="space-y-6">
+      <div class="rounded-2xl border border-emerald-300 bg-emerald-50 p-5 dark:border-emerald-800/60 dark:bg-emerald-950/30">
+        <p class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+          Kullanılan kutu sayısı
+        </p>
+        <p id="bin-count" class="mt-1 font-display text-4xl font-bold text-emerald-900 dark:text-emerald-100"></p>
+        <p id="ratio-summary" class="mt-1 text-xs text-emerald-800 dark:text-emerald-300"></p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Öge sayısı</div>
+          <div id="m-items" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Toplam hacim (Σsᵢ)</div>
+          <div id="m-total" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">L₁ = ⌈Σ/B⌉</div>
+          <div id="m-l1" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">L₂ = |sᵢ &gt; B/2|</div>
+          <div id="m-l2" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Paketleme görselleştirmesi
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Her sütun bir kutu; içindeki bloklar ögeler (tabandan yığılır). Amber çizgi = kutu kapasitesi.
+        </p>
+        <div id="bins-svg-wrap" class="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/40"></div>
+      </div>
+
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Kutu içeriği
+        </h2>
+        <div id="bins-table" class="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800"></div>
+      </div>
+
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Algoritma karşılaştırması
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Aynı girdide beş sezgiselin sonucu — seçili olan mavi vurgulanır.
+        </p>
+        <div id="compare-table" class="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800"></div>
+      </div>
+    </section>
+  </Container>
+
+  {guideHref && (
+    <Container as="section" size="wide" class="py-12 sm:py-16">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900/40">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">Konuyu derinleştir</p>
+        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Bin Packing sezgiselleri ve yaklaşım analizi</h2>
+        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">NP-zorluk kanıtı, Johnson 1974 FFD 11/9 analizi, First Fit 17/10 sınırı, Vazirani ders kitabı 1.5-yaklaşım argümanı ve APTAS haritası üzerine uzun-form Türkçe rehber.</p>
+        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">Rehberi oku →</a>
+      </div>
+    </Container>
+  )}
+</BaseLayout>
+
+<script>
+  import { solveBinPacking, parseItems, BinPackingError, ALGORITHM_LABELS, type BinPackingAlgorithm, type BinPackingResult } from '../../lib/bin-packing';
+
+  const SAMPLES: Record<string, { items: string; capacity: string }> = {
+    johnson: {
+      items: '6\n5\n4\n3\n2\n1',
+      capacity: '10',
+    },
+    hard: {
+      items: 'A\t7\nB\t6\nC\t5\nD\t4\nE\t4\nF\t3\nG\t3\nH\t2\nI\t2\nJ\t1',
+      capacity: '10',
+    },
+  };
+
+  const ALL_ALGORITHMS: BinPackingAlgorithm[] = [
+    'first-fit-decreasing',
+    'best-fit-decreasing',
+    'first-fit',
+    'best-fit',
+    'next-fit',
+  ];
+
+  const $ = (id: string): HTMLElement => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el;
+  };
+
+  const form = $('bp-form') as HTMLFormElement;
+  const itemsInput = $('items') as HTMLTextAreaElement;
+  const itemCount = $('item-count');
+  const capacityInput = $('capacity') as HTMLInputElement;
+  const errorBox = $('error-box');
+  const output = $('output');
+  const binCountEl = $('bin-count');
+  const ratioSummary = $('ratio-summary');
+  const mItems = $('m-items');
+  const mTotal = $('m-total');
+  const mL1 = $('m-l1');
+  const mL2 = $('m-l2');
+  const binsSvgWrap = $('bins-svg-wrap');
+  const binsTable = $('bins-table');
+  const compareTable = $('compare-table');
+  const clearBtn = $('clear-btn');
+
+  function escapeHtml(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function fmt(n: number): string {
+    if (!Number.isFinite(n)) return String(n);
+    return Number.isInteger(n) ? String(n) : n.toFixed(2);
+  }
+
+  function updateCount(): void {
+    try {
+      const items = parseItems(itemsInput.value);
+      itemCount.textContent = `${items.length} öge`;
+    } catch {
+      itemCount.textContent = `${itemsInput.value.split('\n').filter(Boolean).length} satır`;
+    }
+  }
+
+  function renderBinsSvg(res: BinPackingResult): string {
+    const { bins, capacity } = res;
+    const n = bins.length;
+    if (n === 0) return '';
+
+    const binWidth = 60;
+    const binGap = 14;
+    const paddingLeft = 46;
+    const paddingRight = 12;
+    const topPadding = 12;
+    const binHeight = 260;
+    const bottomLabel = 44;
+
+    const totalW = paddingLeft + paddingRight + n * binWidth + (n - 1) * binGap;
+    const totalH = topPadding + binHeight + bottomLabel;
+
+    const svgParts: string[] = [];
+    svgParts.push(`<svg viewBox="0 0 ${totalW} ${totalH}" width="100%" style="max-width:${totalW}px;height:auto;display:block" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kutu paketleme görseli">`);
+
+    // Y-axis: 0 at bottom, capacity at top.
+    const yFor = (v: number) => topPadding + binHeight * (1 - v / capacity);
+
+    // Y-axis grid ticks (0, 1/4, 1/2, 3/4, B).
+    for (const frac of [0, 0.25, 0.5, 0.75, 1]) {
+      const v = capacity * frac;
+      const y = yFor(v);
+      svgParts.push(`<line x1="${paddingLeft}" y1="${y}" x2="${totalW - paddingRight}" y2="${y}" stroke="currentColor" stroke-opacity="0.08" />`);
+      svgParts.push(`<text x="${paddingLeft - 6}" y="${y + 4}" text-anchor="end" font-size="10" fill="currentColor" fill-opacity="0.55" font-family="ui-monospace, monospace">${fmt(v)}</text>`);
+    }
+
+    // Capacity line (amber).
+    const capY = yFor(capacity);
+    svgParts.push(`<line x1="${paddingLeft}" y1="${capY}" x2="${totalW - paddingRight}" y2="${capY}" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4 3" />`);
+
+    // Bin palette (accessible, deterministic).
+    const palette = ['#3b82f6', '#10b981', '#f97316', '#a855f7', '#ec4899', '#14b8a6', '#eab308', '#ef4444'];
+
+    for (let i = 0; i < n; i++) {
+      const x0 = paddingLeft + i * (binWidth + binGap);
+      const bin = bins[i];
+
+      // Bin outline.
+      svgParts.push(`<rect x="${x0}" y="${topPadding}" width="${binWidth}" height="${binHeight}" fill="none" stroke="currentColor" stroke-opacity="0.25" stroke-width="1" rx="4" />`);
+
+      // Items — stacked from bottom.
+      let cumulative = 0;
+      for (let k = 0; k < bin.items.length; k++) {
+        const item = bin.items[k];
+        const yTop = yFor(cumulative + item.size);
+        const yBot = yFor(cumulative);
+        const h = yBot - yTop;
+        const color = palette[item.originalIndex % palette.length];
+        svgParts.push(`<rect x="${x0 + 1}" y="${yTop}" width="${binWidth - 2}" height="${h}" fill="${color}" fill-opacity="0.85" stroke="${color}" stroke-width="0.5" />`);
+        if (h >= 14) {
+          const label = item.name.length > 8 ? item.name.slice(0, 7) + '…' : item.name;
+          svgParts.push(`<text x="${x0 + binWidth / 2}" y="${yTop + h / 2 + 3}" text-anchor="middle" font-size="10" fill="white" font-family="system-ui, sans-serif">${escapeHtml(label)}</text>`);
+        }
+        cumulative += item.size;
+      }
+
+      // Bin label under.
+      svgParts.push(`<text x="${x0 + binWidth / 2}" y="${topPadding + binHeight + 16}" text-anchor="middle" font-size="11" fill="currentColor" fill-opacity="0.85" font-family="system-ui, sans-serif" font-weight="600">Kutu ${bin.index}</text>`);
+      const fillPct = ((bin.used / capacity) * 100).toFixed(0);
+      svgParts.push(`<text x="${x0 + binWidth / 2}" y="${topPadding + binHeight + 30}" text-anchor="middle" font-size="10" fill="currentColor" fill-opacity="0.55" font-family="ui-monospace, monospace">${fmt(bin.used)}/${fmt(capacity)} · %${fillPct}</text>`);
+    }
+
+    svgParts.push('</svg>');
+    return svgParts.join('');
+  }
+
+  function renderBinsTable(res: BinPackingResult): string {
+    const { bins, capacity } = res;
+    const rows = bins.map((b) => {
+      const contents = b.items
+        .map((it) => `${escapeHtml(it.name)} <span class="text-slate-400 dark:text-slate-500">(${fmt(it.size)})</span>`)
+        .join(', ');
+      const fillPct = ((b.used / capacity) * 100).toFixed(0);
+      return `<tr class="border-t border-slate-100 dark:border-slate-800"><td class="px-3 py-2 text-sm font-medium text-slate-900 dark:text-slate-100">Kutu ${b.index}</td><td class="px-3 py-2 text-sm text-slate-700 dark:text-slate-300">${contents}</td><td class="px-3 py-2 text-right font-mono text-sm text-slate-600 dark:text-slate-400">${fmt(b.used)} / ${fmt(capacity)}</td><td class="px-3 py-2 text-right font-mono text-sm text-slate-600 dark:text-slate-400">%${fillPct}</td></tr>`;
+    }).join('');
+    return `<table class="w-full"><thead><tr class="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"><th class="px-3 py-2">Kutu</th><th class="px-3 py-2">İçerik</th><th class="px-3 py-2 text-right">Dolu / Kapasite</th><th class="px-3 py-2 text-right">Doluluk</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  function renderCompareTable(items: { name: string; size: number }[], capacity: number, activeAlgo: BinPackingAlgorithm): string {
+    const rows = ALL_ALGORITHMS.map((algo) => {
+      try {
+        const r = solveBinPacking({ items, capacity, algorithm: algo });
+        const isActive = algo === activeAlgo;
+        const rowCls = isActive
+          ? 'border-t border-slate-100 dark:border-slate-800 bg-brand-50 dark:bg-brand-950/30'
+          : 'border-t border-slate-100 dark:border-slate-800';
+        const ratioTxt = r.ratio === 1 ? '<span class="text-emerald-700 dark:text-emerald-400">optimum ✓</span>' : `${r.ratio.toFixed(3)}`;
+        const fillPct = (r.averageFill * 100).toFixed(0);
+        return `<tr class="${rowCls}"><td class="px-3 py-2 text-sm font-medium text-slate-900 dark:text-slate-100">${escapeHtml(ALGORITHM_LABELS[algo])}</td><td class="px-3 py-2 text-right font-mono text-sm text-slate-700 dark:text-slate-300">${r.binCount}</td><td class="px-3 py-2 text-right font-mono text-sm text-slate-600 dark:text-slate-400">${ratioTxt}</td><td class="px-3 py-2 text-right font-mono text-sm text-slate-600 dark:text-slate-400">%${fillPct}</td></tr>`;
+      } catch {
+        return '';
+      }
+    }).join('');
+    return `<table class="w-full"><thead><tr class="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"><th class="px-3 py-2">Algoritma</th><th class="px-3 py-2 text-right">Kutu</th><th class="px-3 py-2 text-right">Kutu / L*</th><th class="px-3 py-2 text-right">Ort. doluluk</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    errorBox.hidden = true;
+    try {
+      const parsed = parseItems(itemsInput.value);
+      const algorithm = (form.elements.namedItem('algorithm') as RadioNodeList).value as BinPackingAlgorithm;
+      const capacity = Number(capacityInput.value);
+      const r = solveBinPacking({ items: parsed, capacity, algorithm });
+
+      binCountEl.textContent = String(r.binCount);
+      const ratioNote = r.ratio === 1
+        ? 'L* = alt sınıra oturuyor → bu instans için optimum.'
+        : `Alt sınır L* = max(L₁, L₂) = ${r.lowerBound}. Oran = ${r.ratio.toFixed(3)}. Fark: ${r.binCount - r.lowerBound} kutu.`;
+      ratioSummary.textContent = `Algoritma: ${ALGORITHM_LABELS[algorithm]}. ${ratioNote}`;
+
+      mItems.textContent = String(parsed.length);
+      mTotal.textContent = fmt(r.totalSize);
+      mL1.textContent = String(r.lowerBoundL1);
+      mL2.textContent = String(r.lowerBoundL2);
+
+      binsSvgWrap.innerHTML = renderBinsSvg(r);
+      binsTable.innerHTML = renderBinsTable(r);
+      compareTable.innerHTML = renderCompareTable(parsed, capacity, algorithm);
+
+      output.hidden = false;
+      output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      const msg = err instanceof BinPackingError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
+      errorBox.textContent = msg;
+      errorBox.hidden = false;
+      output.hidden = true;
+    }
+  });
+
+  itemsInput.addEventListener('input', updateCount);
+
+  document.querySelectorAll<HTMLButtonElement>('[data-sample]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.sample!;
+      const s = SAMPLES[key];
+      if (!s) return;
+      itemsInput.value = s.items;
+      capacityInput.value = s.capacity;
+      updateCount();
+    });
+  });
+
+  clearBtn.addEventListener('click', () => {
+    itemsInput.value = '';
+    capacityInput.value = '10';
+    updateCount();
+    output.hidden = true;
+    errorBox.hidden = true;
+  });
+
+  updateCount();
+</script>

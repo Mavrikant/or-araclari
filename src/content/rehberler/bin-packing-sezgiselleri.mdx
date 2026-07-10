@@ -1,0 +1,230 @@
+---
+title: "Bin Packing: Kutu Paketleme Problemi ve Sezgisel Yaklaşım Analizi"
+description: "Bin Packing: Next Fit, First Fit, Best Fit ve azalan-sıra sezgiselleri (FFD, BFD), Johnson 1974 11/9·OPT ve FF 17/10·OPT yaklaşım oranları, alt sınırlar ve uygulamalar."
+pubDate: 2026-07-10
+relatedTool: "bin-packing-cozucu"
+keywords:
+  - "bin packing"
+  - "kutu paketleme"
+  - "first fit decreasing"
+  - "next fit"
+  - "best fit"
+  - "yaklaşım algoritması"
+  - "np-zor"
+  - "vazirani"
+  - "johnson 1974"
+readingMinutes: 11
+faq:
+  - question: "Bin packing problemi neden NP-zor?"
+    answer: "Klasik indirgeme PARTITION probleminden yapılır: n sayının toplamı 2S ise, kapasite S olan iki kutuya paketlenip paketlenemedikleri sorusu bin packing kararını verir. PARTITION NP-tam olduğundan bin packing de en az o kadar zordur; kesin çözüm için branch-and-bound, MILP ya da BP-özel column generation gerekir."
+  - question: "First Fit Decreasing (FFD) neden First Fit'ten (FF) daha iyi çalışır?"
+    answer: "FF'in patolojik senaryosu 'küçük ögeler önce, büyük ögeler sonra' dizilimidir: küçükler ilk kutuları yarım doldurur, sonra gelen büyükler o boşluğa sığmaz ve yeni kutu açmak gerekir. FFD ise büyükleri önce yerleştirir; küçükler kalan boşlukları 'grease' gibi doldurur. Johnson 1974 bu sezgiselin OPT'yi ≈ 1.222 kat aşamayacağını ispatlamıştır."
+  - question: "L₁ ve L₂ alt sınırları arasındaki fark nedir?"
+    answer: "L₁ = ⌈Σsᵢ/B⌉ hacim korunumundan gelir: toplam öge hacmi ancak bu kadar kutuya dağıtılabilir. L₂ ise büyük ögelere bakar: B/2 üstü ögeler hiçbir başka B/2 üstü ögeyle eşleşemediği için her biri en az bir kutu tutar. Genelde L₁ ≥ L₂ olur, ama '6 tane 0,6' örneği gibi büyük öge yoğun instansta L₂ bağlayıcı olur ve L₁'i aşabilir."
+  - question: "Next Fit neden bu kadar kötü (2·OPT)?"
+    answer: "Next Fit sadece son kutuya bakar — kapanan kutulara geri dönmez. Bu, ardışık iki kutunun toplamının B'den büyük olmasını garanti eder (aksi hâlde birleştirilebilirdi), dolayısıyla NF/OPT ≤ 2. Uygun bir 'kötü' input (B/2+ε ve B/2-ε ögelerinin sırayla gelmesi) bu 2 sınırının darlığını gösterir. Buna karşılık NF O(n) çalışır ve online senaryoda çok az bellekle iş görür — akıştaki nesneleri kutu-kutu toplamak, gerçek zamanlı sistemlerde makul bir tercih olabilir."
+  - question: "Bin packing için ne kadar hassas polinom zamanlı yaklaşıklık şeması var?"
+    answer: "Klasik FFD 11/9·OPT + 6/9 ile eş zamanlıdır. Karmarkar-Karp (1982) tam bir APTAS (Asymptotic PTAS): her ε > 0 için (1+ε)·OPT + O(1/ε²) sayıda kutu üretecek polinom zamanlı algoritma verir. Yakın zamanda Hoberg-Rothvoss (2017) OPT + O(log OPT) sınırı verdi; OPT + c gibi 'sabit ilave' sınırlarının polinom zamanda mümkün olup olmadığı hâlâ açık (3-partition ile bağlantılı klasik açık problem)."
+  - question: "First Fit ve Best Fit'in asimptotik oranı neden aynı?"
+    answer: "Her ikisi de 17/10·OPT sınırındadır (Johnson 1973, Dosa-Sgall 2013 tight sabit). Sezgi: ikisi de her ögeyi 'sığdıran bir kutuya' koyar, farkları yalnızca hangisine — ama argüman kutu kapatma zamanlamasını değiştirmediği için asimptotik davranış aynı kalır. Pratikte BF, dolu kutuları 'dolu' halinde bırakıp yenileri az doldurma eğilimindedir; FF orta doluluklu kutuları kalabalık tutar."
+  - question: "FFD/BFD sonrası ek iyileştirme yapmalı mıyız?"
+    answer: "FFD çıktısını başlangıç olarak alıp local search (öge takas, kutular arası move, 2-opt) uygulamak endüstride yaygın. Bunun ötesinde exact yöntemler var: Delorme-Iori-Martello (2016) BPPLIB benchmark'ları; column generation + branch-and-price (Vance et al. 1994) 1000+ öge instansta optimuma yakınsayabilir. Ama günlük operasyonda (kargo, VLSI, sanal makine yerleşimi) FFD/BFD yeterli hız/kalite dengesi verir."
+  - question: "Multi-dimensional (2D, 3D) bin packing aynı algoritmalarla çözülür mü?"
+    answer: "Hayır. Çok boyutlu bin packing (kesim stoğu, konteyner yükleme, 2D strip packing) esasen daha zor: 2D için First Fit Decreasing Height (FFDH) ve Best Fit Decreasing Height (BFDH) gibi guillotine kısıtlı varyantlar, 3D için ekstreme point tabanlı yöntemler var. Bu araç 1-boyutlu problemi çözer; asıl uygulamanız 2D/3D ise ayrı bir modele geçmek gerekir."
+  - question: "Bin packing gerçek dünyada nerede karşımıza çıkar?"
+    answer: "Klasik uygulamalar: kargo/palet yüklemede (araç kapasitesine kadar minimum sefer), sanal makine yerleşiminde (fiziksel sunucu = kutu, VM = öge; cloud provider maliyeti bin sayısıyla orantılı), kesim stoğunda (rulo/plaka kısımlara bölünürken firenin azaltılması), reklam yerleşiminde (sayfa/segment = kutu, reklam = öge), gemi konteyner istifleme, ders çizelgelemede boş zaman-slot minimizasyonu, ve modern chip tasarımda FPGA/ASIC placement. Sanal makine konsolidasyonu bugünkü ölçekte muhtemelen en yaygın kullanım."
+---
+
+Elinde 20 sandık var. Kargo kamyonlarının her biri 1000 kg taşıyabiliyor.
+Sandıkların ağırlıkları farklı: bazıları 800 kg, bazıları 300 kg, bazıları
+100 kg. Amacın **mümkün olan en az kamyon** kullanarak hepsini taşımak.
+Yakıt maliyeti kamyon başına, dolayısıyla iki 500 kg'lık sandığı aynı
+kamyona koymak — tek başına kalan iki sandığı ayrı kamyonlarla yollamaktan
+her zaman daha ucuz.
+
+Bu, yöneylem araştırmasının klasiklerinden biri: **bin packing problemi**
+(kutu paketleme). Basit görünen ama NP-zor olan, 1970'lerden bu yana
+onlarca sezgisel ve yaklaşım algoritmasının geliştirildiği, sanal makine
+konsolidasyonundan kesim stoğuna kadar günlük hayatın her yerinde
+karşımıza çıkan bir problem.
+
+## Problem tanımı
+
+**Girdi:**
+
+- $n$ öge, her birinin boyutu $s_i \in (0, B]$
+- Kutu kapasitesi $B$ (her kutu için aynı)
+
+**Çıktı:** ögelerin kutulara ayrık atanması $A_1, A_2, \dots, A_k$ öyle
+ki her kutu için $\sum_{i \in A_j} s_i \le B$, kullanılan kutu sayısı $k$
+**minimum** olsun.
+
+Karar versiyonu **NP-tam** (PARTITION'dan indirgeme); optimizasyon
+versiyonu NP-zor. Yani $n$ büyüdükçe kesin çözüm katlanarak zorlaşır ve
+pratikte sezgisel yaklaşımlar kullanılır.
+
+## Beş klasik sezgisel
+
+Aşağıdaki algoritmaların hepsi **çevrimdışı** (offline) — bütün girdiyi
+görüp karar verirler. Çevrimiçi (online) versiyonları ayrı bir tartışma
+konusu (ögeler tek tek gelir, geri dönemezsin).
+
+### 1. Next Fit (NF)
+
+Yalnızca **son açtığın kutuya** bak. Öge sığıyorsa oraya koy; sığmıyorsa
+yeni kutu aç ve son kutu artık kapalı say. O(n) çalışır, bellek O(1).
+
+- **Asimptotik oran: 2·OPT.** İspat kolay: ardışık iki kutunun toplamı
+  daima $> B$ (aksi hâlde birinci kutu ikinciyi de alabilirdi), yani her
+  iki kutunun ortalama doluluğu $> B/2$, dolayısıyla toplam kutu sayısı
+  $\le 2 \cdot \sum s_i / B \le 2 \cdot \text{OPT}$.
+- **Ne zaman kullan:** akış tabanlı senaryolar (stream), sabit belleğe
+  ihtiyaç duyulan gömülü sistemler, teorik ilk yaklaşım.
+
+### 2. First Fit (FF)
+
+Açık kutuları başlangıçtan itibaren tara; ögeyi sığdıran **ilk** kutuya
+koy. Hiçbiri sığdırmazsa yeni kutu aç. Naive $O(n^2)$; dengeli ağaçla
+$O(n \log n)$.
+
+- **Asimptotik oran: 17/10·OPT** (Johnson 1973; sabit sıkı, Dósa-Sgall 2013).
+- FF'in kötü senaryosu: küçük ögeler önce gelirse ilk kutulara "arka
+  arkaya küçüklerden" birikir ve sonra gelen büyükler sığmaz.
+
+### 3. First Fit Decreasing (FFD)
+
+Ögeleri boyutça **azalan** sırala; sonra FF uygula. Buradaki temel fikir:
+büyük ögeleri önce yerleştir, küçükler yamayı yapsın.
+
+- **Asimptotik oran: 11/9·OPT + 6/9** (Johnson 1974; tight sabit
+  Dósa 2007). Yani $\text{FFD}(I) \le \frac{11}{9} \text{OPT}(I) + \frac{6}{9}$.
+- $\frac{11}{9} \approx 1.222$ — sağlam bir garantidir.
+
+### 4. Best Fit (BF)
+
+Sığdıran açık kutulardan **en dolu** olanına koy. Sığmıyorsa yeni kutu
+aç. Öncelik kuyruğuyla $O(n \log n)$.
+
+- **Asimptotik oran: 17/10·OPT.** Teorik olarak FF ile aynı; pratikte
+  çoğu instansta biri ya diğerinden çok az farkla iyi çıkar.
+
+### 5. Best Fit Decreasing (BFD)
+
+BF'in azalan-sıralı versiyonu. FFD ile aynı 11/9·OPT sınırında. Bazı
+instans ailelerinde BFD, FFD'yi geçebilir; büyük ögeler yerleşirken en
+sıkı boşluğa oturması, sonrakiler için daha "yararlı" boşluklar bırakır.
+
+## Alt sınırlar: çözümün kalitesini nasıl ölçeriz?
+
+OPT'yi bilmek NP-zordur; ama alt sınırları bilmek kolaydır. Sezgiselin
+çıkardığı kutu sayısını **max(L₁, L₂)** ile karşılaştırırsan "en fazla ne
+kadar iyi olabilirim?" sorusunun cevabını görürsün.
+
+### L₁ — Hacim alt sınırı
+
+$$L_1 = \left\lceil \frac{\sum_i s_i}{B} \right\rceil$$
+
+Toplam hacim korunur — kutuların toplam kapasitesi öge hacminden az olamaz.
+
+### L₂ — Büyük öge alt sınırı
+
+$$L_2 = |\{i : s_i > B/2\}|$$
+
+$B/2$'den büyük iki öge asla aynı kutuya sığmaz. Dolayısıyla bu tür
+ögelerin her biri en az bir kutu tutar.
+
+**Örnek:** 6 tane 0,6 boyutlu öge, $B = 1$.
+
+- $L_1 = \lceil 3.6 / 1 \rceil = 4$
+- $L_2 = 6$ (hepsi 0,5'ten büyük)
+- $L^* = \max(L_1, L_2) = 6 = \text{OPT}$
+
+Bu instansta $L_1$ 4'te kalırken $L_2$ optimumu tam olarak yakalar.
+
+## Sayısal örnek: Johnson klasik instansı
+
+**Girdi:** ögeler $\{6, 5, 4, 3, 2, 1\}$, kapasite $B = 10$.
+
+$L_1 = \lceil 21 / 10 \rceil = 3$, $L_2 = 0$, dolayısıyla $L^* = 3$.
+
+**FFD çözümü:** azalan sıra zaten $6, 5, 4, 3, 2, 1$.
+
+| Öge | Aksiyon | Kutu 1 | Kutu 2 | Kutu 3 |
+|---|---|---|---|---|
+| 6 | Kutu 1'e | 6 | | |
+| 5 | Sığmaz kutu 1'e (4 kalan), kutu 2'ye | 6 | 5 | |
+| 4 | Kutu 1'e (kalan tam 0) | 6, 4 | 5 | |
+| 3 | Kutu 2'ye | 6, 4 | 5, 3 | |
+| 2 | Kutu 2'ye | 6, 4 | 5, 3, 2 | |
+| 1 | Kutu 3'e | 6, 4 | 5, 3, 2 | 1 |
+
+**Sonuç:** 3 kutu = $L^*$. Optimum. Kullanılan kutu / alt sınır = 1.
+
+**NF ile karşılaştırma:** $6 \to K_1$, $5$ sığmaz $\to K_2$, $4$ sığar
+$K_2 = 5,4$ dolu $= 9$, $3$ sığmaz $\to K_3$, $2$ sığar $K_3 = 3,2$,
+$1$ sığar $K_3 = 3,2,1$. Sonuç: 3 kutu. Bu instansta NF de tesadüfen
+optimuma isabet etti.
+
+## Vazirani'nin 1,5·OPT argümanı
+
+FFD analizinin ders kitabı versiyonu, Vazirani (2001) *Approximation
+Algorithms*'da 1,5·OPT sınırını daha basit bir argümanla verir:
+
+- Ögeleri iki gruba ayır: **büyük** ($s_i > B/2$) ve **küçük** ($s_i \le B/2$).
+- Büyük ögeler için $L_2$ zaten geçerli — her biri kendi kutusu.
+- FFD, büyük ögeleri önce yerleştirir. Sonra gelen küçük ögeler kalan
+  boşlukları doldurur — küçük öge kutulama sayısı artırmaz (çünkü küçük
+  öge her zaman herhangi bir yarım kutuya sığar).
+- Bu ise küçük ögelerin toplam hacmi bakımından tam iki kata (kutu başına
+  $B/2$ kayıp) yol açar — sonuç $\le 1.5 \cdot \text{OPT}$.
+
+Bu argüman "eğitici" — sıkı sınır 11/9'dur ama 1,5 kolay ispatlanabilen
+kapsayıcı bir üst sınırdır.
+
+## Ne zaman hangi algoritma?
+
+| Durum | Öneri |
+|---|---|
+| Küçük instans (n ≤ 20), kesin çözüm istiyorsun | MILP / branch-and-bound |
+| Endüstriyel offline (n ≤ 10⁴) | **FFD** ya da **BFD** + local search |
+| Endüstriyel offline (n ≥ 10⁵) | FFD + heap ile O(n log n) implementasyon |
+| Akıştan gelen ögeler, geri dönüş yok | **NF** (online) |
+| Bellek çok kısıtlı | **NF** |
+| Çok hassas garanti gerekli, biraz daha yavaş kabul | Karmarkar-Karp APTAS |
+
+## Modelin sınırları
+
+- **Kutular tekdüze:** hepsi aynı $B$. Farklı kapasite ↔ **Variable Sized
+  Bin Packing (VSBP)** başka bir problem.
+- **Ögeler bölünmez:** bölünebilir ögeler ↔ **cutting stock** (yakın akraba
+  ama farklı formülasyon).
+- **1-boyutlu:** genişlik×yükseklik ↔ **2D bin packing** (guillotine kısıt,
+  şelfli/şelfsiz), $3\text{D}$ ↔ konteyner yükleme.
+- **Ek kısıtlar yok:** ağırlık dağıtımı, dengeleme, sıra ilişkisi, öge
+  uyumsuzlukları vb. ↔ **generalized bin packing** varyantları.
+- **Offline:** ögeler baştan bilinir. Online BPP oranları farklı — en iyi
+  bilinen upper bound Best Fit ile $\approx 1.586$, alt sınır $\approx 1.542$
+  (Balogh-Békési-Dosa-Epstein-Levin 2018).
+
+Bu tazeliğin devamı için ilgili araçlarımızdan bazıları:
+
+- [Knapsack Çözücü](/or-araclari/araclar/knapsack-cozucu) — kutu değil çanta,
+  kâr maksimizasyonu; algoritmik kuzenidir.
+- [Atama Problemi Çözücü](/or-araclari/araclar/atama-problemi-cozucu) —
+  bir çeşit özel dağıtım problemi, ama polinom zamanlı.
+- [Wagner-Whitin Dinamik Lot Boyutlandırma](/or-araclari/araclar/wagner-whitin-cozucu)
+  — dönem × dönem "kutulama", envanterde ZIO ilkesiyle.
+
+## Özet
+
+- Bin packing NP-zor; kesin çözüm katlanarak yavaşlar. Sezgiseller pratikte
+  yeterlidir.
+- **FFD ve BFD** en pratikleridir: $\approx 11/9 \cdot \text{OPT}$ garanti,
+  $O(n \log n)$ hız.
+- **FF ve BF** azaltmadan sezgiselleridir: $17/10 \cdot \text{OPT}$ garanti,
+  online varyanta yakın davranış.
+- **NF** en basit ve en kötüsüdür ama $O(1)$ bellek gerektirir.
+- Alt sınır **max(L₁, L₂)** ile karşılaştırınca sezgiselin optimuma ne
+  kadar yakın olduğu görünür; oran 1 ise optimum.
+- Boyut, sıra, ek kısıt varsa ilgili varyanta (2D, VSBP, cutting stock)
+  geçmek gerekir.
