@@ -1,0 +1,591 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import { withBase, SITE } from '../../data/site';
+import { TOOLS } from '../../data/tools';
+
+const tool = TOOLS.find((t) => t.slug === 'johnson-akis-tipi-cizelgeleme')!;
+const guideHref = tool.guideSlug ? withBase(`/rehberler/${tool.guideSlug}`) : null;
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: tool.title,
+  applicationCategory: 'WebApplication',
+  operatingSystem: 'Any',
+  description: tool.description,
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'TRY' },
+  inLanguage: SITE.locale,
+  isAccessibleForFree: true,
+};
+---
+
+<BaseLayout
+  title={tool.title}
+  description={tool.description}
+  image={withBase(`/og/${tool.slug}.png`)}
+  imageAlt={`${tool.title} — OR Araçları`}
+>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+  </Fragment>
+
+  <Container as="section" size="wide" class="pt-12 sm:pt-16">
+    <p class="text-sm font-medium text-brand-600 dark:text-accent-400">
+      <a href={withBase('/araclar')} class="hover:underline">Araçlar</a>
+      <span class="text-slate-400 dark:text-slate-600"> / </span>
+      <span>Çizelgeleme</span>
+    </p>
+    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">
+      {tool.title}
+    </h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
+      Her iş önce M1, sonra M2 (isteğe bağlı M3) makinesinden geçen akış-tipi
+      atölyede toplam süreyi (Cmax) minimize eden iş sırasını Johnson 1954
+      kuralıyla tarayıcıda anlık bul. İki makinada optimum garantili; üç
+      makinada indirgeme koşulu sağlanırsa optimum, sağlanmazsa sezgisel.
+      {guideHref && (
+        <a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>
+      )}
+    </p>
+  </Container>
+
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,380px)_1fr] print:block">
+    <form id="j-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="sample1-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Taha 5-iş
+        </button>
+        <button type="button" id="sample2-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          3-makina örneği
+        </button>
+        <button type="button" id="reset-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+          Sıfırla
+        </button>
+      </div>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Problem tipi
+        </legend>
+        <div class="flex gap-4 text-sm">
+          <label class="inline-flex items-center gap-2 text-slate-700 dark:text-slate-300">
+            <input type="radio" name="mtype" value="2" checked class="accent-brand-600 dark:accent-accent-400" />
+            2 makina (M1 → M2)
+          </label>
+          <label class="inline-flex items-center gap-2 text-slate-700 dark:text-slate-300">
+            <input type="radio" name="mtype" value="3" class="accent-brand-600 dark:accent-accent-400" />
+            3 makina (M1 → M2 → M3)
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          İşler
+        </legend>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          Her satır bir iş. İşlem süreleri sayısal, ≥ 0.
+        </p>
+        <div id="jobs-table" class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800"></div>
+        <div class="flex gap-2">
+          <button type="button" id="add-job-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+            + İş ekle
+          </button>
+        </div>
+      </fieldset>
+
+      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">
+        Çöz
+      </button>
+
+      <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
+    </form>
+
+    <section id="output" hidden aria-live="polite" class="space-y-6">
+      <div class="rounded-2xl border border-emerald-300 bg-emerald-50 p-5 dark:border-emerald-800/60 dark:bg-emerald-950/30">
+        <p class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+          Toplam süre (Cmax) — Johnson kuralı
+        </p>
+        <p id="makespan" class="mt-1 font-display text-4xl font-bold text-emerald-900 dark:text-emerald-100"></p>
+        <p id="seq-summary" class="mt-1 text-xs text-emerald-800 dark:text-emerald-300"></p>
+        <p id="opt-note" class="mt-2 text-xs text-emerald-900/80 dark:text-emerald-200/80"></p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">İş sayısı</div>
+          <div id="m-njobs" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">M1 boş süre</div>
+          <div id="m-m1idle" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">M2 boş süre</div>
+          <div id="m-m2idle" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400" id="m-m3-label">M3 boş süre</div>
+          <div id="m-m3idle" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Gantt çizelgesi
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Her makine ayrı satırda; her bloğun içindeki etiket iş sırasını verir.
+          Boşluk = makine boş.
+        </p>
+        <div id="gantt" class="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40"></div>
+      </div>
+
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Sıra & atama tablosu
+        </h2>
+        <div id="sched-table" class="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800"></div>
+      </div>
+
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Johnson kuralı adımları
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          U kümesi: α ≤ β olan işler, α artan sırada. V kümesi: α &gt; β
+          olan işler, β azalan sırada. Optimum sıra: U ardından V. İki
+          makinada α=p₁, β=p₂; üç makinada α=p₁+p₂, β=p₂+p₃.
+        </p>
+        <div id="rule-table" class="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800"></div>
+      </div>
+    </section>
+  </Container>
+
+  {guideHref && (
+    <Container as="section" size="wide" class="py-12 sm:py-16">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900/40">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">
+          Konuyu derinleştir
+        </p>
+        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          Akış-tipi çizelgeleme ve Johnson kuralı
+        </h2>
+        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+          Akış-tipi (flow-shop) atölyede sıranın Cmax üzerindeki etkisi, Johnson
+          kuralının U/V yapısıyla neden optimum olduğu, üç makinaya
+          Johnson-Bellman uzantısı ve sırayla iş atölyesi (job-shop) modelleriyle
+          farkı üzerine kapsamlı Türkçe rehber.
+        </p>
+        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">
+          Rehberi oku →
+        </a>
+      </div>
+    </Container>
+  )}
+</BaseLayout>
+
+<script>
+  import { solveJohnson, JohnsonError, type JohnsonJob } from '../../lib/johnson';
+
+  const STORAGE_KEY = 'johnson-state-v1';
+
+  interface JobRow {
+    label: string;
+    p1: string;
+    p2: string;
+    p3: string;
+  }
+
+  interface State {
+    machines: 2 | 3;
+    jobs: JobRow[];
+  }
+
+  const SAMPLE_1: State = {
+    machines: 2,
+    jobs: [
+      { label: 'J1', p1: '6', p2: '3', p3: '' },
+      { label: 'J2', p1: '2', p2: '8', p3: '' },
+      { label: 'J3', p1: '4', p2: '7', p3: '' },
+      { label: 'J4', p1: '1', p2: '4', p3: '' },
+      { label: 'J5', p1: '3', p2: '5', p3: '' },
+    ],
+  };
+  const SAMPLE_2: State = {
+    machines: 3,
+    jobs: [
+      { label: 'A', p1: '11', p2: '3', p3: '5' },
+      { label: 'B', p1: '13', p2: '2', p3: '4' },
+      { label: 'C', p1: '15', p2: '1', p3: '6' },
+      { label: 'D', p1: '12', p2: '3', p3: '7' },
+    ],
+  };
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el as T;
+  };
+
+  function escapeHtml(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function fmt(n: number, decimals = 2): string {
+    if (!Number.isFinite(n)) return String(n);
+    if (Math.abs(n - Math.round(n)) < 1e-9) return String(Math.round(n));
+    return n.toFixed(decimals).replace(/\.?0+$/, '');
+  }
+
+  const form = $<HTMLFormElement>('j-form');
+  const jobsTable = $('jobs-table');
+  const addJobBtn = $('add-job-btn');
+  const sample1Btn = $('sample1-btn');
+  const sample2Btn = $('sample2-btn');
+  const resetBtn = $('reset-btn');
+  const errorBox = $('error-box');
+  const output = $('output');
+  const makespanEl = $('makespan');
+  const seqSummary = $('seq-summary');
+  const optNote = $('opt-note');
+  const mNjobs = $('m-njobs');
+  const mM1Idle = $('m-m1idle');
+  const mM2Idle = $('m-m2idle');
+  const mM3Idle = $('m-m3idle');
+  const mM3Label = $('m-m3-label');
+  const gantt = $('gantt');
+  const schedTable = $('sched-table');
+  const ruleTable = $('rule-table');
+
+  let state: State = { machines: 2, jobs: [] };
+
+  function loadState(): void {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const s = JSON.parse(raw) as State;
+        if (s && (s.machines === 2 || s.machines === 3) && Array.isArray(s.jobs) && s.jobs.length > 0) {
+          state = s;
+          return;
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+    state = { machines: SAMPLE_1.machines, jobs: SAMPLE_1.jobs.map((j) => ({ ...j })) };
+  }
+  function saveState(): void {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function renderJobsTable(): void {
+    const three = state.machines === 3;
+    const rows = state.jobs
+      .map(
+        (j, i) => `<tr class="border-t border-slate-100 dark:border-slate-800">
+        <td class="px-2 py-1"><input data-i="${i}" data-f="label" value="${escapeHtml(j.label)}" class="w-16 rounded border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-900 focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" /></td>
+        <td class="px-2 py-1"><input data-i="${i}" data-f="p1" value="${escapeHtml(j.p1)}" inputmode="decimal" class="w-20 rounded border border-slate-300 bg-white px-2 py-1 font-mono text-xs tabular-nums text-slate-900 focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" /></td>
+        <td class="px-2 py-1"><input data-i="${i}" data-f="p2" value="${escapeHtml(j.p2)}" inputmode="decimal" class="w-20 rounded border border-slate-300 bg-white px-2 py-1 font-mono text-xs tabular-nums text-slate-900 focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" /></td>
+        ${three ? `<td class="px-2 py-1"><input data-i="${i}" data-f="p3" value="${escapeHtml(j.p3)}" inputmode="decimal" class="w-20 rounded border border-slate-300 bg-white px-2 py-1 font-mono text-xs tabular-nums text-slate-900 focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" /></td>` : ''}
+        <td class="px-2 py-1 text-right"><button type="button" data-del="${i}" class="rounded p-1 text-slate-400 hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-950/40 dark:hover:text-red-400" aria-label="İşi sil">×</button></td>
+      </tr>`,
+      )
+      .join('');
+    jobsTable.innerHTML = `<table class="w-full text-sm">
+      <thead>
+        <tr class="bg-slate-50 text-left text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+          <th class="px-2 py-1.5">Etiket</th>
+          <th class="px-2 py-1.5">M1 (p₁)</th>
+          <th class="px-2 py-1.5">M2 (p₂)</th>
+          ${three ? '<th class="px-2 py-1.5">M3 (p₃)</th>' : ''}
+          <th class="px-2 py-1.5 text-right">Sil</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+
+    jobsTable.querySelectorAll<HTMLInputElement>('input[data-i]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const i = Number(input.dataset.i);
+        const f = input.dataset.f as keyof JobRow;
+        if (state.jobs[i]) {
+          state.jobs[i][f] = input.value;
+          saveState();
+        }
+      });
+    });
+    jobsTable.querySelectorAll<HTMLButtonElement>('button[data-del]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const i = Number(btn.dataset.del);
+        if (state.jobs.length <= 1) return;
+        state.jobs.splice(i, 1);
+        saveState();
+        renderJobsTable();
+      });
+    });
+  }
+
+  function setMachines(m: 2 | 3): void {
+    state.machines = m;
+    if (m === 2) {
+      state.jobs.forEach((j) => (j.p3 = ''));
+    } else {
+      state.jobs.forEach((j) => {
+        if (!j.p3.trim()) j.p3 = '0';
+      });
+    }
+    saveState();
+    renderJobsTable();
+  }
+
+  form.querySelectorAll<HTMLInputElement>('input[name="mtype"]').forEach((r) => {
+    r.addEventListener('change', () => {
+      if (r.checked) setMachines(Number(r.value) as 2 | 3);
+    });
+  });
+
+  addJobBtn.addEventListener('click', () => {
+    const n = state.jobs.length + 1;
+    state.jobs.push({ label: `J${n}`, p1: '1', p2: '1', p3: state.machines === 3 ? '1' : '' });
+    saveState();
+    renderJobsTable();
+  });
+
+  function applySample(s: State): void {
+    state = { machines: s.machines, jobs: s.jobs.map((j) => ({ ...j })) };
+    saveState();
+    const radio = form.querySelector<HTMLInputElement>(`input[name="mtype"][value="${state.machines}"]`);
+    if (radio) radio.checked = true;
+    renderJobsTable();
+    clearError();
+  }
+  sample1Btn.addEventListener('click', () => applySample(SAMPLE_1));
+  sample2Btn.addEventListener('click', () => applySample(SAMPLE_2));
+
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('Form sıfırlanacak. Devam edilsin mi?')) return;
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    applySample(SAMPLE_1);
+    output.hidden = true;
+  });
+
+  function clearError(): void {
+    errorBox.hidden = true;
+    errorBox.textContent = '';
+  }
+  function showError(msg: string): void {
+    errorBox.textContent = msg;
+    errorBox.hidden = false;
+    output.hidden = true;
+  }
+
+  loadState();
+  const initRadio = form.querySelector<HTMLInputElement>(`input[name="mtype"][value="${state.machines}"]`);
+  if (initRadio) initRadio.checked = true;
+  renderJobsTable();
+
+  function parseJobs(): JohnsonJob[] {
+    const out: JohnsonJob[] = [];
+    for (let i = 0; i < state.jobs.length; i++) {
+      const r = state.jobs[i];
+      const p1 = Number(r.p1);
+      const p2 = Number(r.p2);
+      if (!Number.isFinite(p1)) throw new JohnsonError(`İş ${i + 1} için M1 süresi geçerli değil.`);
+      if (!Number.isFinite(p2)) throw new JohnsonError(`İş ${i + 1} için M2 süresi geçerli değil.`);
+      const job: JohnsonJob = { label: r.label.trim() || `J${i + 1}`, p1, p2 };
+      if (state.machines === 3) {
+        const p3 = Number(r.p3);
+        if (!Number.isFinite(p3)) throw new JohnsonError(`İş ${i + 1} için M3 süresi geçerli değil.`);
+        job.p3 = p3;
+      }
+      out.push(job);
+    }
+    return out;
+  }
+
+  function renderGantt(result: ReturnType<typeof solveJohnson>): void {
+    const three = result.machines === 3;
+    const rows = three ? 3 : 2;
+    const cmax = Math.max(1, result.makespan);
+    const PL = 44;
+    const PR = 12;
+    const PT = 12;
+    const rowH = 40;
+    const gap = 8;
+    const H = PT + rows * rowH + (rows - 1) * gap + 24;
+    const W = 720;
+    const plotW = W - PL - PR;
+    const sx = (t: number) => PL + (t / cmax) * plotW;
+
+    const palette = [
+      { fill: 'fill-brand-500/85 dark:fill-brand-400/75', stroke: 'stroke-brand-700' },
+      { fill: 'fill-accent-500/85 dark:fill-accent-400/75', stroke: 'stroke-accent-700' },
+      { fill: 'fill-emerald-500/85 dark:fill-emerald-400/75', stroke: 'stroke-emerald-700' },
+      { fill: 'fill-amber-500/85 dark:fill-amber-400/75', stroke: 'stroke-amber-700' },
+      { fill: 'fill-rose-500/85 dark:fill-rose-400/75', stroke: 'stroke-rose-700' },
+      { fill: 'fill-violet-500/85 dark:fill-violet-400/75', stroke: 'stroke-violet-700' },
+      { fill: 'fill-teal-500/85 dark:fill-teal-400/75', stroke: 'stroke-teal-700' },
+      { fill: 'fill-cyan-500/85 dark:fill-cyan-400/75', stroke: 'stroke-cyan-700' },
+    ];
+
+    const rowY = (r: number) => PT + r * (rowH + gap);
+    const machineLabels = three ? ['M1', 'M2', 'M3'] : ['M1', 'M2'];
+    const rowLabelSvg = machineLabels
+      .map(
+        (l, r) => `<text x="${PL - 8}" y="${rowY(r) + rowH / 2 + 4}" text-anchor="end" class="fill-slate-700 text-xs font-semibold dark:fill-slate-200">${l}</text>`,
+      )
+      .join('');
+
+    const rowsSvg = machineLabels
+      .map(
+        (_, r) => `<rect x="${PL}" y="${rowY(r)}" width="${plotW}" height="${rowH}" class="fill-slate-100 dark:fill-slate-900" rx="4" />`,
+      )
+      .join('');
+
+    const bars: string[] = [];
+    result.schedule.forEach((e) => {
+      const pal = palette[e.jobIndex % palette.length];
+      const push = (row: number, start: number, end: number) => {
+        if (end <= start) return;
+        const x = sx(start);
+        const w = Math.max(1, sx(end) - x);
+        const label = `${e.label}`;
+        const showLabel = w > 26;
+        bars.push(`<g>
+          <rect x="${x}" y="${rowY(row) + 4}" width="${w}" height="${rowH - 8}" rx="4" class="${pal.fill} ${pal.stroke}" stroke-width="1" />
+          ${showLabel ? `<text x="${x + w / 2}" y="${rowY(row) + rowH / 2 + 4}" text-anchor="middle" class="fill-white text-[11px] font-semibold" pointer-events="none">${escapeHtml(label)}</text>` : ''}
+        </g>`);
+      };
+      push(0, e.m1Start, e.m1End);
+      push(1, e.m2Start, e.m2End);
+      if (three && e.m3Start !== undefined && e.m3End !== undefined) push(2, e.m3Start, e.m3End);
+    });
+
+    const tickCount = Math.min(10, Math.max(2, Math.floor(cmax)));
+    const ticks: string[] = [];
+    for (let i = 0; i <= tickCount; i++) {
+      const t = (cmax * i) / tickCount;
+      const x = sx(t);
+      ticks.push(
+        `<line x1="${x}" y1="${PT}" x2="${x}" y2="${PT + rows * rowH + (rows - 1) * gap}" class="stroke-slate-200 dark:stroke-slate-800" stroke-width="1" stroke-dasharray="2 3" />`,
+      );
+      ticks.push(
+        `<text x="${x}" y="${PT + rows * rowH + (rows - 1) * gap + 14}" text-anchor="middle" class="fill-slate-500 text-[10px] tabular-nums dark:fill-slate-400">${fmt(t, 1)}</text>`,
+      );
+    }
+    const cmaxX = sx(cmax);
+    ticks.push(
+      `<line x1="${cmaxX}" y1="${PT}" x2="${cmaxX}" y2="${PT + rows * rowH + (rows - 1) * gap}" class="stroke-emerald-600 dark:stroke-emerald-400" stroke-width="2" />`,
+    );
+    ticks.push(
+      `<text x="${cmaxX}" y="${PT - 2}" text-anchor="end" class="fill-emerald-700 text-[10px] font-semibold dark:fill-emerald-300">Cmax = ${fmt(result.makespan, 2)}</text>`,
+    );
+
+    gantt.innerHTML = `<svg viewBox="0 0 ${W} ${H}" class="block w-full h-auto" role="img" aria-label="Gantt çizelgesi">
+      ${rowsSvg}
+      ${rowLabelSvg}
+      ${ticks.join('')}
+      ${bars.join('')}
+    </svg>`;
+  }
+
+  function renderScheduleTable(result: ReturnType<typeof solveJohnson>): void {
+    const three = result.machines === 3;
+    const rows = result.schedule
+      .map(
+        (e) => `<tr class="border-t border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900/40">
+        <td class="px-3 py-2 font-mono text-xs font-semibold text-brand-700 dark:text-accent-300">${e.order}</td>
+        <td class="px-3 py-2 text-sm text-slate-900 dark:text-slate-100">${escapeHtml(e.label)}</td>
+        <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-700 dark:text-slate-300">${fmt(e.m1Start, 2)} → ${fmt(e.m1End, 2)}</td>
+        <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-700 dark:text-slate-300">${fmt(e.m2Start, 2)} → ${fmt(e.m2End, 2)}</td>
+        ${three ? `<td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-700 dark:text-slate-300">${fmt(e.m3Start!, 2)} → ${fmt(e.m3End!, 2)}</td>` : ''}
+        <td class="px-3 py-2 text-right font-mono text-xs tabular-nums ${e.m2IdleBefore > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-slate-400'}">${fmt(e.m2IdleBefore, 2)}</td>
+      </tr>`,
+      )
+      .join('');
+    schedTable.innerHTML = `<table class="w-full"><thead><tr class="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+      <th class="px-3 py-2">#</th>
+      <th class="px-3 py-2">İş</th>
+      <th class="px-3 py-2 text-right">M1 aralığı</th>
+      <th class="px-3 py-2 text-right">M2 aralığı</th>
+      ${three ? '<th class="px-3 py-2 text-right">M3 aralığı</th>' : ''}
+      <th class="px-3 py-2 text-right">M2 boş (önce)</th>
+    </tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  function renderRuleTable(result: ReturnType<typeof solveJohnson>): void {
+    const three = result.machines === 3;
+    const seqIndex = new Map(result.sequence.map((idx, k) => [idx, k + 1]));
+    const rows = result.virtualTimes
+      .map(
+        (v, i) => `<tr class="border-t border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900/40">
+        <td class="px-3 py-2 text-sm text-slate-900 dark:text-slate-100">${escapeHtml(v.label)}</td>
+        <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-700 dark:text-slate-300">${fmt(v.alpha, 2)}</td>
+        <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-700 dark:text-slate-300">${fmt(v.beta, 2)}</td>
+        <td class="px-3 py-2 text-center text-xs">
+          <span class="rounded px-1.5 py-0.5 font-semibold ${v.group === 'U' ? 'bg-brand-100 text-brand-800 dark:bg-brand-900/60 dark:text-brand-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200'}">${v.group}</span>
+        </td>
+        <td class="px-3 py-2 text-right font-mono text-xs font-semibold text-slate-900 dark:text-slate-100">${seqIndex.get(i) ?? '—'}</td>
+      </tr>`,
+      )
+      .join('');
+    ruleTable.innerHTML = `<table class="w-full"><thead><tr class="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+      <th class="px-3 py-2">İş</th>
+      <th class="px-3 py-2 text-right">α ${three ? '= p₁+p₂' : '= p₁'}</th>
+      <th class="px-3 py-2 text-right">β ${three ? '= p₂+p₃' : '= p₂'}</th>
+      <th class="px-3 py-2 text-center">Grup</th>
+      <th class="px-3 py-2 text-right">Sıra</th>
+    </tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clearError();
+    try {
+      const jobs = parseJobs();
+      const result = solveJohnson(jobs);
+      makespanEl.textContent = fmt(result.makespan, 2);
+      const seqLabels = result.sequence.map((i) => jobs[i].label).join(' → ');
+      seqSummary.textContent = `Sıra: ${seqLabels}`;
+      if (result.machines === 3) {
+        optNote.textContent = result.optimality === 'exact'
+          ? `Üç makinada Johnson-Bellman indirgemesi optimum verir. ${result.reductionNote}`
+          : `⚠ ${result.reductionNote}`;
+        optNote.className = result.optimality === 'exact'
+          ? 'mt-2 text-xs text-emerald-900/80 dark:text-emerald-200/80'
+          : 'mt-2 text-xs text-amber-800 dark:text-amber-300';
+      } else {
+        optNote.textContent = 'İki makinada Johnson kuralı Cmax için optimumdur.';
+        optNote.className = 'mt-2 text-xs text-emerald-900/80 dark:text-emerald-200/80';
+      }
+      mNjobs.textContent = String(jobs.length);
+      mM1Idle.textContent = fmt(result.m1Idle, 2);
+      mM2Idle.textContent = fmt(result.m2Idle, 2);
+      if (result.machines === 3) {
+        mM3Idle.textContent = fmt(result.m3Idle, 2);
+        mM3Label.textContent = 'M3 boş süre';
+        mM3Idle.parentElement!.hidden = false;
+      } else {
+        mM3Idle.parentElement!.hidden = true;
+      }
+      renderGantt(result);
+      renderScheduleTable(result);
+      renderRuleTable(result);
+      output.hidden = false;
+      output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      const msg = err instanceof JohnsonError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
+      showError(msg);
+    }
+  });
+</script>

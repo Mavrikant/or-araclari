@@ -1,0 +1,299 @@
+---
+title: "Johnson Kuralı: 2/3 Makina Akış-Tipi Çizelgeleme"
+description: "Johnson 1954 kuralı: U/V yapısı, iki-makina flow-shop'ta Cmax optimumu, Johnson-Bellman 3-makina uzantısı, flow-shop / job-shop farkı ve klasik sınav örnekleriyle Türkçe rehber."
+pubDate: 2026-07-10
+relatedTool: "johnson-akis-tipi-cizelgeleme"
+keywords:
+  - "johnson kuralı"
+  - "johnson's rule"
+  - "akış tipi çizelgeleme"
+  - "flow shop scheduling"
+  - "2 makina çizelgeleme"
+  - "üç makina flow shop"
+  - "johnson-bellman"
+  - "makespan"
+  - "Cmax"
+  - "permutation flow shop"
+  - "sıralama problemi"
+readingMinutes: 12
+faq:
+  - question: "Johnson kuralı nedir?"
+    answer: "S. M. Johnson'un 1954'te 'Optimal Two- and Three-Stage Production Schedules with Setup Times Included' makalesinde tanıttığı, iki makinalı akış-tipi (flow-shop) atölyede toplam süreyi (Cmax) minimize eden iş sıralamasını O(n log n) zamanda bulan basit bir kuraldır. Her iş önce M1 sonra M2'den geçer; kural U = { α ≤ β } grubunu α'ya göre artan, V = { α > β } grubunu β'ya göre azalan sıralar ve U + V birleştirir. İki makinada optimum kanıtlanmıştır; üç makinada özel bir indirgeme koşulu sağlandığında hâlâ optimumdur."
+  - question: "Akış-tipi (flow-shop) atölye ile iş-tipi (job-shop) atölye arasındaki fark nedir?"
+    answer: "Flow-shop: tüm işler makinaları **aynı sırayla** ziyaret eder (M1 → M2 → M3). Yalnızca sıralama kararı verilir. Permütasyon flow-shop varyantında makinalar arasında da aynı iş sırası korunur. Job-shop: her işin **kendine özgü** rota'sı vardır; bir iş M1 → M3 → M2 giderken diğeri M2 → M1 → M3 gidebilir. Karar hem sıra hem çakışma yönetimidir ve problem çok daha zordur (F2 || Cmax O(n log n), J3 || Cmax NP-zor). Johnson kuralı sadece flow-shop içindir."
+  - question: "Cmax (makespan) tam olarak nedir?"
+    answer: "Cmax = son işin son makinada bitiş zamanı = tüm siparişleri tamamlamak için gereken toplam süre. Örneğin 5 iş 2 makinada 25 dakika alıyorsa, atölyenin ilk işe başladığı andan son işi teslim ettiği ana kadar 25 dakika geçer. Cmax kaynak kullanımının en klasik ölçütüdür; alternatifleri arasında Σ Ci (ortalama tamamlanma), Lmax (maksimum gecikme), Σ Ti (toplam gecikme) sayılabilir. Johnson kuralı yalnızca Cmax'ı optimize eder — bu diğer ölçütlerde de en iyi anlamına gelmez."
+  - question: "Kural niçin U'yu α'ya göre artan, V'yi β'ya göre azalan sıralar?"
+    answer: "İki iş i, j için sırada i önce, j sonra iken Cmax(i,j) ile ters sırasını karşılaştırırsak, i'nin j'den önce olması için gerek-yeter koşul: min(a_i, b_j) ≤ min(a_j, b_i) (Johnson'un ikili değiştirme kanıtı). Bu ilişki tam (total) bir sıralamayı değil bir 'değiştirme' kuralını verir. Kuralı sabit bir sıra olarak uygulamak için U/V ayırımı yapılır: küçük M1 zamanlı işleri erken çalıştırmak M2'nin idle kalmasını azaltır; küçük M2 zamanlı işleri sona bırakmak son 'kuyruk süresi'ni kısaltır. İki tarafın kesişiminde α ≤ β eşitliği kuralın karar sınırıdır."
+  - question: "Ties nasıl bozulur?"
+    answer: "α = β olan işler U grubuna dahildir (kural α ≤ β). U içinde aynı α'ya sahip iki işi hangi sırada koyduğun Cmax'ı etkilemez ama diğer ölçütleri (Σ Ci, sıra bağımlı ceza) etkileyebilir. Uygulamada kararlı bir tie-break (orijinal iş indeksi, teslim tarihi, öncelik puanı) tercih edilir. Bir başka uygulama seçeneği: aynı α'da (a, b - a) çiftini leksikografik karşılaştır — Cmax değişmez ama plan daha okunaklı olur. Aracımız orijinal indekse göre kararlı sıralar."
+  - question: "Üç makinalı akış-tipi problemi ne zaman Johnson-Bellman ile çözülür?"
+    answer: "F3 || Cmax genelde NP-zor. Ancak Johnson (1954) ve Bellman'ın gösterdiği özel bir koşul: **min(p_i1) ≥ max(p_i2)** VEYA **min(p_i3) ≥ max(p_i2)** — yani ortadaki makine bir 'sızma noktası' olmayacak kadar hızlı ise. Bu koşul sağlanırsa problem sahte-süreler α_i = p_i1 + p_i2 ve β_i = p_i2 + p_i3 kullanılarak iki-makinalı Johnson'a indirgenir ve kanıtlanabilir biçimde optimum verir. Koşul sağlanmazsa aynı reçete klasik bir sezgisel olarak kullanılır (Johnson-Bellman heuristic); optimum için CDS, NEH veya tam permütasyon araması gerekir."
+  - question: "n makinaya (m ≥ 4) genelleme var mı?"
+    answer: "Doğrudan Johnson kuralı yok; F || Cmax genelde güçlü NP-zor. Pratikte kullanılan tarihi sezgiseller: **CDS (Campbell-Dudek-Smith 1970)** — m'yi 2 makinaya sıkıştırarak m-1 farklı Johnson çalıştırıp en iyisini seçer. **NEH (Nawaz-Enscore-Ham 1983)** — Σ p toplamı büyükten küçüğe eklemeli inşa. **Palmer (1965)** — 'slope index'e göre tek sıralama. Modern yaklaşımlar: MIP, benders, tabu search, iterated greedy. Küçük-orta problemlerde NEH tipik olarak Cmax'ın %5 içinde kalır."
+  - question: "İşler arası boşluk (idle time) neden olur ve nasıl azaltılır?"
+    answer: "M1 boş kalır sadece tüm işler bitince (kuyruğun sonunda). M2 iki nedenle boş kalabilir: (a) baş: ilk iş M1'i geçene kadar hep boş, süre = a_{ilk}. (b) araya: M1 daha hızlı bittiğinde M2 önceki işi hâlâ işlerken sıradaki iş bekler (bu boşluk değil, M1'in başka bir iş için hazır olması). Kritik gerçek boşluk: bir iş M1'i çok geç bitirir ve M2 önceki işini çoktan bitirmiştir (M2 idle). Johnson kuralı bu 'M2 idle'ı toplamda minimize eder; küçük a_i'yi başa alarak. Boşluk hâlâ varsa yol makina hızları arasındaki dengesizliktendir."
+  - question: "İşlem sırasında iş bölünebilir mi (preemption) veya makina bekletilebilir mi?"
+    answer: "Klasik F2 || Cmax modelinde: hayır, **non-preemptive**. Bir iş bir makinada başladıysa aralıksız tamamlanır; iki iş aynı anda aynı makinada olamaz. Bir işin M2'ye geçmesi için M1'i bitirmiş olması **ve** M2'nin boş olması gerekir. Sıra sabittir: aynı iş M1'de k'ncı ise M2'de de k'ncı olmalıdır (permütasyon flow-shop varsayımı). Preemption izin verilirse problem daha kolaylaşır ama Johnson kuralı yerini P || Cmax gibi paralel makine algoritmalarına bırakır."
+---
+
+Beş iş sıraya girmiş, iki tezgâh boşta bekliyor. Her iş önce torna,
+sonra freze görecek. Torna sürelerin (dakika) J1=6, J2=2, J3=4, J4=1,
+J5=3. Freze sürelerin J1=3, J2=8, J3=7, J4=4, J5=5. Toplam iş yükü
+sabit ama torna ve freze arasında **iş sırası** değiştirdikçe toplam süre
+oynuyor: J1'i başa alırsan freze 6. dakikaya kadar bomboş. J4'ü başa
+alırsan freze 1. dakikada iş görmeye başlıyor. Bu ne kadar önemli?
+
+Klasik ders kitabı sınav sorusunun cevabı: sıranın seçimi Cmax'ı 25 ile
+40 dakika arasında dolaştırır. **Johnson 1954** kuralı, sırayı elle
+denemeden, iki tarafın "α ≤ β" ilişkisini kullanarak optimumu 3 satırda
+kurar.
+
+## Akış-tipi (flow-shop) atölye nedir?
+
+Bir üretim ortamı düşün: her iş sabit bir makina rota'sını izler. Torna
+→ Freze → Delik açma, hep bu sırada. İki farklı iş bile aynı sırayı
+kullanır. Bu **flow-shop** yapısıdır. Karşıtı **job-shop**: her iş kendi
+teknoloji ihtiyacına göre farklı rota izler; bir iş delik açmadan freze
+görebilir, diğeri tam tersi.
+
+Flow-shop iki nedenle popüler:
+
+1. **Seri üretim ve montaj hatları** doğal olarak flow-shop'tur. Beyaz
+   eşya, otomotiv gövde, tekstil dokuma → hep aynı hat.
+2. **Karar uzayı küçüktür.** n! kadar permütasyon var; job-shop'ta hem
+   sıra hem makina atama seçilir, arama çok büyür.
+
+Flow-shop'un içindeki **permütasyon flow-shop** varsayımı bunu daha da
+sıkılaştırır: aynı iş sırası tüm makinalarda korunur. İki iş yer
+değiştirmez. Johnson kuralı tam olarak bu varsayımla çalışır.
+
+## Neyi optimize ediyoruz: Cmax (makespan)
+
+Farklı ölçütler:
+
+- **Cmax**: son işin son makinada bitiş zamanı. Atölye "kapanış saati".
+- **Σ Ci**: tüm işlerin bitiş zamanları toplamı. Ortalama teslim
+  hızlanır ama Cmax kötüleşebilir.
+- **Lmax**: maksimum gecikme (bitiş − due date). Teslim tarihine bağlı.
+- **Σ Tj**: toplam gecikme cezası.
+
+Kaynak kullanımı odaklıysan Cmax; müşteri memnuniyeti odaklıysan Σ Ci
+veya Σ Tj. Johnson kuralı yalnızca **Cmax**'ı optimize eder. Σ Ci'yi
+ayrıca minimize eden başka bir kural değildir (ilk n işi kısa tutan
+farklı bir sıralama Σ Ci için daha iyi olabilir).
+
+## Johnson kuralı — üç adım
+
+n işin her biri için M1 süresi a_i ve M2 süresi b_i verildi.
+
+**1. Ayır.** `U = { i : a_i ≤ b_i }`. `V = { i : a_i > b_i }`. (a = b
+işleri U'ya girer.)
+
+**2. Sırala.** U'yu a_i **artan** sıraya diz. V'yi b_i **azalan**
+sıraya diz.
+
+**3. Birleştir.** Optimum sıra = U ardından V.
+
+Örnekle görelim. J1=(6,3), J2=(2,8), J3=(4,7), J4=(1,4), J5=(3,5):
+
+- U: J2 (a=2 ≤ b=8), J3 (4 ≤ 7), J4 (1 ≤ 4), J5 (3 ≤ 5)
+- V: J1 (a=6 > b=3)
+
+U'yu a artan sırala: J4 (a=1), J2 (a=2), J5 (a=3), J3 (a=4).
+V'yi b azalan: J1 (b=3).
+
+**Sıra: J4 → J2 → J5 → J3 → J1.**
+
+Elle iz sürelim (t = 0'dan başlayarak):
+
+| Sıra | İş | M1 aralığı | M2 aralığı |
+|---|---|---|---|
+| 1 | J4 | 0–1 | 1–5 |
+| 2 | J2 | 1–3 | 5–13 |
+| 3 | J5 | 3–6 | 13–18 |
+| 4 | J3 | 6–10 | 18–25 |
+| 5 | J1 | 10–16 | 25–28 |
+
+**Cmax = 28.** M2 sadece ilk 1 dakika boş kaldı (J4 tornadan gelene
+kadar). Diğer 27 dakika sürekli iş gördü.
+
+Karşılaştırma için "iş numarası sırası" J1 → J2 → J3 → J4 → J5:
+
+| Sıra | İş | M1 | M2 |
+|---|---|---|---|
+| 1 | J1 | 0–6 | 6–9 |
+| 2 | J2 | 6–8 | 9–17 |
+| 3 | J3 | 8–12 | 17–24 |
+| 4 | J4 | 12–13 | 24–28 |
+| 5 | J5 | 13–16 | 28–33 |
+
+**Cmax = 33.** 5 dakika kayıp — %18 daha fazla süre.
+
+## Johnson kuralı niçin optimumdur? İkili değiştirme argümanı
+
+Herhangi bir sıradaki iki komşu iş i, j alalım. i önce, j sonra
+olduğunu düşünelim. Kim daha iyi?
+
+Blok içindeki M2 bitiş zamanları:
+
+- Sıra (i, j): C_j = max(a_i + a_j + b_j, a_i + b_i + b_j) = a_i +
+  max(a_j + b_j, b_i + b_j) = a_i + b_j + max(a_j, b_i)
+- Sıra (j, i): C_i = a_j + b_i + max(a_i, b_j)
+
+i'nin önce olması gerek-yeter koşulu (i, j) ≤ (j, i):
+
+a_i + b_j + max(a_j, b_i) ≤ a_j + b_i + max(a_i, b_j)
+
+Bunu düzenlersek Johnson'un elde ettiği güzel form:
+
+**min(a_i, b_j) ≤ min(a_j, b_i)**
+
+Bu tam bir sıralama vermez (üç iş için transitif olabilir de olmayabilir
+de). Ama şuna izin verir: küçük a_i'ye sahip işler önce olmalı; küçük
+b_i'ye sahip işler sonra olmalı. U/V ayrımı bunu sabit bir kural olarak
+işletir:
+
+- U (a ≤ b): a küçük, önde olması karlı; U içinde a'ya göre artan.
+- V (a > b): b küçük, arkada olması karlı; V içinde b'ye göre azalan.
+
+Kanıt bir "değiştirme argümanı"dır: herhangi bir optimum plan alın,
+Johnson sırasında olmayan bir komşu çifti gösterirseniz, onu ters
+çevirdiğinizde Cmax **artmaz** (yukarıdaki eşitsizlikten). Sonlu sayıda
+değiştirme sonunda Johnson sırasına ulaşırsınız; Cmax hep en iyi
+kalmıştır. QED.
+
+## Üç makina: Johnson-Bellman uzantısı
+
+Üç makinada F3 || Cmax **genelde NP-zor**. Johnson (1954) ve Bellman
+yine özel bir koşulda optimum kural buldular:
+
+> **min p_i1 ≥ max p_i2**    veya    **min p_i3 ≥ max p_i2**
+
+Sezgi: ortadaki makine bir 'darboğaz' değilse — yani hep hızlı bitirip
+başka bir işi almaya hazırsa — üç makinalı problem iki 'sahte makina'ya
+katlanır.
+
+**İndirgeme.** α_i = p_i1 + p_i2, β_i = p_i2 + p_i3 tanımla. Bu iki
+sahte-süreyle iki-makina Johnson kuralını uygula. Elde ettiğin sıra
+orijinal problemde de optimumdur.
+
+Koşul sağlanmazsa (ortadaki makine gerçekten yavaş) aynı indirgeme
+çalıştırılabilir ama artık **optimum garantisi yoktur**; sonucu
+Johnson-Bellman **sezgiseli** olarak kullanılır ve gerçek optimuma
+yakın (%5-15) plan verir. Bizim araç indirgeme koşulunu kontrol edip
+sonucun **exact** mı yoksa **heuristic** mi olduğunu etikete basar.
+
+**Örnek (koşul sağlanır).** A=(11,3,5), B=(13,2,4), C=(15,1,6), D=(12,3,7).
+min p_i1 = 11 ≥ max p_i2 = 3 ✓. α = (14, 15, 16, 15), β = (8, 6, 7, 10).
+
+- U (α ≤ β): —yok, hepsinde α > β
+- V: A (β=8), B (β=6), C (β=7), D (β=10). Azalan β: D, A, C, B.
+
+Sıra: D → A → C → B. Cmax hesabı üç makinalı simülasyondan çıkar.
+
+## Praktikte sırayı bulmanın algoritma değeri
+
+n! permütasyon vardır. n=10 için 3.6 milyon, n=15 için 1.3 trilyon.
+Brute-force yerine:
+
+- **Johnson (F2)**: O(n log n) — sıralama maliyeti.
+- **Johnson-Bellman (F3, koşul sağlanır)**: O(n log n).
+- **CDS heuristic (Fm)**: O(m · n log n).
+- **NEH heuristic (Fm)**: O(n² · m) — inşa maliyeti daha yüksek ama
+  büyük problemlerde tarihi olarak en iyi sezgisel.
+
+Tarayıcıda 200 iş için Johnson kuralı 1 ms altında; brute-force 20 iş
+üstünde hesaplanamaz. Optimum bulunabildiği durumları optimum,
+bulunamadığında iyi bir sezgisel kullanmak modern OR'nin standart
+sıralamasıdır.
+
+## Yaygın hatalar
+
+**Hata 1: Sırayı iş isimlerinin numarasıyla ("J1'den başla") uygulamak.**
+Problemi 5 dakikada bitirebilecekken 8 dakika sürer.
+
+**Hata 2: Sadece kısa toplam süreli işleri başa almak (SPT).** SPT tek
+makinada Σ Ci için optimumdur; iki makinada Cmax için optimum değildir.
+Örnek: (a=1, b=10) ve (a=10, b=1). SPT (toplam) her ikisi eşit, seçim
+belirsiz. Johnson kesin: küçük a'lı (1,10) başa.
+
+**Hata 3: Üç makinada Johnson-Bellman'ı koşul kontrol etmeden optimum
+sanmak.** Ortadaki makine yavaşsa sonuç sadece iyi bir başlangıç
+noktasıdır; NEH, CDS veya MIP ile iyileştirilmelidir.
+
+**Hata 4: Sıradan bağımsız hazırlık (setup) sürelerini işlem süresine
+katmadan çözmek.** Johnson makale başlığı zaten 'with Setup Times
+Included' der: setup zamanları a_i, b_i içine eklenmelidir. Sıra
+bağımlı setup ise (i'den j'ye geçmek s_ij sürüyorsa) klasik Johnson
+kuralı yetmez; genellikle bir MILP veya karma sezgisel gerekir.
+
+**Hata 5: İş bölünebilir varsaymak.** Preemption yasak — Johnson
+non-preemptive modele göre kanıtlanmıştır. Bir iş M1'de başladıysa
+aralıksız tamamlanır.
+
+## Nerede karşılaşırsın?
+
+- **Makine imalat**: torna → freze → taşlama gibi hatlarda sıra kararı.
+- **Baskı**: dizgi → baskı → ciltleme akışı.
+- **Mutfak**: yıkama → doğrama → pişirme; küçük restoran optimizasyonu.
+- **Yazılım yayınlama**: build → test → deploy adımları (biraz zorlama
+  ama pratik).
+- **Hastane laboratuvarı**: numune hazırlama → analiz → raporlama; bir
+  iş boyunca aynı sıra korunuyor.
+- **Ders sınavı**: klasik OR sınav sorularının favorisi. Öğrenmek
+  algoritmadan çok "iki tarafın neyi ilgilendirdiğini" öğrenmektir.
+
+## Tarihçe: 1954 Johnson makalesi
+
+S. M. Johnson'un *Naval Research Logistics Quarterly* dergisinde
+yayımlanan iki sayfalık makalesi ("Optimal Two- and Three-Stage
+Production Schedules with Setup Times Included") üretim çizelgeleme
+literatürünün temel taşlarındandır. O tarihte üretim planlaması iki
+büyük dalgadan geçiyordu:
+
+1. **Gantt (1917)** çizelgesi görsel bir dil kurdu.
+2. **II. Dünya Savaşı** sonrası askeri lojistikten türeyen yöneylem
+   araştırması ilk kez bu görselleri niceliksel karar araçlarına
+   dönüştürdü.
+
+Johnson'un katkısı hem matematiksel eleganstı — ikili değiştirme
+argümanının polinom zamanlı bir kural verebilmesi — hem de tarihi
+bağlamda anlamlıdır: Sovyet fabrika-otomasyonu tartışması, Bellman'ın
+o yıllarda geliştirdiği dinamik programlama ve Nash'in oyun teorisi
+çalışmalarıyla eş zamanlıdır. Aynı OR dalgasının farklı yüzleri.
+
+**Sonraki adımlar:** Bellman-Johnson uzantısı (1956), Palmer (1965)
+slope index, Campbell-Dudek-Smith (1970), Nawaz-Enscore-Ham (1983),
+Taillard benchmark seti (1993), günümüzde MIP ve metaheuristics.
+
+## Aracımızda ne var?
+
+- **İki ya da üç makina** seçimi (radyo buton).
+- **İş tablosu** — etiket, p₁, p₂ (ve p₃) sütunları; canlı düzenleme.
+- **Hazır örnekler**: Taha 5-iş F2 problemi, 3-makina Johnson-Bellman.
+- **Otomatik U/V grup analizi** — hangi iş hangi gruptaydı ve α, β
+  sahte-süreleri tabloda.
+- **Gantt çizelgesi** — M1, M2 (ve M3) blokları renk kodlu; Cmax dikey
+  çizgi ile işaretli.
+- **Sıra tablosu** — her iş için M1 ve M2 zaman aralıkları; M2 boş
+  süresi ambar rengiyle vurgulu.
+- **Optimum / sezgisel etiketi** — üç makinada koşul otomatik denetlenir
+  ve sonuç `exact` mi `heuristic` mi belirtilir.
+- **Makine boş süreleri** — planlama kalitesinin özet göstergeleri.
+
+Karar destek olarak: küçük atölyelerde el ile hazırlayacağın sıra
+listesini birebir üretir; büyük problemler için NEH veya MIP'ye
+geçmeden önce iyi bir üst sınır (sezgisel) verir.
+
+## İlgili araçlar
+
+- **[PERT / CPM](/or-araclari/araclar/pert-cpm-kritik-yol)** — kritik yol
+  ile makespan hesabı; Johnson bir tür özel PERT bulmacasıdır.
+- **[Wagner-Whitin dinamik lot boyutlandırma](/or-araclari/araclar/wagner-whitin-cozucu)** —
+  hangi işlerin hangi partide yapılacağı; Johnson hangi partide
+  hangi sırada işleneceği.
+- **[Atama problemi (Hungarian)](/or-araclari/araclar/atama-problemi-cozucu)** —
+  iş-makina eşleştirmesinin klasik dengesi.
+- **[Ders programı üretici](/or-araclari/araclar/ders-programi-uretici)** —
+  çakışmasız zaman-blok kısıtlamalı çizelgeleme.
