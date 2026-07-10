@@ -1,0 +1,296 @@
+---
+title: "Wagner-Whitin: Dinamik Lot Boyutlandırma"
+description: "Wagner-Whitin 1958 dinamik lot boyutlandırma algoritması, Zero Inventory Ordering ilkesi, ileri DP formülasyonu ve Silver-Meal sezgiseliyle karşılaştırma üzerine kapsamlı Türkçe rehber."
+pubDate: 2026-07-10
+relatedTool: "wagner-whitin-cozucu"
+keywords:
+  - "wagner-whitin"
+  - "dinamik lot boyutlandırma"
+  - "dynamic lot sizing"
+  - "MRP"
+  - "silver-meal"
+  - "least unit cost"
+  - "zero inventory ordering"
+  - "EOQ değişken talep"
+  - "dinamik programlama envanter"
+  - "üretim planlama"
+  - "ileri DP"
+readingMinutes: 12
+faq:
+  - question: "Wagner-Whitin algoritması nedir?"
+    answer: "Harvey Wagner ve Thomson Whitin'in 1958'de yayımladığı, sonlu bir T-dönem ufuk üzerinde zaman-değişken talep, kurulum ve taşıma maliyetleri altında toplam maliyeti minimize eden üretim/sipariş çizelgesini O(T²) zamanda bulan ileri dinamik programlama algoritmasıdır. Klasik EOQ'nun temel varsayımı olan sabit talep kırıldığında ondan geriye kalan tek doğru çözümdür; sabit-Q sezgileri (EOQ, POQ) genelde optimum değildir."
+  - question: "Zero Inventory Ordering (ZIO) ilkesi nedir?"
+    answer: "Wagner ve Whitin'in kanıtladığı yapısal özellik: optimal bir planda üretim yalnızca elde stok sıfırken yapılır. Eşdeğer olarak, dönem j'de üretim yapılıp j..k periyodu karşılanıyorsa k+1'e kadar tekrar üretim olmaz. Bu, T-dönemlik problemi 1..T'nin ardışık 'lot blokları'na bölünmesine indirger; O(2^{T−1}) partisyon yerine O(T²) DP ile en iyisi bulunabilir."
+  - question: "İleri DP formülasyonu nasıl kurulur?"
+    answer: "f(t) = 1..t dönemlerini karşılamanın minimum maliyeti olsun; f(0) = 0. Her t için: f(t) = min_{1 ≤ j ≤ t} { f(j−1) + K_j + Σ_{p=j..t} (h_j + h_{j+1} + … + h_{p−1}) · d_p + c_j · Σ_{p=j..t} d_p }. İç toplamda K_j son lotun kurulum maliyeti; taşıma terimi j'de üretilen ama p'de tüketilen birimin yol maliyeti; c_j üretim maliyeti. arg-min j'yi kaydedip sondan başa geri izleyerek lot bloklarını çıkartırız."
+  - question: "EOQ ile Wagner-Whitin arasındaki fark nedir?"
+    answer: "EOQ (Wilson, 1913) yıllık **sabit** talep varsayımı altında sabit sipariş miktarı Q* = √(2DS/H)'yı bulur. Wagner-Whitin talebin dönemden döneme **değiştiği** durumda çalışır ve genelde eşit-olmayan lotlar üretir. Talep sabit olduğunda WW yaklaşık olarak POQ (Periodic Order Quantity) = EOQ/D dönemlik lotlara indirger. Değişken talepli MRP çıktıları söz konusu olduğunda EOQ sistematik olarak ya çok fazla stok tutar ya da gereksiz kurulum yapar."
+  - question: "Silver-Meal sezgiseli nasıl çalışır ve ne zaman WW ile farklılaşır?"
+    answer: "Silver ve Meal (1973): mevcut lotu genişletirken 'dönem başına ortalama maliyet' azaldıkça sıradaki dönemi de kapsa, artmaya başladığında lotu kapat ve yeniden başla. Miyop bir açgözlü kuraldır: mevcut lotun ortalamasına bakar, geleceği görmez. Talep çok dalgalıysa (özellikle küçük bir dönemden hemen sonra büyük bir dönem geldiğinde) yanlış yerde lot kapatabilir ve WW'ye kıyasla %5-15 fazla maliyete çıkabilir. Talep 'düzgünken' pratikte WW'ye çok yakındır."
+  - question: "Wagner-Whitin ne zaman doğru araç değildir?"
+    answer: "Üç durumda: (1) Kapasite kısıtı varsa (bir dönemde en fazla C_t birim üretebilirsen), CLSP (Capacitated Lot Sizing Problem) NP-zordur, WW'nin serbest DP'si geçerli değildir. (2) Talep stokastikse ve rassal sapmalar planlama ufkunda kaymak-tekrarlıyorsa (rolling horizon), WW'nin planı 'nervous' olabilir; yaklaşık çözüm ya stok tampon eklenmeli ya da Silver-Meal + emniyet stoğu tercih edilir. (3) Ürünler birbirini etkiliyorsa (multi-item ortak kaynak), koordineli lot boyutlandırma modelleri gerekir."
+  - question: "Wagner-Whitin planı 'nervous' mudur?"
+    answer: "Evet, uyarısız kullanılırsa. WW dönem T'de biten ufka göre optimum çıkarır; T + 1 döneme geçildiğinde yeni tahminler eski planı geçersizleştirebilir. Bu 'MRP nervousness' olarak bilinir. Pratik çözümler: (a) donma dönemi (ilk N döneme dokunmama), (b) rolling-horizon her hafta yeniden çözüp yalnızca ilk lotu uygulama, (c) Silver-Meal veya POQ gibi daha 'ataletli' sezgiseller tercih edilebilir. Optimallik pahasına dengeli plan istenirse WW tek başına yetmez."
+  - question: "Algoritmanın karmaşıklığı nedir?"
+    answer: "Naif ileri DP O(T²). Her t için 1..t arasından en iyi j seçilir, blok maliyeti O(t) sürede hesaplanır — toplam O(T³). Blok maliyetleri kümülatif toplam kullanarak inkremental hesaplanırsa O(T²)'ye iner. Aggarwal-Park (1993) monotonluk özelliklerini kullanarak O(T log T)'ye kadar düşürdü. Pratik ufuk boyutu 12-52 hafta olduğu için T² fazlasıyla yeterli; tarayıcıda 240 dönem için bile gecikme hissedilmez."
+  - question: "MRP sistemlerinde Wagner-Whitin nerede oturuyor?"
+    answer: "SAP APO, Oracle ASCP ve modern APS motorlarının 'lot sizing rules' menüsünde WW klasik bir seçenek olarak listelenir (yanında EOQ, POQ, Silver-Meal, LUC, LFL). Ford Motor 1958'de yayımlandığında algoritmayı önce parça-satın alımı için, sonra üretim planlamada kullanmıştır. Küçük ölçekli iş çizelgeleme veya perakende yeniden sipariş kararlarında hâlâ tercih edilir; büyük ölçekli çok-ürünlü sistemlerde koordineli varyantları (Manne, Dixon-Silver) veya MIP formülasyonları kullanılır."
+---
+
+Her hafta farklı miktarda talep gelen bir üretim tesisi düşün. 10 hafta
+sonrasına kadar tahmin ettiğin talep şu: 10, 62, 12, 130, 154, 129, 88,
+52, 124, 160. Kurulum maliyetin sabit 100 ₺, birim başına haftalık taşıma
+maliyetin 1 ₺. Kaç kez üretim yapmalı, her seferinde ne kadar
+üretmelisin?
+
+EOQ formülü bu soruyu cevaplayamaz — talebin sabit olduğunu varsayar,
+sen ise haftadan haftaya iki kat sapma görüyorsun. "Her hafta ne
+istiyorsa onu üret" (lot-for-lot) 10 kurulum × 100 ₺ = 1000 ₺ eder ama
+taşıma maliyeti 0 olur. "Tümünü bir seferde üret" 100 ₺ kurulum ama
+yüksek taşıma maliyeti. Doğru cevap ikisinin arasında bir yerde ve
+**Wagner-Whitin 1958** algoritması onu bulmanın polinom zamanlı ve
+optimal yoludur.
+
+## Dinamik lot boyutlandırma nedir?
+
+Klasik EOQ'nun üç sabitleyici varsayımı vardı:
+
+1. Talep sabit ve deterministik
+2. Sürekli-dönem (t sürekli bir zaman değişkeni)
+3. Kurulum maliyeti K, taşıma maliyeti h, birim maliyet c hepsi zamanla değişmez
+
+Gerçek üretim planlamada bu varsayımların üçü birden çoğu zaman
+tutmaz. MRP (Materials Requirements Planning) sistemleri her hafta net
+gereksinim tablosu üretir; talep bir hafta 10 birim, ertesi hafta 150
+birim olabilir. Sözleşmeye bağlı kampanya haftalarında kurulum maliyeti
+farklıdır. Enflasyon veya yeni kontrat nedeniyle birim maliyet
+değişebilir. Ürün mevsimlik ısı-hassas ise taşıma maliyeti yaz aylarında
+kışa göre iki katına çıkabilir.
+
+**Dinamik lot boyutlandırma problemi** (dynamic lot-sizing problem) bu
+soruyu formüle eder:
+
+> $T$ dönemlik sonlu ufuk boyunca $d_1, d_2, \ldots, d_T$ talebi,
+> $K_1, \ldots, K_T$ kurulum maliyeti, $h_1, \ldots, h_T$ birim-başına
+> taşıma maliyeti verilir. Her dönem için bir üretim (veya sipariş)
+> miktarı $x_t \geq 0$ seç ve stok dengesini $I_t = I_{t-1} + x_t - d_t$
+> ile takip et. Amaç: $\sum_t [K_t \cdot \mathbb{1}(x_t > 0) + h_t \cdot I_t]$
+> toplamını minimize etmek.
+
+Karar değişkenleri hem sürekli ($x_t$) hem ayrık ($\mathbb{1}(x_t > 0)$).
+Naif çözüm karma tam sayılı programlama (MILP) ile bulunur ama bu genel
+olarak NP-zor bir alandır. Wagner ve Whitin bu problemin özel yapısını
+görüp çok daha hızlı bir algoritmanın var olduğunu kanıtladı.
+
+## Zero Inventory Ordering ilkesi
+
+Wagner-Whitin'in kalp atışı **Zero Inventory Ordering** (ZIO) teoremidir:
+
+> Optimal bir planda, üretim yalnızca elde stok sıfır iken yapılır.
+
+Yani $I_{t-1} > 0$ iken $x_t > 0$ olmaz. Eşdeğer bir söyleyiş: eğer
+dönem $j$'de üretim yapılıp $j..k$ arasındaki talep karşılanıyorsa,
+$k+1$'e kadar tekrar üretim yapılmaz. Bu, planlama ufkunu **ardışık lot
+bloklarına** böler:
+
+$$
+[1..k_1], [k_1+1..k_2], \ldots, [k_{n-1}+1..T]
+$$
+
+**İspat sezgisi:** varsayalım optimal planda dönem $j$'de $I_{j-1} > 0$
+ve $x_j > 0$. Bir birim üretimi $j$'den kaldırıp $j$'nin taşıdığı stoktan
+karşılayabiliriz — üretim miktarı azalır ama kurulum maliyeti değişmez
+(yine $x_j > 0$). Bir sonraki üretime kadar taşıma maliyeti düşer. Bu
+kesin bir iyileşme; çelişki. Ya $x_j = 0$ olmalı ya da $I_{j-1} = 0$
+olmalı.
+
+ZIO şunu söylüyor: T-dönemlik problemi $2^{T-1}$ olası partisyon
+üzerinden değil, bunların arasında yalnızca **zincir** yapıya sahip
+olanları (her lot bloğu bitip bir sonrakinin başlaması) düşünmemiz
+yeterli. Bu, dinamik programlamayı mümkün kılan yapıdır.
+
+## İleri DP formülasyonu
+
+$f(t)$: 1..t dönemlerini karşılamanın minimum toplam maliyeti.
+$f(0) = 0$ konvansiyonu.
+
+Herhangi bir $t \geq 1$ için, son lot bloğu $[j..t]$ olsun (bir $1 \leq j \leq t$
+seçimi). Bu bloğun maliyeti:
+
+$$
+c(j, t) \;=\; K_j \;+\; \sum_{p=j}^{t} \left( \sum_{q=j}^{p-1} h_q \right) d_p \;+\; c_j \sum_{p=j}^{t} d_p
+$$
+
+Birinci terim: $j$'deki kurulum. İkinci terim: $j$'de üretilip $p$'de
+tüketilen bir birimin $h_j + h_{j+1} + \ldots + h_{p-1}$ boyunca
+taşınmasının maliyeti. Üçüncü terim: opsiyonel birim üretim maliyeti.
+
+Rekürans:
+
+$$
+f(t) \;=\; \min_{1 \leq j \leq t} \left\{ f(j-1) + c(j, t) \right\}
+$$
+
+Her $t$ için en iyi $j^*(t)$ argmini kaydedilir; sondan başa geri izleyerek:
+
+$$
+t \leftarrow T, \quad \text{lot} = [j^*(t) .. t], \quad t \leftarrow j^*(t) - 1
+$$
+
+Bloklar bulunana kadar tekrarlanır.
+
+**Karmaşıklık.** Her $t$ için en fazla $t$ seçenek; blok maliyeti $O(t)$
+sürede hesaplanır → toplam $O(T^3)$. Kümülatif toplam ile $O(T^2)$'ye
+iner. Aggarwal & Park 1993 monotonluk özelliklerini kullanarak
+$O(T \log T)$'ye düşürdü ama pratik ufuk 12-52 hafta olduğu için $O(T^2)$
+zaten fazlasıyla yeterli.
+
+## Sayısal örnek
+
+Yukarıdaki 10-hafta talep serisi ile çözelim: $d = [10, 62, 12, 130,$
+$154, 129, 88, 52, 124, 160]$, $K = 100$, $h = 1$, $c = 0$.
+
+Bazı blok maliyetlerini el ile hesaplayalım:
+
+- **Blok $[1..1]$:** kurulum 100, taşıma 0 → toplam 100
+- **Blok $[1..2]$:** kurulum 100, taşıma $1 \times 62 = 62$ → toplam 162
+- **Blok $[1..3]$:** kurulum 100, taşıma $1 \cdot 62 + 2 \cdot 12 = 86$ → toplam 186
+- **Blok $[2..3]$:** kurulum 100, taşıma $1 \cdot 12 = 12$ → toplam 112
+
+DP tablosunun ilk birkaç adımı:
+
+- $f(1) = f(0) + c(1,1) = 100$, $j^*(1) = 1$
+- $f(2) = \min\{f(0) + 162,\ f(1) + 100\} = \min\{162, 200\} = 162$, $j^*(2) = 1$
+- $f(3) = \min\{f(0) + 186,\ f(1) + 112,\ f(2) + 100\} = \min\{186, 212, 262\} = 186$, $j^*(3) = 1$
+
+İlk üç dönem tek bir lotta üretilmeli. Algoritma tamamlandığında bu
+problem için optimal plan **beş lot** kullanır ve toplam maliyet
+**864 ₺**'dir. Silver-Meal sezgiseli aynı problemde daha yüksek maliyette
+bir plan üretir; aracın "Silver-Meal karş." kartında iki plan arasındaki
+farkı anında görebilirsin.
+
+## Silver-Meal, LUC ve diğer sezgiseller
+
+Wagner-Whitin optimalidir ama pratik nedenlerle **sezgiseller** de sıkça
+kullanılır: hesabı daha basit, planı daha "ataletli" (rolling-horizon'da
+daha az değişken).
+
+**Silver-Meal (1973):** mevcut lotu genişletirken 'dönem başına ortalama
+maliyet' $\bar{c}(j,k) = c(j,k) / (k - j + 1)$ azaldıkça bir sonraki
+dönemi kapsa; artmaya başladığında lotu kapat ve yeni bir lotla yeniden
+başla. Miyop bir açgözlü kural — mevcut lotun ortalamasına bakar, uzak
+geleceği görmez. Talep düzgünse WW'ye çok yakın; dalgalı talepte
+(özellikle küçük bir dönemin ardından büyük bir dönem geldiğinde) %5-15
+fazla maliyet üretir.
+
+**Least Unit Cost (LUC):** aynı fikir ama **birim başına** ortalama
+maliyet $c(j,k) / \sum_{p=j}^{k} d_p$ üzerinden. Talep patlamalarında
+Silver-Meal'den daha az duyarlı ama uzun ufukta hâlâ suboptimal.
+
+**Part-Period Balancing (PPB):** taşıma ve kurulum maliyetlerini
+dengelemeye çalışır; DeMatteis & Mendoza 1968. Wagner-Whitin'e daha
+yakın olabilir ama garantisi yoktur.
+
+**Periodic Order Quantity (POQ):** sabit periyot uzunluğu $T^* \approx
+\sqrt{2K / (hD)}$'a sabitlenir. EOQ'nun uzun bir haftalık planlamaya
+mekanik uyarlaması; kritik problemli haftalarda büyük hata verir.
+
+**Lot-for-Lot (LFL):** her dönem için ayrı üretim. Taşıma maliyeti sıfır
+ama kurulum maliyeti maksimum. Kurulum çok ucuzsa optimalidir; aksi
+takdirde israfçıdır.
+
+Rehber olarak: **kurulum baskınken** WW büyük tasarruf verir;
+**kurulum ucuzken** LFL yeterlidir; **talep dalgalıyken** WW'nin
+sezgisellere üstünlüğü belirginleşir.
+
+## Rolling horizon ve "MRP nervousness"
+
+Wagner-Whitin yalnızca bugünkü tahminlere göre bir plan çıkarır. Ertesi
+hafta yeni bilgi geldiğinde plan tümüyle değişebilir — bir önceki
+haftadaki lot yapısı geçersiz olabilir. Bu, MRP kültüründe **nervousness**
+olarak bilinen sorundur.
+
+Pratik çözümler:
+
+1. **Donma dönemi.** İlk $N$ döneme (örneğin 4 hafta) dokunma; yalnızca
+   sonraki dönemleri yeniden çöz.
+2. **Rolling horizon.** Her hafta yeniden çöz ama yalnızca **ilk** lotu
+   uygula; T-dönem sonrasını bir sonraki hafta zaten yeniden çözeceksin.
+3. **Sezgisele geç.** Silver-Meal veya POQ nervousness'a daha az duyarlı.
+4. **Yumuşatılmış hedef.** WW'yi bir "üst sınır" olarak kullan ve gerçek
+   çizelgede geçmişteki kararlara ceza ekle (Blackburn-Millen 1980).
+
+Aracın çıktısı **bir zaman anındaki** optimal planı verir. Üretimde
+kullanmadan önce nervousness stratejisine karar vermek yöneticinin
+işidir; algoritma sadece dostudur.
+
+## ZIO ötesindeki sınırlar
+
+Wagner-Whitin'in serbest DP'si üç varsayıma dayanır:
+
+- **Kapasite yok.** Her dönemde istediğin kadar üretebilirsin. Kapasite
+  eklenirse (CLSP — Capacitated Lot Sizing) problem NP-zor olur; MIP ve
+  Lagrange gevşetmesi kullanılır.
+- **Tek ürün.** Ortak kaynak kısıtlı çok-ürünlü ortamda (multi-item CLSP)
+  problem daha zor; koordineli lot boyutlandırma modelleri (Manne 1958,
+  Dixon-Silver 1981) kullanılır.
+- **Deterministik talep.** Rassal talepli sistemde WW'yi doğrudan
+  kullanmak nervousness sorununu ağırlaştırır. Stokastik uzantılar
+  (Federgruen-Zipkin, base-stock politikası) ayrı bir literatürdür.
+
+## Yaygın 5 hata
+
+1. **EOQ'yu değişken talebe zorla uygulamak.** Sabit-Q kullanmak
+   dalgalı talepte kurulum sayısını en kötü ihtimalle ikiye katlayabilir.
+   Değişken talepte lot-sizing sezgiselleri veya doğrudan WW kullan.
+2. **Ufkun sonunu unutmak.** WW $[j..T]$ blokları için maliyeti hesaplar
+   ama gerçekte $T+1, T+2, \ldots$ talebi vardır. Son bloğu suni olarak
+   büyütebilirsin (**horizon effect**). Rolling horizon veya suni ek
+   dönemlerle çöz.
+3. **Taşıma maliyetini yanlış dönem-birimine çevirmek.** Yıllık $h$
+   verilmişse ve dönem haftaysa $h / 52$'ye böl. Aracın $h$ girişi
+   **dönem başınadır**.
+4. **Zero-demand dönemleri lot kırıcı sanmak.** WW $d_p = 0$ olan dönemi
+   olduğu gibi taşır; ekstra kurulum eklemez. "Bu hafta talep yok, yeni
+   lot başlatayım" refleksi WW mantığına aykırıdır.
+5. **Sezgiseli WW'nin yerine koymak.** Silver-Meal hızlı ve pratik ama
+   dalgalı talepte %10'a varan gap açabilir. Kritik maliyet
+   optimizasyonunda WW koş; sezgisel yalnızca aciliyet varsa.
+
+## Kısa tarih: Wagner, Whitin ve MRP
+
+**Harvey M. Wagner** ve **Thomson M. Whitin**, Cambridge/Yale
+akademisinde tanışıp *Management Science* dergisine 1958'de "Dynamic
+Version of the Economic Lot Size Model" makalesini yayımladılar. Makale
+Wilson 1913'ün EOQ'sunu doğrudan **çok-dönemlik ve zaman-değişken**
+duruma genelleştiriyordu. O yıllarda IBM 704 üzerinde konu edilen "MRP"
+sistemleri henüz emekleme aşamasındaydı; Joseph Orlicky'nin 1975 kitabı
+ile MRP endüstriyel norm haline geldiğinde WW algoritması hazır ve
+bekliyordu.
+
+1970-80'lerdeki modern APS sistemlerinde (COPICS, MAPICS) "lot sizing
+rules" menüsü yerleşik hâle geldi: EOQ, POQ, LFL, Silver-Meal, LUC,
+Wagner-Whitin. Bugün SAP APO, Oracle ASCP ve OpenBoM gibi bulut MRP
+motorlarında hâlâ standart bir seçenek olarak listelenir.
+
+Uzantılar:
+
+- **Aggarwal-Park (1993):** monotonluk kullanarak $O(T \log T)$ çözüm
+- **Federgruen-Tzur (1991):** kapasiteli durum için polinom yaklaşım
+- **Wagelmans, Van Hoesel, Kolen (1992):** eğer maliyetler
+  "well-behaved" ise $O(T \log T)$ ile aynı optimum
+- **Uncapacitated multi-item joint replenishment:** Roundy 1985 %98-optimum
+  power-of-two politikaları
+
+## Özet
+
+- **Wagner-Whitin (1958)** değişken talep, kurulum ve taşıma maliyetleri
+  altında **T-dönem** üretim/sipariş planlaması için polinom-zaman
+  optimal algoritmadır.
+- **ZIO teoremi**: optimal planda üretim yalnızca stok sıfırken yapılır.
+  Bu, problemi ardışık lot bloklarına indirger.
+- **İleri DP:** $f(t) = \min_j \{ f(j-1) + c(j,t) \}$, $O(T^2)$ zaman.
+- Silver-Meal, LUC, POQ, LFL **sezgiselleri** hesabı basitleştirir ama
+  optimum garanti etmez.
+- Kapasiteli, çok-ürünlü veya stokastik ortamlarda WW doğrudan
+  yetmez — uzantıları veya MIP formülasyonları gerekir.

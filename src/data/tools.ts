@@ -288,6 +288,16 @@ export const TOOLS: readonly Tool[] = [
     status: 'ready',
     guideSlug: 'newsvendor-tek-donem-envanter',
   },
+  {
+    slug: 'wagner-whitin-cozucu',
+    title: 'Wagner-Whitin Dinamik Lot Boyutlandırma',
+    shortTitle: 'Wagner-Whitin',
+    description:
+      'Zamana bağlı değişken talep, kurulum ve taşıma maliyetleri altında çok-dönemli üretim/sipariş çizelgesini Wagner-Whitin (1958) ileri dinamik programlaması ile tarayıcıda anlık optimize et. Zero Inventory Ordering ilkesi, lot yapısı, dönem defteri ve Silver-Meal sezgiseliyle otomatik karşılaştırma. Değişken talep altında EOQ / EPQ ailesinin doğal DP uzantısı, MRP ve APS motorlarının çekirdeğinde bulunan klasik.',
+    category: 'envanter',
+    status: 'ready',
+    guideSlug: 'wagner-whitin-dinamik-lot',
+  },
 ] as const;
 
 export function getReadyTools(): readonly Tool[] {
