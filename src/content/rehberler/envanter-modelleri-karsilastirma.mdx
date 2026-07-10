@@ -1,0 +1,288 @@
+---
+title: "Hangi Envanter Modeli Ne Zaman? EOQ, EPQ, Newsvendor, Wagner-Whitin, (Q, R)"
+description: "EOQ, EPQ, Newsvendor, Wagner-Whitin ve (Q, R) modelleri arasında hangisini ne zaman kullanacağınızı seçmenize yardımcı olan karar rehberi. Karşılaştırma tablosu, karar ağacı ve beş sayısal senaryo."
+pubDate: 2026-07-10
+keywords:
+  - "envanter modelleri"
+  - "EOQ"
+  - "EPQ"
+  - "Newsvendor"
+  - "Wagner-Whitin"
+  - "ROP"
+  - "reorder point"
+  - "envanter karar rehberi"
+  - "hangi model ne zaman"
+  - "inventory model selection"
+  - "critical fractile"
+  - "safety stock"
+  - "MRP"
+  - "APS"
+readingMinutes: 10
+faq:
+  - question: "Bu beş model arasında birini seçmenin en hızlı yolu nedir?"
+    answer: "Üç soruya cevap ver: (1) talep sabit mi, değişken deterministik mi, yoksa rasgele mi? (2) Ufkun tek dönem mi, çok dönem mi, sürekli mi? (3) Tedarik anlık mı, sonlu üretim hızıyla mı, gecikmeli mi? Sabit talep + sürekli ufuk + anlık tedarik → EOQ. Aynısı ama sonlu üretim hızı → EPQ. Rasgele talep + tek dönem → Newsvendor. Zamana bağlı değişken talep + çok dönem → Wagner-Whitin. Rasgele talep + sürekli izleme + gecikmeli tedarik → (Q, R). Aynı ürün için bu modellerin birden fazlası birlikte de kullanılabilir; en tipik kombinasyon EOQ ile Q'yu belirleyip (Q, R) ile R'yi belirlemektir."
+  - question: "EOQ ile Wagner-Whitin ne zaman aynı sonucu verir?"
+    answer: "Talep tam olarak sabit ve zaman-değişken yoksa (h_t, K_t sabit) Wagner-Whitin yaklaşık olarak POQ (Periodic Order Quantity) = EOQ/d dönemlik ardışık lotlar üretir; T uzunsa iki modelin lot büyüklüğü ve toplam maliyeti bir sıra hatası içinde çakışır. Ancak talep zayıfça bile dalgalı olduğunda WW eşit-olmayan lotlar seçerek EOQ'ya kıyasla %5-30 tasarruf sağlar; bu aralık Wagner ve Whitin'in orijinal 1958 makalesinde ve sonraki karşılaştırma çalışmalarında raporlanmıştır."
+  - question: "Newsvendor ile (Q, R) arasındaki temel fark nedir?"
+    answer: "Newsvendor tek-dönemliktir: kararı bir kez verirsin, dönem sonunda hurdayla veya eksikle biter (gazete, sezonluk giyim, konser bileti, kısa raf-ömürlü gıda). (Q, R) çok-dönemliktir: aynı stok kalemi tekrar tekrar sipariş edilir, her çevrimin sonu bir sonraki çevrimin başıdır. Newsvendor 'ne kadar sipariş vereyim?' sorusuna, (Q, R) 'ne zaman ve ne kadar sipariş vereyim?' sorusuna cevap verir. Newsvendor Cu/Co asimetrisiyle, (Q, R) hedef servis seviyesi α veya β ile çalışır."
+  - question: "EPQ, EOQ ile aynı formülün küçük bir varyantı mı?"
+    answer: "Neredeyse. Tek fark: EOQ tedarikin anlık geldiğini varsayar (Q birimi tek sefer stoğa girer, sonra doğrusal düşer). EPQ tedarikin p birim/yıl hızıyla üretimden geldiğini varsayar; stok üretim döneminde (p - d) hızıyla artar, üretim durunca d hızıyla düşer. Sonuç: efektif taşıma maliyeti h → h·(1 - d/p), yani formül Q* = √(2DK / [h(1 - d/p)]). p → ∞ limitinde EPQ ↦ EOQ; makul p değerlerinde EPQ daha büyük lot önerir çünkü üretim sırasında stok pikinin ortalaması daha düşüktür."
+  - question: "Wagner-Whitin varken neden Silver-Meal veya LFL sezgiselleri hâlâ kullanılıyor?"
+    answer: "Üç sebep. (a) Rolling horizon: MRP çıktısı her hafta güncellendiğinden 'donma dönemi' dışındaki lotlar zaten yeniden hesaplanacak, o yüzden %5-10 optimallik farkı geri kazanılır. (b) Nervousness: WW ufkun sonundaki küçük bir talep değişikliğinde ufkun başındaki lotu değiştirebilir; bu tedarikçiye/atölyeye 'her hafta farklı sipariş' sinyali gönderir. Silver-Meal'in miyopluğu paradoksal olarak stabilite verir. (c) Kapasite kısıtlı çoklu-ürün (CLSP) NP-zor olduğunda WW+relaxation heuristikleri kullanılır. Salt tek ürün + sınırsız kapasite + sınırlı ufuk varsa WW her zaman tercih edilir."
+  - question: "Aynı ürün için birden fazla model birlikte kullanılabilir mi?"
+    answer: "Evet, ve pratikte en yaygın kalıp budur. Klasik SAP MM / Oracle E-Business Suite paterni: (1) EOQ ile Q sabit lot büyüklüğünü belirle (yıllık ortalama talebe göre); (2) talep rasgele + tedarik gecikmeliyse (Q, R) modeliyle emniyet stoğu SS ve R = μL + SS'yi belirle; (3) yeni ürün lansmanında ya da sezonluk piklerde tek-dönem Newsvendor'a geç, kısa vadeli MRP çıktısında değişken talep varsa haftalık Wagner-Whitin ile plan yenile. Yani her model bir dilime sahiptir; sorunun katmanları modellerin katmanlarıyla eşleşir."
+  - question: "Kritik oran (Cu/(Cu+Co)) ve servis seviyesi (α) aynı şey midir?"
+    answer: "Aynı matematiksel forma sahipler (her ikisi de bir Φ⁻¹ argümanı) ama semantikleri farklı. Newsvendor'da kritik oran maliyet asimetrisinden türetilir: satamama maliyeti eksik-maliyetten kaç kat büyükse Q* o oranda medyanın üstüne çıkar. (Q, R)'de α doğrudan yönetsel hedeftir: 'çevrimin %95'inde stoksuz kalma' politikası. İki paradigmayı denk hâle getirmek isteyenlerse Cu = kayıp brüt kâr, Co = birim taşıma maliyeti · L olarak eşleyip aynı z değerine ulaşabilir. Ancak (Q, R) çok-dönemliğin uzun-vadeli maliyet dengesine bakarken Newsvendor tek karar penceresine odaklanır — pratikte iki farklı problemi çözerler."
+  - question: "Bu araçların çıktılarını üretim planlama sistemine nasıl bağlarım?"
+    answer: "En yaygın entegrasyon: ERP master data'sında her SKU için Q (lot size) ve R (reorder point) alanları vardır. EOQ hesaplayıcısı çıktısını Q'ya yaz; (Q, R) çıktısını R'ye yaz. MRP çalıştığında her satır bu değerleri okur. Değişken talepli kısa dönemli hesaplar için Wagner-Whitin çıktısı doğrudan MRP planlama çıktısına (planned orders) map edilir. Newsvendor tek-dönem sezonluk satın alma için alım komitesine bir öneri raporu üretir; sistem alanı yerine iş süreci karar noktasına yerleşir."
+  - question: "Bu beş model dışında pratikte önemli olan başka envanter modelleri var mı?"
+    answer: "Evet, en önemlileri: (a) (s, S) — sürekli izleme + değişken lot: stok s'ye düşünce S'ye kadar sipariş; kurulum maliyeti yüksekse (Q, R)'yi baskılar. Scarf (1960) optimum yapıyı ispatladı. (b) Periyodik-review (R, T) — belirli T aralıklarında sipariş; parça sayısı çok ve tedarikçi ortak gemi kullanıyorsa (Q, R)'ye tercih edilir. (c) Multi-echelon (METRIC, Clark-Scarf 1960) — merkezi depo + bölgesel depolar için hiyerarşik SS. (d) Base-stock — birim/birim yenileme, tam-zamanında üretim tarzı. (e) Broken-assortment / substitution — çoklu ürün ikame edildiğinde. Tüm bunlar burada saydığımız beşlinin genellemeleridir; matematik altyapıları aynı: marjinal analiz, DP, ve stokastik teori."
+---
+
+Aynı iş için "yanlış envanter modelini seç" tuzağı klasiktir. Wilson'un
+EOQ formülünü mevsimlik giyim mağazasına uygulamak, Wagner-Whitin'i
+otomotiv yedek parçasına zorlamak, ya da Newsvendor'ı kesintisiz
+üretimde çalışan bir montaj hattına dayatmak — hepsi aynı sonucu verir:
+matematiksel olarak "optimum" ama pratikte yanlış bir karar. Bu rehber,
+sitedeki beş klasik envanter aracını **ne zaman** birbirine tercih
+edeceğinizi seçmeniz için karar çerçevesi sunar.
+
+## Karar üç eksende yapılır
+
+Her envanter modeli üç eksende bir konum işgal eder. Doğru modeli
+seçmek için önce probleminizin her eksende **hangi tarafta**
+oturduğunu belirlemek gerekir.
+
+### 1. Talep yapısı
+
+- **Sabit (deterministik, düzgün):** Yıllık talep bilinir, dönemden
+  döneme büyük dalgalanma yok. Fabrika hammadde tüketimi, standart
+  ambalaj kutusu, ofis A4 kağıdı bu gruba girer.
+- **Değişken ama deterministik:** Talep dönemden döneme belirgin
+  şekilde değişir ama önceden bilinir. MRP çıktısı, promosyon takvimi
+  belli olan ürünler, projeye özel bileşenler bu gruba girer.
+- **Rasgele (stokastik):** Talep bir olasılık dağılımı ile tanımlıdır;
+  bir sonraki dönem ya da gün ne kadar satılacağı bilinmez, ancak
+  ortalama ve standart sapma tahmin edilebilir. Perakende satış,
+  hastane ilacı, servis parçası talebi bu gruba girer.
+
+### 2. Zaman ufku
+
+- **Tek dönem:** Karar bir kez verilir, dönem sonunda ürün ya
+  hurdaya çıkar ya da eksik kalır. Gazete, taze sebze, sezonluk
+  giyim, konser bileti, uzay mekiği yedek parçası bu gruba girer.
+- **Sürekli / tekrar eden:** Aynı stok kalemi tekrar tekrar sipariş
+  edilir; bir çevrimin sonu yeni çevrimin başıdır. Standart tüketim
+  malzemeleri bu gruba girer.
+
+### 3. Tedarik yapısı
+
+- **Anlık:** Sipariş verildikten hemen sonra tüm miktar stoğa girer.
+  Gerçekte lead-time bir haftaysa bile "üretim döneminin çok altında"
+  ise anlık kabul edilir.
+- **Sonlu üretim hızı:** Ürün kendi üretilir; üretim döneminde stok
+  (p − d) hızıyla dolar, üretim durunca d hızıyla boşalır.
+- **Belirsiz süreli (gecikmeli):** Sipariş verildikten L kadar sonra
+  gelir; L kendisi ortalaması ve varyansı olan bir rasgele değişken
+  olabilir.
+
+## Beş modelin haritası
+
+Aşağıdaki tablo, sitedeki beş envanter aracının bu üç eksendeki
+konumunu tek bakışta gösterir. **Tablo mobilde yatay olarak kaydırılır.**
+
+<div class="overflow-x-auto not-prose my-6">
+
+| Model | Talep | Ufuk | Tedarik | Çözüm türü | Kapalı form? |
+|---|---|---|---|---|---|
+| [EOQ](/or-araclari/araclar/eoq-hesaplayici) | Sabit | Sürekli | Anlık | Kalkülüs (Wilson) | ✓ Q* = √(2DK/h) |
+| [EPQ](/or-araclari/araclar/epq-uretim-lot-boyu) | Sabit | Sürekli | Sonlu p | Kalkülüs | ✓ Q* = √(2DK / [h(1−d/p)]) |
+| [Newsvendor](/or-araclari/araclar/newsvendor-cozucu) | Rasgele | Tek dönem | Anlık | Marjinal analiz | ✓ F(Q*) = Cu/(Cu+Co) |
+| [Wagner-Whitin](/or-araclari/araclar/wagner-whitin-cozucu) | Değişken det. | Çok dönem | Anlık | İleri DP O(T²) | ✗ (algoritmik) |
+| [(Q, R) / ROP](/or-araclari/araclar/rop-emniyet-stogu) | Rasgele | Sürekli | Gecikmeli L | Servis hedefi + z | ✓ R = μL + z·σ_DL |
+
+</div>
+
+Beş modeli tek boyutlu bir "genellik" ekseninde de yerleştirebiliriz.
+En kısıtlayıcı varsayımlar EOQ'da (her şey sabit, anlık, sonsuz ufuk);
+her sütunda bir varsayımı gevşetince komşu modele geçilir:
+
+- EOQ + sonlu üretim hızı → **EPQ**
+- EOQ + rasgele talep + tek dönem → **Newsvendor**
+- EOQ + değişken deterministik talep → **Wagner-Whitin**
+- EOQ + rasgele talep + rasgele tedarik süresi → **(Q, R)**
+
+## Karar ağacı: hangi model?
+
+Aşağıdaki soruları sırayla cevaplayarak doğru araca ulaşırsınız.
+
+```
+1. Ürün tek satış penceresinden mi geçiyor
+   (mevsim sonrası değeri kaybediyor)?
+   ├─ Evet → Newsvendor
+   └─ Hayır → 2
+
+2. Talep dönemden döneme belirgin şekilde değişiyor ama önceden bilinir mi
+   (MRP çıktısı, promosyon takvimi, kesin sipariş)?
+   ├─ Evet → Wagner-Whitin
+   └─ Hayır → 3
+
+3. Talep rasgele mi (ortalama var ama sapma önemli)?
+   ├─ Hayır → 4 (deterministik yol)
+   └─ Evet → (Q, R) / ROP  [+ EOQ ile Q'yu belirleyebilirsin]
+
+4. Tedarik anlık mı (kısa lead-time, tedarikçiden gelir)?
+   ├─ Evet → EOQ
+   └─ Hayır (ürünü kendi üretiyorsun, sonlu hız) → EPQ
+```
+
+**Melez kalıp.** Pratikte en yaygın kombinasyon: EOQ ile **Q**'yu (lot
+büyüklüğü) belirleyip (Q, R) ile **R**'yi (yeniden sipariş noktası +
+emniyet stoğu) belirlemek. Yani "ne kadar" ve "ne zaman" iki farklı
+modelle çözülür; SAP, Oracle, Kinaxis gibi ERP/APS sistemlerinin master
+data alanları bu ikili varsayımla tasarlanmıştır.
+
+## Beş sayısal senaryo — hangisi hangi modele düşer?
+
+Aynı "envanter kararı gibi görünen" problem farklı özellikler ışığında
+tümüyle farklı bir modele düşebilir. Kısa senaryolar:
+
+### A. Otomotiv bayii, yıllık 12.000 balata
+
+Yıllık talep 12.000 adet, sipariş başına 250 ₺, birim yıllık taşıma
+maliyeti 4 ₺, tedarikçi 3 gün içinde teslim ediyor, günlük tüketim
+oldukça istikrarlı. **Doğru araç: EOQ.** Q* = √(2·12000·250 / 4) =
+1225 birim, yılda ≈ 10 sipariş. Tedarik gecikme etkisi ihmal
+edilebilir çünkü 3 gün ≪ çevrim süresi (36 gün).
+
+### B. Aynı bayii, ama tedarikçi bazen 2 gün, bazen 8 gün gönderiyor
+
+Aynı yıllık talep ama günlük satışın standart sapması var (bir gün 30,
+bir gün 45), tedarik süresi de değişken. Emniyet stoğu olmazsa
+kritik anda balata biter. **Doğru araç: EOQ (Q için) + (Q, R) (R için).**
+Q sabiti EOQ'dan gelir; R = μ_d·L + z·σ_DL kombine varyansla hesaplanır.
+
+### C. Kot pantolon markası, kış sezonu için 5.000 çift üretim kararı
+
+Talep ortalama 5.000, standart sapma 900, birim maliyet 300 ₺, satış
+fiyatı 800 ₺, sezon sonu outlet fiyatı 200 ₺. Sezon sonrası ürün
+tamamen değer kaybediyor; şu sezon karar bir defa verilir.
+**Doğru araç: Newsvendor.** Cu = 800 − 300 = 500, Co = 300 − 200 = 100,
+CR = 500/(500+100) = 0.833, z ≈ 0.967, Q* ≈ 5.870 çift.
+
+### D. Otomotiv fabrikası, motor bloğu üretimi
+
+Yıllık talep 24.000 blok (kendi üretiliyor), üretim hızı 200
+blok/gün, günlük tüketim 80 blok, setup 8 saat × 500 ₺ = 4.000 ₺,
+yıllık taşıma 25 ₺/blok. **Doğru araç: EPQ.** Q* = √(2·24000·4000 /
+[25·(1 − 80/200)]) ≈ 3.582 blok. Üretim döneminde stok pikleri EOQ
+formülünün sandığından düşük olduğu için EOQ çok küçük Q önerir.
+
+### E. Rüzgâr türbini bakım parçası, önümüzdeki 12 hafta
+
+Hafta bazlı planlanan bakımlar 12 haftalık talep dizisi veriyor:
+[0, 6, 0, 0, 14, 0, 8, 0, 0, 12, 0, 4]. Her sipariş 800 ₺ setup, her
+hafta stoğu tutmak birim başına 5 ₺ maliyet, üretim tedarikçiden
+1 haftadan az. **Doğru araç: Wagner-Whitin.** Talep zamana bağlı
+değişken, deterministik ve tek üretim çevrimi değil. EOQ zorlaması
+kimi haftada ihtiyaç yokken bile sipariş açar; WW ancak talep olduğu
+hafta öncesi lotu oluşturur.
+
+## Yaygın yanlış eşleştirmeler
+
+- **EOQ'yu değişken talepli MRP çıktısına uygulamak.** Klasik hata:
+  yıllık ortalamaya göre Q* hesaplanır, MRP her hafta bu sabit lotu
+  önerir, ama gerçek talep 0-14 arası değiştiği için sistem ya çok
+  stok tutar ya da lot ile talebi eşleştirmek için manuel iptal
+  yapar. Doğrusu: Wagner-Whitin.
+- **Newsvendor'ı tekrar eden satış kalemine uygulamak.** Newsvendor
+  "sezon sonu artık değer" varsayar; günlük tüketimi olan bir ürün
+  için Cu ve Co tanımı bile net değildir. Aynı SKU sürekli satılıyorsa
+  (Q, R) düşünülmelidir.
+- **(Q, R)'yi tek-dönemlik ürüne uygulamak.** Sürekli-izleme çerçevesi,
+  sonsuz-ufuklu maliyet ortalamalarını minimize eder; bir defalık
+  sezon için Cu/Co asimetrisini yakalayamaz.
+- **Wagner-Whitin'i rasgele talepli ürüne "beklenen değer plug-in"
+  uygulamak.** WW deterministik girdiyle çalışır; ortalama talep
+  girip "beklenen değeriyle çalıştı" demek stokastik varyansı yok
+  sayar. Rasgele talep + çok dönem probleminde stokastik DP (WW
+  formülünün stokastik uzantısı, örneğin Federgruen-Zipkin)
+  gerekir; site şu an bunu kapsamıyor, alternatif olarak (Q, R) +
+  parçalı planlama pratikte yeterli olur.
+- **EPQ ile EOQ'yu birbirinin yerine kullanmak.** EPQ'nun (1 − d/p)
+  düzeltme çarpanı %20-40 farkı yansıtabilir; içeride üretiliyor ama
+  EOQ ile hesaplandığında lot sistemik olarak küçük çıkar ve gereksiz
+  setup yapılır.
+
+## Modellerin akrabalık ağacı
+
+Bu beşi bir soy ağacı gibi düşünmek de mümkün. Kronolojik olarak:
+
+- **1913 — Ford W. Harris, EOQ.** Anlık tedarik + sabit talep.
+- **1918 — E. W. Taft, EPQ.** Anlık yerine sonlu üretim hızı; EOQ'nun
+  ilk gevşetmesi.
+- **1934 — R. H. Wilson,** EOQ'yu yönetsel çerçeveye yerleştirir;
+  formül literatüre "Wilson formülü" adıyla girer.
+- **1888 — F. Y. Edgeworth ve 1951 — Arrow-Harris-Marschak.**
+  Tek-dönem stokastik envanter → Newsvendor. Kritik oran ve marjinal
+  analiz burada olgunlaşır.
+- **1958 — H. Wagner ve T. Whitin.** Değişken talep + çok dönem için
+  ileri DP; ZIO özelliğinin ispatı. MRP'nin matematiksel çekirdeği.
+- **1963 — Hadley ve Whitin,** *Analysis of Inventory Systems*
+  kitabında (Q, R) modelini standartlaştırır.
+- **1979 — Peterson ve Silver,** *Decision Systems for Inventory
+  Management* ile pratik ERP kılavuzlarının şablonunu koyar.
+- **1990'lar → günümüz.** SAP APO, Oracle Demantra, Kinaxis
+  RapidResponse gibi APS motorları içeride bu beş modelin melez
+  varyantlarını (kapasiteli lot boyutlandırma, multi-echelon SS,
+  stokastik lead-time) koşturur.
+
+Yani beş model rakip değil; birbirinin varsayım gevşetmesidir. EOQ'yu
+"kabul edilebilir yaklaşımdır" diye kullanmak, ürününüzün varsayımlara
+uyduğu durumlarda hâlâ makul karardır — kalkülüsün zarif kapalı formu
+buna izin verir.
+
+## Sitedeki araçlar arasında dolaşım
+
+Beş envanter aracının hepsi tarayıcıda saf JavaScript ile hesaplar,
+kayıt gerektirmez, veri sunucuya gönderilmez. Konseptleri
+karşılaştırırken şu sırayı öneriyorum:
+
+1. Önce [EOQ hesaplayıcı](/or-araclari/araclar/eoq-hesaplayici) ile
+   klasik Wilson formülünü çalıştır — hem toplam maliyet eğrisini
+   görmek hem de "Q* çevresinde eğri düz" gözlemini yaşamak faydalı.
+2. Ardından [EPQ üretim lot boyu](/or-araclari/araclar/epq-uretim-lot-boyu)
+   ile aynı ürüne sonlu üretim hızı ekle; (1 − d/p) çarpanının Q'yu
+   nasıl büyüttüğünü gör.
+3. [Newsvendor çözücü](/or-araclari/araclar/newsvendor-cozucu) ile
+   tek-dönem stokastiği dene; Cu ≫ Co ve Cu ≪ Co uçlarında Q*'nın
+   nasıl kaydığını gözle.
+4. [Wagner-Whitin çözücü](/or-araclari/araclar/wagner-whitin-cozucu)
+   ile 6-10 dönemlik değişken talep serisi ver; Silver-Meal
+   sezgiseliyle otomatik karşılaştır.
+5. Son olarak [(Q, R) / emniyet stoğu](/or-araclari/araclar/rop-emniyet-stogu)
+   ile aynı ürüne rasgele talep + gecikmeli tedarik ekle; hedef servis
+   seviyesini α = 0.90'dan 0.99'a taşıyıp SS'nin nasıl artışa geçtiğini
+   duyarlılık tablosunda gör.
+
+## Özet
+
+- Karar üç eksende yapılır: talep (sabit / değişken deterministik /
+  rasgele), ufuk (tek dönem / sürekli), tedarik (anlık / sonlu üretim
+  hızı / gecikmeli).
+- Beş model bu üç eksende farklı konumları doldurur; en kısıtlayıcı
+  EOQ'dan başlayıp her varsayımı gevşetince komşu modele geçilir.
+- Pratikte bir ürün için birden fazla model birlikte kullanılır: en
+  yaygın kalıp EOQ (Q) + (Q, R) (R + SS).
+- Yanlış model seçmenin en pahalı sürümü, değişken talebe EOQ zorlamak
+  (Wagner-Whitin'e kaymak) ve tek-dönem sezona (Q, R) uygulamaktır
+  (Newsvendor'a kaymak).
+- Beş modelin hepsi 1913-1963 arasında dört büyük makale ile
+  şekillendi; modern ERP/APS sistemleri bu beşinin melez varyantlarını
+  koşturur.
+
+Yardımcı bir yol haritası: sorunuzu tek cümlede özetleyin — "Talep X,
+ufuk Y, tedarik Z" — ve yukarıdaki tablodan tek satır seçin. Emin
+değilseniz iki modeli aynı veriyle çalıştırıp toplam maliyeti / servis
+seviyesini karşılaştırın; çoğu zaman "hangisi daha uygun" sorusuna
+sayısal olarak kısa yoldan cevap gelir.

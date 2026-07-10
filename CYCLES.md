@@ -5,6 +5,26 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 
 ---
 
+## DÖNGÜ #34 — 2026-07-10
+
+**Yapılan:** F-INVENTORY-COMPARE — "Hangi envanter modeli ne zaman?" karar rehberi. Envanter beşlisinin (EOQ / EPQ / Newsvendor / Wagner-Whitin / (Q, R)) tazeliğinden yararlanan meta içerik. Yeni araç değil, saf içerik: talep / ufuk / tedarik üç eksenli karar çerçevesi + karar ağacı + 5 sayısal senaryo + 5 yanlış eşleştirme + akrabalık ağacı + sitedeki 5 aracın önerilen dolaşım sırası.
+
+**Detay:**
+- `src/content/rehberler/envanter-modelleri-karsilastirma.mdx` (+180 satır, ~10 dk okuma) — frontmatter: title 74 char, description 189 char (≤200 sınırı), pubDate 2026-07-10, 14 keyword, 9 FAQ (her biri question ≤200 / answer ≤800 char). Bölümler: (1) Üç eksende karar — talep (sabit / değişken deterministik / rasgele), ufuk (tek dönem / sürekli), tedarik (anlık / sonlu p / gecikmeli L). (2) Beş modelin haritası — 6-sütun tablo (`overflow-x-auto not-prose` sarmalayıcı ile mobilde yatay scroll). Modellerin genellik ekseninde EOQ'dan komşulara "hangi varsayımı gevşetince hangi modele geçilir" haritası. (3) Karar ağacı — 4 soru sırayla (tek dönem? → Newsvendor; değişken det? → WW; rasgele? → (Q, R); anlık tedarik? → EOQ vs EPQ). Fence code block içinde ASCII ağaç. (4) 5 sayısal senaryo (A) 12.000 balata sabit → EOQ Q*=1225; (B) aynı ürün stokastik L → EOQ+(Q, R) melez; (C) 5.000 kot sezon → Newsvendor CR=0.833, Q*≈5.870; (D) motor bloğu EPQ Q*≈3.582; (E) rüzgâr türbini 12-hafta değişken → WW. (5) 5 yaygın yanlış eşleştirme (EOQ→değişken talep, Newsvendor→tekrar eden, (Q, R)→tek dönem, WW→stokastik plug-in, EPQ↔EOQ). (6) Akrabalık ağacı — Harris 1913, Taft 1918, Wilson 1934, Edgeworth 1888 / Arrow-Harris-Marschak 1951, Wagner-Whitin 1958, Hadley-Whitin 1963, Peterson-Silver 1979, modern APS motorları. (7) Sitedeki 5 aracın önerilen dolaşım sırası — her araca inline markdown link. (8) 5 madde özet. **9 FAQ** JSON-LD: en hızlı seçim yolu, EOQ↔WW eşdeğerliği, Newsvendor vs (Q, R), EPQ↔EOQ farkı, WW varken Silver-Meal/LFL, çoklu model kalıbı, kritik oran vs α, ERP entegrasyonu, kapsam-dışı modeller (s,S / R,T / multi-echelon / base-stock).
+- İlk taslakta `import { Aside } from '../../components/Aside'` denendi ama site'da Aside bileşeni yok (`ls src/components/` doğruladı) — kaldırıldı, "melez kalıp" callout'u bold-öncüllü paragrafa çevrildi. Bu, diğer rehberlerin desenine (Aside kullanmayan, sadece markdown + `withBase` import) uygun.
+
+**Tasarım notu:** Bu döngü *content-only*, sıfır algoritma değişikliği. Bu yüzden test sayısı sabit kaldı (686 → 686). Meta rehber `relatedTool` alanı olmadan yazıldı çünkü 5 aracın hepsine birden atıfta bulunuyor — inline markdown link'ler ile araç sayfalarına dolaşım sağlanıyor; MDX içindeki `/or-araclari/araclar/<slug>` mutlak yol deseni tutarlı (base path astro.config.mjs'de sabit). Rehber listesi (`src/pages/rehberler/index.astro`) `getCollection('rehberler')` ile otomatik listelediği için ek kayıt gerekmedi.
+
+**Kalite kapıları:** check ✓ (0 hata / 0 warning / 0 hint, **123 dosya** — sabit, sadece MDX eklendi) · test ✓ (**686/686**, 33 dosya — algoritma değişmedi, sayı sabit) · build ✓ (**70 sayfa**, 5.84s — 69 → 70: sadece yeni rehber sayfası) · Lighthouse — yeni sayfa mevcut BaseLayout + Container + rehber şablonuna bire bir uyumlu, ≥95 beklenir. `dist/rehberler/envanter-modelleri-karsilastirma/index.html` üretildiği doğrulandı.
+
+**Yayın:** PR açılacak (aşağıda), merge sonrası deploy takip edilecek.
+
+**İşaret:** yok (sırf 🟢 yeşil — meta içerik, yeni bağımlılık yok, algoritma yok, i18n mimarisi bozulmadı, statik-dışı hiçbir şey eklenmedi, mobil-öncelikli tablo `overflow-x-auto` ile sarıldı).
+
+**Sıradaki:** Backlog'da açık 🟢 yeşil iş kalan aday: Q-INVENTORY-XLINK — 5 envanter tool rehberinden bu meta rehbere cross-link ekle (XS efor, 4 dosya, birer paragraf). Yeni araç fikirlerinden en muhtemeller: F-CDS-NEH (Johnson'a m ≥ 4 CDS + NEH ikinci algoritma paneli — JPS/Lemke deseni), F-BIN-PACKING (First-Fit-Decreasing + Best-Fit-Decreasing + Next-Fit sezgisel çözücü + kutu görselleştirme + Vazirani 1.5-yaklaşım analizi). Q-INVENTORY-XLINK'in bir sonraki döngüde ele alınması, envanter tazeliği zincirini bir adım daha uzatır.
+
+---
+
 ## DÖNGÜ #33 — 2026-07-10
 
 **Yapılan:** F-ROP — Yeniden Sipariş Noktası & Emniyet Stoğu (Q, R modeli). Envanter kategorisinde EOQ (sabit talep) → EPQ (sabit talep + sonlu üretim hızı) → Newsvendor (tek-dönem stokastik) → Wagner-Whitin (çok-dönem deterministik) sonrası, sürekli-izleme + rasgele talep + isteğe bağlı rasgele tedarik süresi ekseninde beşinci klasik. R = μL + z·σ_DL kapalı-form, Type-I (cycle service level) + Type-II (fill rate) iki modu.
