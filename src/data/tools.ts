@@ -290,10 +290,10 @@ export const TOOLS: readonly Tool[] = [
   },
   {
     slug: 'johnson-akis-tipi-cizelgeleme',
-    title: 'Johnson Kuralı — 2/3 Makina Akış-Tipi Çizelgeleme',
-    shortTitle: 'Johnson (Flow-Shop)',
+    title: 'Akış-Tipi Çizelgeleme — Johnson · CDS · NEH',
+    shortTitle: 'Flow-Shop (Johnson · CDS · NEH)',
     description:
-      'Her iş önce M1 sonra M2 (isteğe bağlı M3) makinesinden geçen akış-tipi atölyede toplam süreyi (Cmax) minimize eden iş sırasını Johnson 1954 kuralı ile tarayıcıda anlık bul. İki makinada optimum garantili; üç makinada min(p₁) ≥ max(p₂) ya da min(p₃) ≥ max(p₂) sağlanırsa optimum, sağlanmazsa Johnson-Bellman sezgiseli. Gantt çizelgesi, U/V grup analizi ve makine boş süreleri tek geçişte.',
+      'm makinadan aynı sırayla geçen akış-tipi (permutation flow-shop) atölyede toplam süreyi (Cmax) minimize eden iş sırasını üç algoritmadan biriyle tarayıcıda anlık bul: Johnson 1954 (m=2 optimum, m=3 koşullu), CDS 1970 (m-1 alt problem) ve NEH 1983 (açgözlü ekleme). Gantt çizelgesi, U/V grup analizi, CDS alt problem tablosu ve NEH ekleme adım izi tek geçişte.',
     category: 'cizelgeleme',
     status: 'ready',
     guideSlug: 'johnson-akis-tipi-cizelgeleme',

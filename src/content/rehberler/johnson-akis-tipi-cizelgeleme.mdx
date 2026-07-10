@@ -1,6 +1,6 @@
 ---
-title: "Johnson Kuralı: 2/3 Makina Akış-Tipi Çizelgeleme"
-description: "Johnson 1954 kuralı: U/V yapısı, iki-makina flow-shop'ta Cmax optimumu, Johnson-Bellman 3-makina uzantısı, flow-shop / job-shop farkı ve klasik sınav örnekleriyle Türkçe rehber."
+title: "Akış-Tipi Çizelgeleme: Johnson, CDS ve NEH"
+description: "Johnson 1954 U/V yapısı ile F2 || Cmax optimumu, 3-makina Johnson-Bellman uzantısı, m ≥ 4 için CDS ve NEH sezgiselleri, flow-shop / job-shop farkı ve klasik örneklerle Türkçe rehber."
 pubDate: 2026-07-10
 relatedTool: "johnson-akis-tipi-cizelgeleme"
 keywords:
@@ -269,22 +269,31 @@ Taillard benchmark seti (1993), günümüzde MIP ve metaheuristics.
 
 ## Aracımızda ne var?
 
-- **İki ya da üç makina** seçimi (radyo buton).
-- **İş tablosu** — etiket, p₁, p₂ (ve p₃) sütunları; canlı düzenleme.
-- **Hazır örnekler**: Taha 5-iş F2 problemi, 3-makina Johnson-Bellman.
-- **Otomatik U/V grup analizi** — hangi iş hangi gruptaydı ve α, β
-  sahte-süreleri tabloda.
-- **Gantt çizelgesi** — M1, M2 (ve M3) blokları renk kodlu; Cmax dikey
-  çizgi ile işaretli.
-- **Sıra tablosu** — her iş için M1 ve M2 zaman aralıkları; M2 boş
-  süresi ambar rengiyle vurgulu.
-- **Optimum / sezgisel etiketi** — üç makinada koşul otomatik denetlenir
-  ve sonuç `exact` mi `heuristic` mi belirtilir.
-- **Makine boş süreleri** — planlama kalitesinin özet göstergeleri.
+- **2 ile 8 arası makina** seçimi (radyo buton). İş tablosunun sütunları
+  m'ye göre otomatik güncellenir.
+- **Üç algoritma**:
+  - **Johnson** kuralı (yalnızca m ∈ {2, 3}) — U/V grup analizi ve
+    Johnson-Bellman koşulu otomatik denetlenir; sonuç `exact` mi
+    `heuristic` mi etiketlenir.
+  - **CDS (Campbell-Dudek-Smith 1970)** — m-1 sanal iki-makina alt
+    problem üretir, her birini Johnson kuralıyla çözer, orijinal m
+    makinada Cmax'ı en küçük olanı seçer. Sonuç panelinde her alt
+    problemin sırası ve Cmax'ı listelenir; seçilen k emerald ile
+    vurgulanır.
+  - **NEH (Nawaz-Enscore-Ham 1983)** — işleri Σ p azalan sırada sıralar,
+    her adımda kısmi çizelgeye tüm ekleme pozisyonlarını dener; adım-adım
+    ekleme izi (aday Cmax'lar + seçilen pozisyon) tabloda görünür.
+- **Hazır örnekler**: Taha 5-iş F2, 3-makina Johnson-Bellman, NEH klasik
+  5-iş 4-makina.
+- **Genelleştirilmiş Gantt çizelgesi** — M₁..Mₘ blokları renk kodlu;
+  Cmax dikey çizgi ile işaretli.
+- **Sıra tablosu** — her iş için tüm makinalarda zaman aralıkları.
+- **Metrikler** — n, m, toplam boş süre, doluluk (Σp / (m·Cmax)).
 
 Karar destek olarak: küçük atölyelerde el ile hazırlayacağın sıra
-listesini birebir üretir; büyük problemler için NEH veya MIP'ye
-geçmeden önce iyi bir üst sınır (sezgisel) verir.
+listesini birebir üretir; m ≥ 4 büyük problemlerde CDS bir üst sınır,
+NEH ise pratikte en iyi bilinen inşa sezgiseli olarak Cmax'ı tipik
+olarak optimuma %5 içinde tutar.
 
 ## İlgili araçlar
 
