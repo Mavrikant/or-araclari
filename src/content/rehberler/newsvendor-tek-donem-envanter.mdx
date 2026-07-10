@@ -1,0 +1,346 @@
+---
+title: "Newsvendor Modeli: Tek Dönemlik Sipariş Kararı"
+description: "Newsvendor (gazete satıcısı) modeli, critical fractile F(Q*) = Cu / (Cu + Co) formülünün türetimi, normal ve üniform talep altında optimum sipariş miktarı üzerine kapsamlı Türkçe rehber."
+pubDate: 2026-07-10
+relatedTool: "newsvendor-cozucu"
+keywords:
+  - "newsvendor"
+  - "gazete satıcısı modeli"
+  - "critical fractile"
+  - "critical ratio"
+  - "tek dönem envanter"
+  - "stokastik envanter"
+  - "belirsiz talep"
+  - "EOQ vs newsvendor"
+  - "servis seviyesi"
+  - "hurda değeri"
+  - "goodwill kaybı"
+readingMinutes: 12
+faq:
+  - question: "Newsvendor modeli nedir?"
+    answer: "Talebin belirsiz olduğu, ürünün tek bir dönem için sipariş edildiği ve dönem sonunda kalan stoğun değer kaybına uğradığı klasik envanter problemidir. Adını 19. yüzyıl gazete bayilerinden alır: bayi sabah gazeteyi tahminine göre alır, gün sonunda satılamayan gazete iade edilemez, gerçek satış talebi kadardır. Karar: `Q` sipariş miktarı. Beklenen maliyeti minimize eden Q*'a critical fractile çözümü denir."
+  - question: "Critical fractile formülü F(Q*) = Cu / (Cu + Co) nereden geliyor?"
+    answer: "Marjinal analiz argümanı: son eklenen birimin beklenen faydası ile beklenen zararı eşit olmalı. Birim ekstra siparişin beklenen zararı Co · P(D < Q) — talep bu seviyenin altındaysa satamıyoruz. Beklenen faydası Cu · P(D ≥ Q) — talep bu seviyenin üstündeyse ek birim eksik kalmıyor. Eşitleyip Cu · (1 − F(Q)) = Co · F(Q) çözünce F(Q*) = Cu / (Cu + Co) çıkar."
+  - question: "Cu (underage) ve Co (overage) nasıl hesaplanır?"
+    answer: "İki yol var. **Doğrudan giriş:** Cu = birim başına eksik kalmanın fırsat maliyeti, Co = birim başına satılamayanın zararı. **Fiyat modelinden türetme:** satış fiyatı p, alım maliyeti c, hurda değeri s (default 0), goodwill/ceza g (default 0) ile: Cu = p − c + g (kaçırılan brüt kâr artı ceza), Co = c − s (satılamayanın net zararı). Hurda değeri satamadığın malı elden çıkardığın fiyattır; iade anlaşmalı gazetelerde s = c olabilir, sezonluk ürünlerde s ≪ c."
+  - question: "Newsvendor ile EOQ arasındaki fark nedir?"
+    answer: "EOQ deterministik ve sürekli-dönem modelidir: talep sabit, sipariş sürekli yenileniyor, sipariş verme maliyeti K ve taşıma maliyeti h vardır. Karar noktası tek: sipariş büyüklüğü Q. Newsvendor ise stokastik ve tek-dönemdir: talep rastgele bir değişken, sipariş dönem başında bir kere veriliyor, sipariş verme maliyeti önemli değil, yerine underage/overage maliyet asimetrisi var. Newsvendor riski (talebin dağılımını) modelin özüne alır; EOQ risk yönetimini emniyet stoğuna dış-parametreye bırakır."
+  - question: "Neden ortalama talebi sipariş etmek yanlış?"
+    answer: "Talep dağılımı simetrik değildir asıl mesele — hata da simetrik değildir. Cu ile Co eşit olsaydı (CR = 0.5), gerçekten ortalama optimal olurdu. Ama gerçek hayatta çoğunlukla değil: yüksek marjlı sezonluk üründe Cu ≫ Co, ortalama üstünde sipariş vermek gerekir; hurda değeri düşük dayanıksız üründe Co ≫ Cu, ortalama altında sipariş vermek gerekir. Ortalama sipariş etmek, sistematik olarak yanlış tarafta hata yapmak demektir. Sadece CR = 0.5 durumunda ortalama optimalidır."
+  - question: "Servis seviyesi (Type I) ile fill rate (Type II) arasındaki fark nedir?"
+    answer: "**Servis seviyesi (cycle service level)** = F(Q*) = talebin siparişi aşmama olasılığıdır. Newsvendor'da doğrudan critical ratio'ya eşittir. **Fill rate** = E[min(Q, D)] / E[D] = talebin ortalamada kaçta kaçının stoktan karşılanabildiğidir. Fill rate her zaman servis seviyesinden daha yüksektir çünkü stok yetmediği durumlarda bile talebin bir kısmı karşılanıyor. Süpermarketler genellikle %98–99 fill rate hedefler, ki bu %90 civarı bir servis seviyesine karşılık gelir."
+  - question: "Normal talep için optimum sipariş miktarı nasıl bulunur?"
+    answer: "Talep D ∼ N(μ, σ²) ise F(Q*) = CR eşitliğinden Q* = μ + Φ⁻¹(CR) · σ çıkar; burada Φ⁻¹ standart normal ters CDF'dir. CR = 0.5 → Q* = μ (ortalama). CR = 0.84 → Q* ≈ μ + σ. CR = 0.95 → Q* ≈ μ + 1.645σ. CR = 0.99 → Q* ≈ μ + 2.33σ. Kritik oran arttıkça, satırın üstündeki emniyet stoğu z·σ hızla büyür — hedef %99'a ulaşmak %90'dan iki kat pahalıdır."
+  - question: "Talep dağılımı normal değilse ne yapmalı?"
+    answer: "Newsvendor mantığı dağılımdan bağımsızdır; formül aynı kalır: F(Q*) = CR. Sadece F ters çevirmek gerekir. **Üniform** için kapalı form var: Q* = a + (b − a)·CR. **Lognormal, gamma, Weibull** için ters CDF sayısal olarak hesaplanır. **Ampirik** talep verisi varsa CR-inci yüzdelik doğrudan sıralı gözlemden okunabilir — parametrik bir varsayıma girmeye gerek yok. Küçük örnek varyansında normal yaklaşımı çoğu zaman yeter."
+  - question: "Q duyarlılık eğrisi neden U-şeklindedir?"
+    answer: "Beklenen toplam maliyet TC(Q) = Cu · E[eksik(Q)] + Co · E[fazla(Q)]. E[eksik] Q'ya göre monoton azalan, E[fazla] Q'ya göre monoton artan konveks fonksiyonlar. İkisinin ağırlıklı toplamı da konvekstir ve minimumu tam olarak F(Q*) = CR noktasındadır. Eğri Q*'a yakın 'düz' — %5 sapma maliyeti kayda değer artırmıyor. Bu robustluk, kestirimlerdeki küçük hataların yıkıcı olmadığını gösterir; ama Q* çok sağa veya çok sola giderse maliyet doğrusal-üstü büyür."
+---
+
+Bir gazete bayii her sabah dağıtımcıdan kaç gazete almalı? Az alırsa
+müşteri kaçar; çok alırsa akşam iade edilemeyen gazete zarar yazılır.
+Talep tam olarak bilinmiyor — sadece geçmiş verilerden bir dağılım
+tahmin edilebiliyor. Klasik EOQ modeli bu soruyu cevaplayamaz: EOQ
+talebin **sabit** olduğunu varsayar. **Newsvendor modeli** tam olarak bu
+belirsizliği modele alır ve tek-dönemlik sipariş kararı için kapalı-form
+bir çözüm verir.
+
+## Newsvendor problemi nedir?
+
+Newsvendor (Türkçe literatürde bazen "gazete satıcısı problemi") üç
+karakteristikle tanımlanır:
+
+1. **Tek dönem.** Ürün bir kere sipariş edilir; ikinci bir şans yoktur.
+   Dönem sonunda kalan stok bir sonraki döneme aktarılamaz (sezonluk
+   giyim, taze meyve, gazete, konser bileti, otel odası, uçak
+   koltuğu).
+2. **Belirsiz talep.** Talep $D$ rastgele bir değişkendir; dağılımı
+   $F(\cdot)$ ile bilinir ama gerçek değeri sipariş kararı verildikten
+   sonra ortaya çıkar.
+3. **Asimetrik maliyet.** Az sipariş vermenin (eksik) ve fazla sipariş
+   vermenin (fazla) maliyetleri farklıdır. Karar bu iki riski
+   dengelemektir.
+
+Karar değişkeni sipariş miktarı $Q$'dur. Amaç: beklenen toplam maliyeti
+minimize etmek (ya da denk olarak beklenen kârı maksimize etmek).
+
+## Underage ve overage maliyetleri
+
+Modelin çekirdek iki büyüklüğü:
+
+- **$C_u$ (underage cost, eksik maliyeti)**: Talep siparişi aştığında,
+  karşılayamadığın her birim için ödediğin marjinal zarar. Genelde
+  kaçırılan brüt kârdır: $C_u = p - c$. Müşteri kaybı, imaj erozyonu
+  gibi ek "goodwill" cezası $g$ varsa $C_u = p - c + g$.
+- **$C_o$ (overage cost, fazla maliyeti)**: Talep siparişin altında
+  kaldığında, elinde kalan her birim için maruz kaldığın marjinal
+  zarar. Alım maliyetinden hurda değerini çıkarırsın: $C_o = c - s$.
+  Hurda değeri $s$ dönem sonu satabildiğin fiyat: iade anlaşmalı
+  gazetede $s = c$ (kayıp yok), sezonluk giyimde $s$ outlet fiyatıdır,
+  taze meyvede $s = 0$ (çöpe gider).
+
+Aracımız iki modu destekler: **doğrudan** $C_u / C_o$ giriş veya
+**fiyat modelinden türetme** (p, c, s, g'yi girip Cu ve Co otomatik
+hesaplansın).
+
+## Critical fractile: F(Q*) = Cu / (Cu + Co)
+
+Newsvendor'un ünlü sonucu, marjinal analiz argümanıyla türetilir. Şu
+soruyu soralım: **son birimi eklemek uygun mu?**
+
+Siparişi $Q$'dan $Q + 1$'e çıkarttığımızda iki senaryo var:
+
+- Talep $D \geq Q + 1$: son birim satılır, $p - c$ kâr getirir. Bu
+  senaryoya girme olasılığı $1 - F(Q)$.
+- Talep $D < Q + 1$: son birim satılamaz, $c - s$ zarar yazar. Olasılık
+  $F(Q)$.
+
+Son birimin **beklenen katkısı**:
+
+$$
+\Delta(Q) = (p - c)\,\bigl(1 - F(Q)\bigr) \;-\; (c - s)\,F(Q).
+$$
+
+$\Delta(Q^*) = 0$ olduğu noktada durmak gerekir (kritik nokta). Cu ve
+Co notasyonuyla:
+
+$$
+C_u\,\bigl(1 - F(Q^*)\bigr) = C_o\,F(Q^*).
+$$
+
+Düzenlersek meşhur formül:
+
+$$
+\boxed{\; F(Q^*) \;=\; \frac{C_u}{C_u + C_o} \;=\; CR.\;}
+$$
+
+Sağ tarafa **critical ratio** ya da **critical fractile** denir. Sipariş
+miktarı öyle seçilir ki talebin siparişi karşılama olasılığı tam olarak
+CR olsun.
+
+### Sezgi
+
+- $C_u \gg C_o$ ise (kaçırılan kâr, hurda kaybından büyükse): $CR \to 1$,
+  $Q^*$ ortalamanın çok üstüne çıkar. Yüksek marjlı, hurdası
+  değersiz olmayan ürünlerde (ör. iade anlaşmalı gazete) böyledir.
+- $C_u \ll C_o$ ise (dayanıksız, hurdası düşük, marjı ince ürün):
+  $CR \to 0$, $Q^*$ ortalamanın altına iner. Balıkçının stratejisi.
+- $C_u = C_o$ ise: $CR = 0.5$, medyan optimaldir. Simetrik dağılımda
+  medyan = ortalama.
+
+## Normal talep altında kapalı form
+
+Talep $D \sim N(\mu, \sigma^2)$ ise ters CDF Standard normal ters
+fonksiyonu $\Phi^{-1}$ ile yazılır:
+
+$$
+Q^* = \mu + \Phi^{-1}(CR)\,\sigma.
+$$
+
+Bazı kritik oranlar için hazır $z$ değerleri:
+
+| CR | $z = \Phi^{-1}(CR)$ | Yorum |
+|---|---|---|
+| 0.50 | 0.000 | ortalama |
+| 0.75 | 0.674 | ortalama + 0.67σ |
+| 0.84 | 1.000 | ortalama + 1σ |
+| 0.90 | 1.282 | tipik hedef |
+| 0.95 | 1.645 | yüksek servis |
+| 0.99 | 2.326 | çok yüksek servis |
+| 0.999 | 3.090 | ultra servis |
+
+**Uyarı — servis seviyesi asimetriktir:** CR'yi %95'ten %99'a çıkarmak
+sadece 4 puanlık bir iyileşme gibi görünür, ama gerekli emniyet stoğu
+$1.645\sigma$'dan $2.33\sigma$'ya, yani %42 artar. %99'dan %99.9'a
+çıkışta ise emniyet stoğu tekrar %33 daha büyür. Yüksek servis
+seviyeleri **pahalıdır**.
+
+### Beklenen eksik ve fazla — standart normal kayıp fonksiyonu
+
+Talep normal ise $Q^* = \mu + z\sigma$ noktasında beklenen büyüklükler
+kapalı formda hesaplanır. Standart normal kayıp fonksiyonu:
+
+$$
+L(z) = \varphi(z) - z\,\bigl(1 - \Phi(z)\bigr),
+$$
+
+burada $\varphi$ standart normal PDF'dir. Beklenen eksik ve fazla:
+
+$$
+E[\text{eksik}] = \sigma \cdot L(z), \qquad
+E[\text{fazla}] = Q^* - \mu + \sigma \cdot L(z).
+$$
+
+Bu iki büyüklük Q duyarlılık analizinin bel kemiğidir; aracımız
+grafikte $C_u \cdot E[\text{eksik}](Q)$ (kırmızı), $C_o \cdot
+E[\text{fazla}](Q)$ (mavi) ve toplam beklenen maliyet eğrilerini
+çizer.
+
+## Üniform talep altında kapalı form
+
+Talep $D \sim U(a, b)$ ise F(Q) = (Q − a) / (b − a). Ters çevirme
+neredeyse önemsiz:
+
+$$
+Q^* = a + (b - a) \cdot CR.
+$$
+
+Kolay örnek: talep 200 ile 500 arasında üniform, CR = 0.75 ise
+$Q^* = 200 + 300 \cdot 0.75 = 425$.
+
+Beklenen eksik ve fazla üniform için ikinci dereceden polinomdur:
+
+$$
+E[\text{eksik}] = \frac{(b - Q)^2}{2(b - a)}, \qquad
+E[\text{fazla}] = \frac{(Q - a)^2}{2(b - a)}.
+$$
+
+## Bir baştan sona örnek: sezonluk kalınbot
+
+Bir mağaza kışlık kalınbot sipariş verecek:
+
+- Alım maliyeti $c = 30$ ₺, satış fiyatı $p = 80$ ₺, sezon sonu outlet
+  fiyatı $s = 15$ ₺. Goodwill cezası ihmal edilebilir ($g = 0$).
+- Talep tahmini: geçmiş sezon 12 mağaza verisinden ortalama $\mu = 350$,
+  standart sapma $\sigma = 90$ (normal varsayımı).
+
+Cu ve Co'yu türet:
+
+$$
+C_u = p - c + g = 80 - 30 + 0 = 50 \;\text{₺/birim},\\
+C_o = c - s = 30 - 15 = 15 \;\text{₺/birim}.
+$$
+
+Critical ratio:
+
+$$
+CR = \frac{50}{50 + 15} = \frac{50}{65} \approx 0.769.
+$$
+
+Normal tabloda $\Phi^{-1}(0.769) \approx 0.735$. Optimum sipariş:
+
+$$
+Q^* = 350 + 0.735 \cdot 90 \approx 350 + 66 = 416 \;\text{çift}.
+$$
+
+Beklenen eksik: $L(0.735) \approx 0.128$; $E[\text{eksik}] = 90 \cdot
+0.128 \approx 11.5$ çift. Beklenen fazla: $416 - 350 + 11.5 = 77.5$
+çift. Kabul edilebilir mi? Fill rate = (350 − 11.5) / 350 ≈ %96.7 —
+müşterilerin %96.7'sini karşılıyoruz.
+
+Ortalama sipariş etseydik ($Q = 350$): beklenen eksik $\sigma \cdot
+L(0) = 90 \cdot 0.399 \approx 35.9$, beklenen maliyet çok daha
+yüksek olurdu (fill rate düşer, kaçırılan kâr artar). $C_u > C_o$
+olduğu için ortalama üstünde stoklamak doğru refleks.
+
+## Aracı adım adım kullanmak
+
+1. **Maliyet modelini seç.** İki yoldan biri: doğrudan $C_u$ / $C_o$
+   veya fiyat-maliyet ($p$, $c$, $s$, $g$). Yeni analiz için fiyat modu
+   daha okunaklıdır.
+2. **Talep dağılımını seç.** Normal (ortalama + std. sapma) veya
+   üniform (alt + üst). Küçük veri setinde normal genellikle güvenli
+   bir başlangıçtır.
+3. **Hesapla.** Q\* yeşil kartta, kritik oran ve servis seviyesi metrik
+   şeridinde, Q duyarlılığı U-eğrisi grafikte belirir. Eğrinin Q\*
+   civarındaki düz kısmı, tahminlerdeki küçük hataların **maliyet
+   olarak** ne kadar zararlı olduğunu görsel olarak gösterir.
+4. **Duyarlılık.** Talep std. sapmasını iki katına çıkarıp tekrar
+   hesapla — Q\* nasıl kaydı? σ arttıkça emniyet stoğu doğrusal olarak
+   büyür.
+
+## Model varsayımlarına dair kritik notlar
+
+**Talep dağılımını yanlış tahmin etmek daha yıkıcıdır.** Model doğru
+formülü verse bile, $\sigma$ %50 yanlış tahminleniyorsa Q\* de aynı
+oranda hatalıdır. Newsvendor'da sağlıklı sonuç için önce **verinin**
+kalitesi gerekir: en az bir-iki sezonluk gözlem, mevsimsellik ve trend
+gibi bileşenlerin ayrılması, aykırı değerlerin işaretlenmesi.
+
+**Talep sipariştan bağımsız olmayabilir.** Klasik newsvendor talebin
+sipariş miktarından **etkilenmediğini** varsayar. Ama vitrindeki mal
+azaldıkça satış hızının düşmesi (broken-assortment etkisi) yaygın bir
+olgudur. Bu durumda düzeltme faktörü ile $\mu$'yü aşağı yönlü kaydırmak
+gerekir.
+
+**Hurda değeri sabit değildir.** Sezon sonu outlet fiyatı, gerçekte
+kalan stok miktarına bağlıdır (arz-talep dengesi). Basit modelde
+sabit varsayılır; ileri modeller (multi-period markdown pricing) bu
+dinamiği modele katar.
+
+**Tek dönem varsayımı ne zaman kırılır?** Aslında pek çok "tek
+dönemlik" ürün için ikinci bir dönem vardır: sonraki sezonda outlet
+mağazasında satılmaya devam eder. Bu durumda gerçek $s$, tam bir
+tasfiye fiyatı yerine "beklenen ikinci dönem geliri"dir.
+
+## EOQ, güvenlik stoku ve newsvendor: aynı ailenin üç yüzü
+
+Üç model de envanter kararı verir ama farklı sorulara cevap:
+
+- **EOQ**: Talep sabit, sipariş sürekli. Soru: her sipariş kaç birim?
+  Cevap: $Q^* = \sqrt{2DK/h}$.
+- **(Q, R) sürekli gözden geçirme + güvenlik stoku**: Talep stokastik,
+  sipariş sürekli. Soru: yeniden sipariş noktası R ne olmalı? Cevap:
+  $R = \mu_L + z_\alpha \sigma_L$, α hedef servis seviyesi.
+- **Newsvendor**: Talep stokastik, sipariş tek dönem. Soru: dönem başı
+  ne kadar sipariş? Cevap: $F(Q^*) = C_u / (C_u + C_o)$.
+
+Aslında (Q, R) modelinin güvenlik stoğu newsvendor'un gizli halidir:
+tedarik süresi $L$ boyunca talep aşımı riski, tek-dönem newsvendor
+mantığıyla emniyet stoğuna dönüşür. Optimum servis seviyesi α'nın
+aslında $C_u / (C_u + C_o)$ olması gerektiği çoğu kitapta ayrı bir
+bölüm gerektirir; newsvendor bu köprüyü tek bir formülle kurar.
+
+## Sık karşılaşılan hatalar
+
+- **Ortalama talep = optimum sipariş sanmak.** Sadece $C_u = C_o$
+  olduğunda doğru. Uygulamada nadirdir.
+- **Hurda değeri sıfır varsaymak.** İade anlaşması varsa $s = c$'dir,
+  outlet varsa $s > 0$'dır. Gerçek $s$ bilinmeden Cu/Co doğru
+  hesaplanmaz.
+- **Goodwill kaybını atlamak.** Sadık müşteri kaybının parasal
+  karşılığı Cu'nun içine girmelidir. Çoğu perakendecide $g$ tahmini
+  bile $g = 0$ varsaymaktan iyidir.
+- **Servis seviyesini fill rate ile karıştırmak.** Yönetim %99 fill rate
+  isterken ekip %99 servis seviyesi hedefi kurarsa gereksiz stok
+  taşınır. İki metrik farklı; hangisinin optimize edildiğini net
+  yaz.
+- **Newsvendor'u çoklu dönem ürüne uygulamak.** Aynı SKU her hafta
+  sipariş ediliyor ve kalan stok bir sonraki haftaya kayıyorsa
+  newsvendor değil, base-stock ya da (s, S) modeli gerekir.
+
+## Küçük tarih ve modern uzantılar
+
+Klasik formül **Kenneth Arrow, Theodore Harris ve Jacob Marschak**'ın
+1951 tarihli "Optimal Inventory Policy" çalışmasına dayanır; ama
+1888'de Francis Edgeworth'ün kar (kâr) risk modelinde ilkel biçimiyle
+görünür. "Gazete satıcısı" adlandırması yaygınlaştıktan sonra literatür
+şu genişlemeleri üretti:
+
+- **Multiple products, ortak bütçe kısıtı**: newsvendor'ın Lagrange
+  çarpanıyla ölçekli versiyonu.
+- **Risk-averse newsvendor**: karar vericinin CVaR ya da fayda
+  fonksiyonu ile riski cezalandırdığı hâl.
+- **Belirsiz dağılım (distribution-free)**: sadece $\mu$ ve $\sigma$
+  bilindiğinde min-max regret ile $Q^*$ türetimi (Scarf, 1958).
+- **Sipariş miktarı iadeli (Buyback) sözleşmeler**: tedarikçi sezon
+  sonu kalan stoğu belirli fiyattan geri alır. Newsvendor bu sözleşme
+  parametrelerinin en optimum tasarımına yol gösterir.
+
+## Özet
+
+- Karar: tek dönemlik $Q$; belirsizlik: talep $D$.
+- Merkezî formül: $F(Q^*) = C_u / (C_u + C_o)$.
+- Cu = kaçırılan kâr + goodwill; Co = alım maliyeti − hurda değeri.
+- Normal talep: $Q^* = \mu + \Phi^{-1}(CR) \cdot \sigma$; standart
+  kayıp fonksiyonu ile eksik/fazla kapalı formda.
+- Üniform talep: $Q^* = a + (b-a) \cdot CR$; polinom kayıp.
+- Q duyarlılık eğrisi U-şeklinde ve Q\* civarında düz — kestirimlerdeki
+  küçük hatalara toleranslı.
+- EOQ ile karışmasın: farklı sorular, farklı formüller; ama emniyet
+  stoğu üzerinden kavramsal olarak akrabalar.
+
+Newsvendor, yöneylem araştırmasının en zarif kapalı-form sonuçlarından
+biridir: tek satırlık formül, arkasında marjinal analiz sezgisi ve
+yarım asırlık literatür. Aracımız formülü tarayıcıda anında hesaplar;
+sen model varsayımlarına ve verinin kalitesine odaklanabilirsin.
