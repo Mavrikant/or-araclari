@@ -1,0 +1,558 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/Container.astro';
+import { withBase, SITE } from '../../data/site';
+import { TOOLS } from '../../data/tools';
+
+const tool = TOOLS.find((t) => t.slug === 'newsvendor-cozucu')!;
+const guideHref = tool.guideSlug ? withBase(`/rehberler/${tool.guideSlug}`) : null;
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: tool.title,
+  applicationCategory: 'WebApplication',
+  operatingSystem: 'Any',
+  description: tool.description,
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'TRY' },
+  inLanguage: SITE.locale,
+  isAccessibleForFree: true,
+};
+---
+
+<BaseLayout
+  title={tool.title}
+  description={tool.description}
+  image={withBase(`/og/${tool.slug}.png`)}
+  imageAlt={`${tool.title} — OR Araçları`}
+>
+  <Fragment slot="head">
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(softwareJsonLd)} />
+  </Fragment>
+
+  <Container as="section" size="wide" class="pt-12 sm:pt-16">
+    <p class="text-sm font-medium text-brand-600 dark:text-accent-400">
+      <a href={withBase('/araclar')} class="hover:underline">Araçlar</a>
+      <span class="text-slate-400 dark:text-slate-600"> / </span>
+      <span>Envanter & Tedarik</span>
+    </p>
+    <h1 class="mt-2 max-w-3xl font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">
+      {tool.title}
+    </h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
+      Tek dönemlik ürünler için belirsiz talep altında optimum sipariş miktarı Q*.
+      Critical ratio Cu / (Cu + Co) çözümü; normal veya üniform talep, Cu/Co doğrudan
+      girişi veya fiyat-maliyet-hurda-ceza modelinden otomatik türetme.
+      {guideHref && (
+        <a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>
+      )}
+    </p>
+  </Container>
+
+  <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,340px)_1fr] print:block">
+    <form id="nv-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="sample1-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Gazete bayii örneği
+        </button>
+        <button type="button" id="sample2-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          Sezonluk giyim
+        </button>
+        <button type="button" id="reset-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+          Sıfırla
+        </button>
+      </div>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Maliyet modeli
+        </legend>
+        <div class="flex gap-4 text-xs">
+          <label class="inline-flex items-center gap-1.5">
+            <input type="radio" name="cost-mode" value="direct" checked class="text-brand-600 focus:ring-brand-500" />
+            <span class="text-slate-700 dark:text-slate-300">Doğrudan Cu / Co</span>
+          </label>
+          <label class="inline-flex items-center gap-1.5">
+            <input type="radio" name="cost-mode" value="priced" class="text-brand-600 focus:ring-brand-500" />
+            <span class="text-slate-700 dark:text-slate-300">Fiyat / maliyet</span>
+          </label>
+        </div>
+
+        <div id="direct-fields" class="space-y-3">
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+              Eksik maliyeti Cu (₺/birim, kaçırılan kâr)
+            </span>
+            <input type="number" id="cu-input" min="0" step="any" inputmode="decimal"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+              Fazla maliyeti Co (₺/birim, satılamayan)
+            </span>
+            <input type="number" id="co-input" min="0" step="any" inputmode="decimal"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+        </div>
+
+        <div id="priced-fields" class="hidden space-y-3">
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+              Satış fiyatı p (₺/birim)
+            </span>
+            <input type="number" id="p-input" min="0" step="any" inputmode="decimal"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+              Alım maliyeti c (₺/birim)
+            </span>
+            <input type="number" id="c-input" min="0" step="any" inputmode="decimal"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+              Hurda değeri s <span class="text-slate-400">(opsiyonel, default 0)</span>
+            </span>
+            <input type="number" id="s-input" min="0" step="any" inputmode="decimal" placeholder="0"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+              Eksik cezası g <span class="text-slate-400">(opsiyonel, goodwill kaybı)</span>
+            </span>
+            <input type="number" id="g-input" min="0" step="any" inputmode="decimal" placeholder="0"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Talep dağılımı
+        </legend>
+        <div class="flex gap-4 text-xs">
+          <label class="inline-flex items-center gap-1.5">
+            <input type="radio" name="dist" value="normal" checked class="text-brand-600 focus:ring-brand-500" />
+            <span class="text-slate-700 dark:text-slate-300">Normal</span>
+          </label>
+          <label class="inline-flex items-center gap-1.5">
+            <input type="radio" name="dist" value="uniform" class="text-brand-600 focus:ring-brand-500" />
+            <span class="text-slate-700 dark:text-slate-300">Üniform</span>
+          </label>
+        </div>
+
+        <div id="normal-fields" class="grid grid-cols-2 gap-3">
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Ortalama μ</span>
+            <input type="number" id="mean-input" min="0" step="any" inputmode="decimal"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Std. sapma σ</span>
+            <input type="number" id="sd-input" min="0" step="any" inputmode="decimal"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+        </div>
+
+        <div id="uniform-fields" class="hidden grid-cols-2 gap-3">
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Alt sınır a</span>
+            <input type="number" id="a-input" min="0" step="any" inputmode="decimal"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Üst sınır b</span>
+            <input type="number" id="b-input" min="0" step="any" inputmode="decimal"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+          </label>
+        </div>
+      </fieldset>
+
+      <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 dark:bg-accent-500 dark:text-brand-950 dark:hover:bg-accent-400">
+        Hesapla
+      </button>
+
+      <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
+    </form>
+
+    <section id="output" hidden aria-live="polite" class="space-y-6">
+      <div class="rounded-2xl border border-emerald-300 bg-emerald-50 p-5 dark:border-emerald-800/60 dark:bg-emerald-950/30">
+        <p class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+          Optimum sipariş miktarı Q*
+        </p>
+        <p id="qstar" class="mt-1 font-display text-4xl font-bold text-emerald-900 dark:text-emerald-100"></p>
+        <p id="qstar-formula" class="mt-1 font-mono text-xs text-emerald-800 dark:text-emerald-300"></p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Critical ratio</div>
+          <div id="m-cr" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Servis seviyesi F(Q*)</div>
+          <div id="m-sl" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">E[eksik]</div>
+          <div id="m-short" class="mt-1 font-display text-lg font-bold tabular-nums text-amber-700 dark:text-amber-300"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">E[fazla]</div>
+          <div id="m-left" class="mt-1 font-display text-lg font-bold tabular-nums text-amber-700 dark:text-amber-300"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">E[satış]</div>
+          <div id="m-sales" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Fill rate</div>
+          <div id="m-fill" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">E[toplam maliyet]</div>
+          <div id="m-cost" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+        </div>
+        <div id="m-profit-cell" class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-800/50 dark:bg-emerald-950/20">
+          <div class="text-xs font-medium text-emerald-700 dark:text-emerald-300">E[kâr]</div>
+          <div id="m-profit" class="mt-1 font-display text-lg font-bold tabular-nums text-emerald-800 dark:text-emerald-200"></div>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+          Q duyarlılığı — beklenen maliyet
+        </h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Kırmızı = E[eksik]·Cu, mavi = E[fazla]·Co, siyah = toplam beklenen maliyet.
+          Yeşil dikey çizgi Q*, U-eğrisinin dibi.
+        </p>
+        <div id="chart" class="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/40"></div>
+      </div>
+    </section>
+  </Container>
+
+  {guideHref && (
+    <Container as="section" size="wide" class="py-12 sm:py-16">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-8 dark:border-slate-800 dark:bg-slate-900/40">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-accent-400">
+          Konuyu derinleştir
+        </p>
+        <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          Newsvendor modeli, critical fractile ve tek-dönem envanter kararı
+        </h2>
+        <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+          F(Q*) = Cu / (Cu + Co) formülü nereden geliyor, normal vs üniform talepte
+          nasıl uygulanır, EOQ ile ilişkisi ve fiyat-maliyet-hurda modeli
+          üzerine kapsamlı Türkçe rehber.
+        </p>
+        <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">
+          Rehberi oku →
+        </a>
+      </div>
+    </Container>
+  )}
+</BaseLayout>
+
+<script>
+  import {
+    computeNewsvendor,
+    newsvendorSensitivity,
+    NewsvendorError,
+    type NewsvendorInput,
+  } from '../../lib/newsvendor';
+
+  const STORAGE_KEY = 'newsvendor-state-v1';
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el as T;
+  };
+
+  function fmt(n: number, decimals = 2): string {
+    if (!Number.isFinite(n)) return '—';
+    if (Math.abs(n) >= 10000) return n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return n.toFixed(decimals).replace(/\.?0+$/, '');
+  }
+  function pct(n: number): string {
+    return `%${(n * 100).toFixed(1).replace(/\.0$/, '')}`;
+  }
+
+  const form = $<HTMLFormElement>('nv-form');
+  const cuInput = $<HTMLInputElement>('cu-input');
+  const coInput = $<HTMLInputElement>('co-input');
+  const pInput = $<HTMLInputElement>('p-input');
+  const cInput = $<HTMLInputElement>('c-input');
+  const sInput = $<HTMLInputElement>('s-input');
+  const gInput = $<HTMLInputElement>('g-input');
+  const meanInput = $<HTMLInputElement>('mean-input');
+  const sdInput = $<HTMLInputElement>('sd-input');
+  const aInput = $<HTMLInputElement>('a-input');
+  const bInput = $<HTMLInputElement>('b-input');
+  const directFields = $('direct-fields');
+  const pricedFields = $('priced-fields');
+  const normalFields = $('normal-fields');
+  const uniformFields = $('uniform-fields');
+  const sample1Btn = $('sample1-btn');
+  const sample2Btn = $('sample2-btn');
+  const resetBtn = $('reset-btn');
+  const errorBox = $('error-box');
+  const output = $('output');
+  const qstar = $('qstar');
+  const qstarFormula = $('qstar-formula');
+  const mCr = $('m-cr');
+  const mSl = $('m-sl');
+  const mShort = $('m-short');
+  const mLeft = $('m-left');
+  const mSales = $('m-sales');
+  const mFill = $('m-fill');
+  const mCost = $('m-cost');
+  const mProfit = $('m-profit');
+  const mProfitCell = $('m-profit-cell');
+  const chart = $('chart');
+
+  function currentCostMode(): 'direct' | 'priced' {
+    return (document.querySelector('input[name="cost-mode"]:checked') as HTMLInputElement).value as 'direct' | 'priced';
+  }
+  function currentDist(): 'normal' | 'uniform' {
+    return (document.querySelector('input[name="dist"]:checked') as HTMLInputElement).value as 'normal' | 'uniform';
+  }
+
+  function syncModeVisibility(): void {
+    const mode = currentCostMode();
+    directFields.classList.toggle('hidden', mode !== 'direct');
+    pricedFields.classList.toggle('hidden', mode !== 'priced');
+    const dist = currentDist();
+    normalFields.classList.toggle('hidden', dist !== 'normal');
+    normalFields.classList.toggle('grid', dist === 'normal');
+    uniformFields.classList.toggle('hidden', dist !== 'uniform');
+    uniformFields.classList.toggle('grid', dist === 'uniform');
+  }
+
+  /* ---------- state ---------- */
+
+  interface Persisted {
+    mode: 'direct' | 'priced';
+    dist: 'normal' | 'uniform';
+    cu: string; co: string;
+    p: string; c: string; s: string; g: string;
+    mean: string; sd: string; a: string; b: string;
+  }
+
+  function loadState(): void {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const s = JSON.parse(raw) as Partial<Persisted>;
+      if (s.mode === 'priced') {
+        (document.querySelector('input[name="cost-mode"][value="priced"]') as HTMLInputElement).checked = true;
+      }
+      if (s.dist === 'uniform') {
+        (document.querySelector('input[name="dist"][value="uniform"]') as HTMLInputElement).checked = true;
+      }
+      cuInput.value = s.cu ?? ''; coInput.value = s.co ?? '';
+      pInput.value = s.p ?? ''; cInput.value = s.c ?? '';
+      sInput.value = s.s ?? ''; gInput.value = s.g ?? '';
+      meanInput.value = s.mean ?? ''; sdInput.value = s.sd ?? '';
+      aInput.value = s.a ?? ''; bInput.value = s.b ?? '';
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function saveState(): void {
+    try {
+      const s: Persisted = {
+        mode: currentCostMode(),
+        dist: currentDist(),
+        cu: cuInput.value, co: coInput.value,
+        p: pInput.value, c: cInput.value, s: sInput.value, g: gInput.value,
+        mean: meanInput.value, sd: sdInput.value,
+        a: aInput.value, b: bInput.value,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  loadState();
+  syncModeVisibility();
+
+  /* ---------- chart ---------- */
+
+  function renderChart(input: NewsvendorInput, qStar: number): void {
+    const points = newsvendorSensitivity(input, 80, 0.5, 1.5);
+    const W = 720;
+    const Hh = 320;
+    const PL = 60;
+    const PR = 16;
+    const PT = 16;
+    const PB = 36;
+
+    const xs = points.map((p) => p.q);
+    const xMin = Math.min(...xs);
+    const xMax = Math.max(...xs);
+    const uHelper = validateCosts(input);
+    const yMax = Math.max(
+      ...points.map((p) => Math.max(
+        p.expectedCost,
+        uHelper.underage * p.expectedShortage,
+        uHelper.overage * p.expectedLeftover,
+      )),
+    );
+
+    const sx = (q: number) => PL + ((q - xMin) / (xMax - xMin)) * (W - PL - PR);
+    const sy = (v: number) => Hh - PB - (v / yMax) * (Hh - PT - PB);
+
+    const path = (get: (p: (typeof points)[number]) => number): string =>
+      points.map((p, i) => `${i === 0 ? 'M' : 'L'}${sx(p.q).toFixed(1)},${sy(get(p)).toFixed(1)}`).join(' ');
+
+    const shortPath = path((p) => uHelper.underage * p.expectedShortage);
+    const leftPath = path((p) => uHelper.overage * p.expectedLeftover);
+    const totalPath = path((p) => p.expectedCost);
+
+    const xAxis = `<line x1="${PL}" y1="${Hh - PB}" x2="${W - PR}" y2="${Hh - PB}" class="stroke-slate-300 dark:stroke-slate-700" stroke-width="1" />`;
+    const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${Hh - PB}" class="stroke-slate-300 dark:stroke-slate-700" stroke-width="1" />`;
+    const qStarMarker = `<line x1="${sx(qStar)}" y1="${PT}" x2="${sx(qStar)}" y2="${Hh - PB}" class="stroke-emerald-500" stroke-width="1" stroke-dasharray="3 3" />
+      <text x="${sx(qStar) + 4}" y="${PT + 12}" class="fill-emerald-700 text-[10px] font-semibold dark:fill-emerald-300">Q*</text>`;
+    const xTicks = [xMin, qStar, xMax].map((q) => `<text x="${sx(q)}" y="${Hh - PB + 14}" text-anchor="middle" class="fill-slate-500 text-[10px] dark:fill-slate-400">${fmt(q, 0)}</text>`).join('');
+    const yTicks = [0, yMax / 2, yMax].map((v) => `<text x="${PL - 4}" y="${sy(v) + 3}" text-anchor="end" class="fill-slate-500 text-[10px] dark:fill-slate-400">${fmt(v, 0)}</text>`).join('');
+
+    const legend = `
+      <text x="${W - PR - 4}" y="${PT + 14}" text-anchor="end" class="fill-red-600 text-[10px] dark:fill-red-400">— eksik maliyeti (Cu·E[eksik])</text>
+      <text x="${W - PR - 4}" y="${PT + 28}" text-anchor="end" class="fill-blue-600 text-[10px] dark:fill-blue-400">— fazla maliyeti (Co·E[fazla])</text>
+      <text x="${W - PR - 4}" y="${PT + 42}" text-anchor="end" class="fill-slate-800 text-[10px] font-semibold dark:fill-slate-200">— toplam beklenen maliyet</text>`;
+
+    chart.innerHTML = `<svg viewBox="0 0 ${W} ${Hh}" class="block w-full h-auto" role="img" aria-label="Q duyarlılığı">
+      ${xAxis}${yAxis}${xTicks}${yTicks}
+      <path d="${shortPath}" fill="none" class="stroke-red-500" stroke-width="1.5" />
+      <path d="${leftPath}" fill="none" class="stroke-blue-500" stroke-width="1.5" />
+      <path d="${totalPath}" fill="none" class="stroke-slate-800 dark:stroke-slate-200" stroke-width="2" />
+      ${qStarMarker}
+      ${legend}
+      <text x="${(W - PL - PR) / 2 + PL}" y="${Hh - 4}" text-anchor="middle" class="fill-slate-500 text-[10px] dark:fill-slate-400">Sipariş miktarı (Q)</text>
+      <text x="14" y="${(Hh - PT - PB) / 2 + PT}" transform="rotate(-90 14 ${(Hh - PT - PB) / 2 + PT})" text-anchor="middle" class="fill-slate-500 text-[10px] dark:fill-slate-400">Beklenen maliyet (₺)</text>
+    </svg>`;
+  }
+
+  function validateCosts(input: NewsvendorInput): { underage: number; overage: number } {
+    if (input.costs.mode === 'direct') {
+      return { underage: input.costs.underage, overage: input.costs.overage };
+    }
+    const salvage = input.costs.salvage ?? 0;
+    const penalty = input.costs.shortagePenalty ?? 0;
+    return {
+      underage: input.costs.price - input.costs.cost + penalty,
+      overage: input.costs.cost - salvage,
+    };
+  }
+
+  /* ---------- form handlers ---------- */
+
+  function showError(msg: string): void {
+    errorBox.textContent = msg;
+    errorBox.hidden = false;
+    output.hidden = true;
+  }
+  function clearError(): void {
+    errorBox.hidden = true;
+    errorBox.textContent = '';
+  }
+
+  function buildInput(): NewsvendorInput {
+    const costMode = currentCostMode();
+    const costs = costMode === 'direct'
+      ? { mode: 'direct' as const, underage: Number(cuInput.value), overage: Number(coInput.value) }
+      : {
+          mode: 'priced' as const,
+          price: Number(pInput.value),
+          cost: Number(cInput.value),
+          salvage: sInput.value ? Number(sInput.value) : undefined,
+          shortagePenalty: gInput.value ? Number(gInput.value) : undefined,
+        };
+    const dist = currentDist();
+    const demand = dist === 'normal'
+      ? { kind: 'normal' as const, mean: Number(meanInput.value), stdDev: Number(sdInput.value) }
+      : { kind: 'uniform' as const, min: Number(aInput.value), max: Number(bInput.value) };
+    return { costs, demand };
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clearError();
+    saveState();
+    try {
+      const input = buildInput();
+      const r = computeNewsvendor(input);
+
+      qstar.textContent = `${fmt(r.optimalQty, 2)} birim`;
+      const dist = currentDist();
+      if (dist === 'normal') {
+        const mu = (input.demand as { kind: 'normal'; mean: number; stdDev: number }).mean;
+        const sd = (input.demand as { kind: 'normal'; mean: number; stdDev: number }).stdDev;
+        qstarFormula.textContent = `Q* = μ + Φ⁻¹(${fmt(r.criticalRatio, 4)}) · σ = ${fmt(mu, 2)} + ${fmt((r.optimalQty - mu) / sd, 3)} · ${fmt(sd, 2)}`;
+      } else {
+        const d = input.demand as { kind: 'uniform'; min: number; max: number };
+        qstarFormula.textContent = `Q* = a + (b − a) · CR = ${fmt(d.min, 2)} + ${fmt(d.max - d.min, 2)} · ${fmt(r.criticalRatio, 4)}`;
+      }
+      mCr.textContent = fmt(r.criticalRatio, 4);
+      mSl.textContent = pct(r.serviceLevel);
+      mShort.textContent = fmt(r.expectedShortage, 2);
+      mLeft.textContent = fmt(r.expectedLeftover, 2);
+      mSales.textContent = fmt(r.expectedSales, 2);
+      mFill.textContent = pct(r.fillRate);
+      mCost.textContent = `₺${fmt(r.expectedCost, 2)}`;
+
+      const hasProfit = r.expectedProfit !== null;
+      if (hasProfit) {
+        mProfit.textContent = `₺${fmt(r.expectedProfit!, 2)}`;
+        mProfitCell.classList.remove('hidden');
+      } else {
+        mProfitCell.classList.add('hidden');
+      }
+
+      renderChart(input, r.optimalQty);
+      output.hidden = false;
+      output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      const msg = err instanceof NewsvendorError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
+      showError(msg);
+    }
+  });
+
+  form.addEventListener('change', () => {
+    syncModeVisibility();
+    saveState();
+  });
+  form.addEventListener('input', saveState);
+
+  sample1Btn.addEventListener('click', () => {
+    (document.querySelector('input[name="cost-mode"][value="priced"]') as HTMLInputElement).checked = true;
+    (document.querySelector('input[name="dist"][value="normal"]') as HTMLInputElement).checked = true;
+    pInput.value = '5'; cInput.value = '2'; sInput.value = '0.5'; gInput.value = '';
+    meanInput.value = '150'; sdInput.value = '30';
+    cuInput.value = ''; coInput.value = ''; aInput.value = ''; bInput.value = '';
+    syncModeVisibility(); saveState(); clearError();
+  });
+  sample2Btn.addEventListener('click', () => {
+    (document.querySelector('input[name="cost-mode"][value="priced"]') as HTMLInputElement).checked = true;
+    (document.querySelector('input[name="dist"][value="uniform"]') as HTMLInputElement).checked = true;
+    pInput.value = '80'; cInput.value = '30'; sInput.value = '15'; gInput.value = '';
+    aInput.value = '200'; bInput.value = '500';
+    cuInput.value = ''; coInput.value = ''; meanInput.value = ''; sdInput.value = '';
+    syncModeVisibility(); saveState(); clearError();
+  });
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('Form sıfırlanacak. Devam edilsin mi?')) return;
+    form.reset();
+    (document.querySelector('input[name="cost-mode"][value="direct"]') as HTMLInputElement).checked = true;
+    (document.querySelector('input[name="dist"][value="normal"]') as HTMLInputElement).checked = true;
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+    syncModeVisibility(); clearError();
+    output.hidden = true;
+  });
+</script>

@@ -278,6 +278,16 @@ export const TOOLS: readonly Tool[] = [
     status: 'ready',
     guideSlug: 'steiner-agaci-2-yaklasim',
   },
+  {
+    slug: 'newsvendor-cozucu',
+    title: 'Newsvendor (Tek-Dönem Envanter) Çözücü',
+    shortTitle: 'Newsvendor',
+    description:
+      'Gazete, taze meyve, sezonluk giyim, konser bileti gibi tek dönemlik ürünler için belirsiz talep altında optimum sipariş miktarını critical fractile (F(Q*) = Cu/(Cu+Co)) yöntemiyle tarayıcıda anlık hesapla. Normal ya da üniform talep, Cu/Co doğrudan girişi veya fiyat-maliyet-hurda-ceza modelinden türetme, beklenen kâr / eksik / fazla / fill rate ve Q duyarlılık eğrisi tek geçişte.',
+    category: 'envanter',
+    status: 'ready',
+    guideSlug: 'newsvendor-tek-donem-envanter',
+  },
 ] as const;
 
 export function getReadyTools(): readonly Tool[] {
