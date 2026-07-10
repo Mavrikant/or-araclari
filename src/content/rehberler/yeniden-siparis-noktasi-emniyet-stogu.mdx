@@ -1,0 +1,263 @@
+---
+title: "Yeniden Sipariş Noktası (ROP) ve Emniyet Stoğu"
+description: "Sürekli-izleme (Q, R) modelinde R = μL + z·σ_DL formülü, kombine tedarik süresi belirsizliği, Type-I ve Type-II servis seviyesi ile emniyet stoğu boyutlandırma üzerine Türkçe rehber."
+pubDate: 2026-07-10
+relatedTool: "rop-emniyet-stogu"
+keywords:
+  - "yeniden sipariş noktası"
+  - "reorder point"
+  - "emniyet stoğu"
+  - "safety stock"
+  - "Q R modeli"
+  - "sürekli izleme"
+  - "tedarik süresi belirsizliği"
+  - "servis seviyesi"
+  - "cycle service level"
+  - "fill rate"
+  - "kombine varyans"
+  - "EOQ safety stock"
+readingMinutes: 12
+faq:
+  - question: "Yeniden sipariş noktası (ROP) nedir?"
+    answer: "Sürekli-izleme (Q, R) modelinde stok R eşiğine düştüğü anda sabit Q kadar yeni sipariş verilir. Sipariş, tedarik süresi L sonrasında ulaşır. R yeteri kadar yüksek olmalı ki tedarik süresi boyunca gelecek talep büyük olasılıkla stoktan karşılanabilsin. Klasik formül R = μ_d · L + z · σ_DL; ilk terim beklenen tedarik-süresi talebi, ikincisi bu talebin belirsizliğine karşı seçilen emniyet stoğudur."
+  - question: "Emniyet stoğu (safety stock) neden gerekir?"
+    answer: "Talep ortalamasının üstünde çıktığı ya da tedarik gecikince stok tükenmesin diye tutulan tampondur. Talebi tam olarak μ_d · L kadar tahmin edersek ve bu miktarı sipariş noktasına koyarsak talebin bu ortalamayı aşan yarısında stoksuz kalırız — cycle service level %50 olur. Belirsizlik altında hedef %95, %99 gibi bir servise ulaşmak için ortalama üstünde bir tampon eklemek gerekir; işte SS = z · σ_DL bu tamponun büyüklüğüdür."
+  - question: "σ_DL neden L·σ_d² + μ_d²·σ_L² şeklinde hesaplanır?"
+    answer: "Tedarik süresi L rasgele bir değişkense, tedarik süresi boyunca kümülatif talep D_L = Σ_{t=1}^{L} d_t ikili rasgeleliğin çarpımıdır. Toplam varyans yasası (law of total variance): Var(D_L) = E[L]·Var(d) + (E[d])²·Var(L). Yani L·σ_d² + μ_d²·σ_L². L deterministikse (σ_L = 0) σ_DL = √L · σ_d klasik hâline döner. Sık karıştırılan nokta: σ_L'yi doğrudan σ_DL'ye eklemek YANLIŞ — μ_d² katsayısı sipariş büyüklüğüne göre σ_L etkisini büyütür."
+  - question: "z değeri nereden gelir?"
+    answer: "Tedarik süresi boyunca talep D_L ~ N(μL, σ_DL²) yaklaşımı altında, P(D_L ≤ R) = α → R = μL + Φ⁻¹(α) · σ_DL. z_α = Φ⁻¹(α) standart normal ters CDF. Ders kitabından bilinen değerler: z_{0.90} ≈ 1.28, z_{0.95} ≈ 1.65, z_{0.975} ≈ 1.96, z_{0.99} ≈ 2.33, z_{0.999} ≈ 3.09. Talep gerçekten normal değilse Chebyshev veya distribution-free yaklaşımlar var; ancak toplama etkisi (Central Limit) nedeniyle L uzun ise normal yaklaşımı çoğu zaman yeterlidir."
+  - question: "Cycle service level (Type-I) ile fill rate (Type-II) arasındaki fark nedir?"
+    answer: "Cycle service α = P(tedarik süresi boyunca stoksuz kalmama) — bir sipariş çevriminde en az bir birim eksik kalınmama olasılığıdır. Fill rate β = E[karşılanan talep] / E[toplam talep] — talebin ortalama olarak kaçta kaçının stoktan karşılandığıdır. Aynı sayısal hedefte (%95) fill rate genelde daha az emniyet stoğu ister çünkü stoksuzluk olduğunda bile talebin çoğu karşılanmış olabilir. Perakende ve dağıtım fill rate hedefini tercih eder; kritik yedek parçada cycle service anlamlıdır."
+  - question: "Q'nun (sipariş büyüklüğünün) emniyet stoğu ile ilişkisi nedir?"
+    answer: "Cycle service için Q, R'yi ETKİLEMEZ; sadece σ_DL ve α belirler. Ancak fill rate için β = 1 − σ_DL·L(z)/Q ilişkisi vardır: büyük Q, aynı stoksuz miktarı daha çok toplam talebe bölerek fill rate'i yükseltir. Bu yüzden büyük lotlarla çalışılırsa aynı β hedefine daha AZ emniyet stoğuyla ulaşılabilir. Q ile SS aynı yönde çalışır — biri artınca öbürü azaltılabilir; toplam envanter maliyet dengesi (Q/2)·h + SS·h olarak yönetilir."
+  - question: "EOQ + emniyet stoğu ile Newsvendor arasındaki ilişki nedir?"
+    answer: "Üçü de aynı problem ailesinin farklı köşeleridir. EOQ deterministik ve sürekli, tek karar Q, risk yönetimi dışarıda. Newsvendor stokastik ama tek dönem, tek karar Q, risk kapalı-form. (Q, R) modeli hibrittir: Q'yu deterministik EOQ ile boyutlar, R ve SS'yi stokastik olarak — critical fractile'nin analoğu z = Φ⁻¹(α) — belirler. Newsvendor'da underage/overage asimetrisi kritik oranı verirken (Q, R)'de servis-seviyesi α doğrudan hedef olarak alınır."
+  - question: "Yüksek servis seviyesi neden orantısız pahalıya patlar?"
+    answer: "z_α ile α arasında doğrusal olmayan ilişki var: %90 → z = 1.28, %95 → z = 1.65 (+%29 SS), %99 → z = 2.33 (+%82 SS'e göre %95'ten), %99.9 → z = 3.09 (+%33 daha). Her ek '9' emniyet stoğu için çok daha fazla ödeme demektir. Ayrıca stoksuz kalma olayı zaten nadir olduğu için son yüzdeleri gütmek işletme değeriyle orantısız envanter bağlar. Kritik yedek parçada (%99.9) haklı; hızlı tüketim ürününde (%92) çoğu zaman yeterlidir."
+  - question: "Talep dağılımı normal değilse ne yapmalı?"
+    answer: "Üç seçenek: (1) Toplam etkisi — L ≥ 5 çevrim ise Merkezi Limit Teoremi ile ampirik olarak normale yakınsar; parametrik varsayım güvenli. (2) Bootstrap — geçmiş günlük talep serisinden L uzunluğunda pencereler örnekle, kümülatif talep dağılımını ampirik olarak inşa et; R doğrudan bu dağılımın α-yüzdeliği. (3) Distribution-free — sadece ortalama ve varyans varsa Scarf 1958 en-kötü-durum formülü R = μL + √((1-α)/α) · σ_DL kullanılabilir; daha konservatif. Kesikli talep için Poisson yaklaşımı, sık kesilen tedarikte gamma karışımları alternatif."
+---
+
+Klasik EOQ modeli talep sabittir sanar; gerçek hayatta talep dalgalanır,
+tedarikçi gecikir, gemi limanda beklerdi. Bir mağazanın stok defterine
+bakan yönetici aslında iki soruyu birlikte cevaplamak zorundadır:
+**Ne kadar sipariş edeyim?** (lot büyüklüğü Q) ve **Ne zaman sipariş
+edeyim?** (yeniden sipariş noktası R). Bu ikisinin bileşimine kısaca
+**(Q, R) modeli** ya da **sürekli-izleme sistemi** denir. Bu rehberde R
+ve emniyet stoğunun türetimi, tedarik süresi belirsizliğinin kombine
+varyansla nasıl modele girdiği, Type-I / Type-II servis seviyesi ayrımı
+ve EOQ ile birlikte toplam yıllık maliyet üzerine yoğunlaşacağız.
+
+## Sürekli-izleme (Q, R) modeli nedir?
+
+Süpermarkette bir raf düşünelim: kasa yazarları anlık olarak stok
+düzeyini biliyor. Sistem tanımlı bir eşik değeri **R** var; stok bu
+seviyeye düştüğü anda tedarikçiye sabit büyüklükte bir sipariş
+gönderiliyor. Sipariş verildikten sonra **tedarik süresi L** boyunca yeni
+mal gelmiyor; bu sürede talep açığa çıkarsa emniyet stoğundan karşılanır.
+Mal geldiğinde stok yeniden **Q + SS** seviyesine sıçrar ve döngü baştan
+başlar. Bu klasik "testere dişi" desen, sürekli-izleme + sabit sipariş
+büyüklüğü + rasgele talep + rasgele tedarik süresi varsayımlarıyla
+tanımlanır.
+
+Alternatif model **periyodik-inceleme (R, T)**dir: her T dönem başında
+stoğa bakılır ve hedef seviyeye tamamlanacak kadar sipariş verilir. Q
+sabit değildir; her siparişte farklı bir miktar sipariş edilir. Perakende
+kolileme ekonomilerinde ve MRP nervousness kontrolünde (R, T) yaygındır;
+sürekli-izleme ise POS ve barkod sistemleriyle birlikte 1970'lerden sonra
+egemen oldu.
+
+## Neden emniyet stoğuna ihtiyaç var?
+
+Diyelim ortalama günlük talep μ_d = 100 birim ve tedarik süresi L = 4
+gün (sabit). Beklenen tedarik-süresi talebi μ_d · L = 400 birim. Eğer R
+= 400 seçersek, sipariş verildikten sonra tedarik süresi boyunca gelecek
+gerçek talep **ortalama olarak** 400 birim olur. Ama "ortalama" demek
+zamanların yarısında talebin bunu **aştığı** demektir. R = 400 ile cycle
+service level tam olarak %50: iki çevrimden birinde stoksuz kalırız.
+
+Hedef **α = %95** için ortalamayı geçmesi olası talep karşılığında bir
+tampon eklemek gerekir. Bu tampona **emniyet stoğu (SS)** denir. Talep
+tedarik süresi boyunca ortalama μ_d · L, standart sapma σ_DL ile normal
+dağılıyorsa:
+
+$$
+R = \mu_d \cdot L + z_\alpha \cdot \sigma_{DL}, \qquad SS = z_\alpha \cdot \sigma_{DL}
+$$
+
+burada z_α = Φ⁻¹(α) standart normal ters CDF'sidir. α = 0.95 → z_α ≈
+1.6449 → SS ≈ 1.6449 · σ_DL. σ_d = 10 birim/gün, L = 4 gün ise σ_DL =
+√L · σ_d = 20; SS = 32.9 birim; R = 432.9. Yani 33 birimlik bir tampon
+ile stoksuz kalma olasılığını %50'den %5'e indiriyoruz.
+
+## Tedarik süresi belirsizliği: kombine varyans
+
+Modelin en incelikli parçası burasıdır. Tedarik süresi L rasgele bir
+değişkense — gemi geç geliyor, gümrük takılıyor, tedarikçi vardiyayı
+kaçırıyor — σ_DL sadece σ_d ile hesaplanamaz. Toplam varyans yasasıyla
+(law of total variance):
+
+$$
+\mathrm{Var}(D_L) = E[L] \cdot \mathrm{Var}(d) + (E[d])^2 \cdot \mathrm{Var}(L)
+$$
+
+yani
+
+$$
+\sigma_{DL} = \sqrt{L \cdot \sigma_d^2 + \mu_d^2 \cdot \sigma_L^2}.
+$$
+
+Burada dikkat: μ_d² katsayısı σ_L'nin etkisini **büyütür**. Talep hacmi
+büyükse tedarik süresi belirsizliği baskın hâle gelir. Örnek: μ_d = 100
+birim/gün, σ_d = 5, L = 10 gün. σ_L = 0 iken σ_DL = √10 · 5 ≈ 15.81.
+σ_L = 2 gün eklendiğinde σ_DL = √(10·25 + 10000·4) = √40250 ≈ 200.62 —
+neredeyse 13 kat büyür. Emniyet stoğu tam bu oranda büyür.
+
+Sık yapılan hata σ_L'yi doğrudan σ_DL'ye eklemektir. Bu tamamen yanlıştır
+— birimleri bile uyuşmaz (σ_L gündür, σ_DL birimdir).
+
+## Type-I (cycle service) ve Type-II (fill rate) ayrımı
+
+İki farklı servis-seviyesi tanımı literatürde eşit sıklıkta karşımıza
+çıkar ve karıştırılırsa yanlış R çıkar.
+
+**Cycle service level (α)** — bir sipariş çevriminde stoksuz kalmama
+olasılığı:
+
+$$
+\alpha = P(D_L \le R).
+$$
+
+Doğrudan critical ratio: R = μ_d · L + Φ⁻¹(α) · σ_DL.
+
+**Fill rate (β)** — talebin ortalama olarak kaçta kaçının stoktan
+karşılandığı:
+
+$$
+\beta = 1 - \frac{E[\text{stoksuzluk / çevrim}]}{Q} = 1 - \frac{\sigma_{DL} \cdot L(z)}{Q}
+$$
+
+burada L(z) = φ(z) − z(1 − Φ(z)) standart normal kayıp fonksiyonudur.
+Fill rate hedefi verildiğinde z ve dolayısıyla R'yi bulmak için L(z) = k
+= (1 − β) · Q / σ_DL denkleminde z için bisection ile ters çevrim
+yapılır.
+
+**Neden farklıdır?** Diyelim çevrim başına 20 birim stoksuz kalıyoruz ve
+Q = 500 (ortalama çevrim talebi). Fill rate β = 1 − 20/500 = %96 — çok
+iyi. Ama stoksuz kalma OLAYI hâlâ her çevrimde yaşanıyor — cycle service
+= %0. Fill rate operasyonel açıdan daha bilgilendiricidir çünkü müşteri
+memnuniyeti olay sayısına değil karşılanmayan talep miktarına duyarlıdır.
+Fakat kritik yedek parçada (uçak motoru, iş makinesi) OLAYIN sayısı da
+önemlidir — orada cycle service uygundur.
+
+Aynı %95 hedef için: cycle service → SS ≈ 33 birim (σ_DL = 20 örnekte);
+fill rate + Q = 200 → z ≈ 0.85 → SS ≈ 17 birim. Fill rate genelde daha
+az emniyet stoğu ister — büyük Q "koruyucu" etki yapar.
+
+## EOQ ile birlikte toplam yıllık maliyet
+
+Q ve R kararları ayrık gibi görünse de birbirinden bağımsız değildir.
+Cycle service durumunda R'yi α belirler; ama toplam yıllık maliyet
+Q'ya bağlıdır ve klasik EOQ formülü hâlâ optimum yaklaşımdır:
+
+$$
+Q^* = \sqrt{\frac{2 D K}{h}}
+$$
+
+Toplam yıllık maliyet:
+
+$$
+TC = \underbrace{\frac{D}{Q} K}_{\text{sipariş}} + \underbrace{\frac{Q}{2} h}_{\text{çevrim envanteri}} + \underbrace{SS \cdot h}_{\text{emniyet stoğu}} + \underbrace{Cu \cdot E[\text{stoksuzluk}] \cdot \frac{D}{Q}}_{\text{opsiyonel: stoksuzluk cezası}}
+$$
+
+Emniyet stoğunun taşıma maliyeti sabit — Q'ya bağlı değil — ancak servis
+seviyesi arttıkça hızla büyür. %90 → %99.9 hedefi çevrim envanterine
+kıyasla emniyet stoğu maliyetini yıllıkta 2-3 katına çıkarabilir.
+
+**Sayısal örnek** (uygulamada bire bir kullanılabilecek):
+
+- D = 10000 birim/yıl, K = 100 ₺/sipariş, h = 2 ₺/birim/yıl → Q* = √(2·10000·100/2) = 1000
+- μ_d = 27.4 birim/gün, σ_d = 5, L = 7 gün, σ_L = 0
+- σ_DL = √7 · 5 ≈ 13.23
+- α = 0.95 → z = 1.6449 → SS ≈ 21.76 birim → R = 27.4·7 + 21.76 = 213.6
+- Yıllık: sipariş (10000/1000)·100 = 1000 ₺, çevrim (1000/2)·2 = 1000 ₺, SS 21.76·2 ≈ 43.5 ₺
+- Toplam TC ≈ 2043.5 ₺/yıl
+
+Emniyet stoğu toplam maliyetin %2'sinden azını oluşturur ama stoksuz
+kalma olasılığını yarıdan %5'e indirir. Bu tipik bir "az yatırım büyük
+etki" durumudur.
+
+## Yaygın 5 hata
+
+1. **σ_DL yerine σ_d kullanmak.** Tedarik süresi boyunca **kümülatif**
+   talebin dağılımıdır önemli olan; günlük σ_d değil. Bu hata SS'yi
+   ciddi biçimde küçültür.
+2. **σ_L'yi doğrudan σ_DL'ye eklemek.** Toplam varyans yasası μ_d²
+   katsayısını devreye sokar; birimleri de uyuşmaz. Kombine formülü
+   kullan.
+3. **α = 1 hedeflemek.** z → ∞ demektir. Sıfır stoksuzluk imkânsızdır —
+   siparişleri iptal etmeden hep alacaksın. Realistik hedef %99–99.9.
+4. **Tedarik-süresi ortalama tahminini nokta olarak kullanmak.** σ_L =
+   0 varsayımı çoğu tedarik zincirinde geçersizdir. Geçmiş verinden σ_L
+   tahmin edilmelidir.
+5. **Cycle service ile fill rate'i karıştırmak.** İki farklı ölçüttür ve
+   aynı sayısal hedefte (%95) farklı R üretir. Yönetim raporunda hangisi
+   olduğu belirtilmelidir.
+
+## EOQ vs Newsvendor vs (Q, R): kavramsal karşılaştırma
+
+| Model | Zaman ufku | Karar | Talep varsayımı | Risk mekanizması |
+|---|---|---|---|---|
+| EOQ | Sürekli | Q | Deterministik | Yok |
+| EPQ | Sürekli | Q | Deterministik + sonlu üretim hızı | Yok |
+| Newsvendor | Tek dönem | Q | Stokastik | Critical fractile |
+| (Q, R) — bu araç | Sürekli | Q + R | Stokastik + rasgele L | Emniyet stoğu SS |
+| Wagner-Whitin | Çok dönem, sonlu ufuk | Her dönem lot | Deterministik + zaman-değişken | Yok |
+
+(Q, R) sürekli **stokastik** eksenin egemenidir. Newsvendor tek-dönem
+kesitidir; EOQ ise deterministik iskeletini verir. Uygulamada perakende,
+FMCG, yedek parça yönetiminde ve tıbbi tedarik zincirinde en yaygın
+kullanılan modeldir.
+
+## Ne zaman (Q, R) yanlış araçtır?
+
+- **Kısa yaşam döngülü ürün** (sezonluk giyim, teknoloji lansmanı) →
+  Newsvendor.
+- **Zamanla değişen deterministik talep** (proje bazlı montaj) →
+  Wagner-Whitin.
+- **Yüksek talep-tedarik korelasyonu** — büyük bir promosyon hem talebi
+  hem tedariki etkiliyorsa bağımsızlık varsayımı çöker; joint stokastik
+  simülasyon gerekir.
+- **Ürünler arası bağımlılık** — komplemanter kalemlerde ortak sipariş
+  ekonomisi joint replenishment modeli ister.
+
+## Tarih
+
+Model çok kez keşfedildi: **Wilson (1934)** deterministik EOQ, **Arrow,
+Harris ve Marschak (1951)** stokastik envanteri newsvendor türetimiyle
+formalize etti; **Whitin (1953)** ve **Hadley & Whitin (1963)** sürekli-
+izleme (Q, R) modelini standartlaştırdı. **Peterson & Silver (1979)**
+kitabı tedarik zincirinde referans metin oldu. Modern MRP ve APS
+sistemleri (SAP APO, Oracle Demantra, Kinaxis) sürekli-izleme modelini
+motor olarak kullanır; ancak Wagner-Whitin ve rolling horizon üzerine
+inşa edilmiş katmanlarla birlikte.
+
+## Bu araç neyi hesaplar?
+
+Sol formda ortalama günlük talep (μ_d), talep std. sapması (σ_d),
+ortalama tedarik süresi (L) ve isteğe bağlı tedarik süresi std. sapması
+(σ_L) girilir. Servis modu — Type-I (cycle) veya Type-II (fill) — ve
+hedef seviye (0-1 arası) seçilir. İsteğe bağlı Q sipariş büyüklüğü
+verilebilir; verilmezse D, K, h üçlüsünden EOQ türetilir.
+
+Sağ panelde: R, SS, z, σ_DL, ulaşılan cycle service ve fill rate,
+E[eksik/çevrim], toplam yıllık maliyet metrikleri; testere-dişi stok
+grafiği (R çizgisi kırmızı, SS koridoru amber); ve α = 0.5 → 0.999
+duyarlılık tablosu.
+
+## Sıralı ilgili araçlar
+
+- [EOQ](/or-araclari/araclar/eoq-hesaplayici) — Q'yu deterministik olarak boyutlar
+- [EPQ](/or-araclari/araclar/epq-uretim-lot-boyu) — sonlu üretim hızıyla EOQ
+- [Newsvendor](/or-araclari/araclar/newsvendor-cozucu) — tek-dönem stokastik
+- [Wagner-Whitin](/or-araclari/araclar/wagner-whitin-cozucu) — çok-dönem deterministik
