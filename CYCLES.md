@@ -17,7 +17,7 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 
 **Kalite kapıları:** check ✓ (0 hata / 0 warning / 0 hint, **123 dosya** — sabit, sadece MDX eklendi) · test ✓ (**686/686**, 33 dosya — algoritma değişmedi, sayı sabit) · build ✓ (**70 sayfa**, 5.84s — 69 → 70: sadece yeni rehber sayfası) · Lighthouse — yeni sayfa mevcut BaseLayout + Container + rehber şablonuna bire bir uyumlu, ≥95 beklenir. `dist/rehberler/envanter-modelleri-karsilastirma/index.html` üretildiği doğrulandı.
 
-**Yayın:** PR açılacak (aşağıda), merge sonrası deploy takip edilecek.
+**Yayın:** PR [#71](https://github.com/Mavrikant/or-araclari/pull/71) squash-merge edildi (c62ed78). Deploy run 29115969681 başlatıldı. Canlı: <https://karaman.dev/or-araclari/rehberler/envanter-modelleri-karsilastirma>.
 
 **İşaret:** yok (sırf 🟢 yeşil — meta içerik, yeni bağımlılık yok, algoritma yok, i18n mimarisi bozulmadı, statik-dışı hiçbir şey eklenmedi, mobil-öncelikli tablo `overflow-x-auto` ile sarıldı).
 
