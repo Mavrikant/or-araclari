@@ -22,7 +22,7 @@ Blockquote deseni tutarlı: `> **Karar rehberi:** {mevcut model}'i {kalan 4 mode
 
 **Kalite kapıları:** check ✓ (0 hata / 0 warning / 0 hint, **123 dosya** — dosya sayısı sabit, sadece 5 MDX değişti) · test ✓ (**686/686**, 33 dosya — algoritma değişmedi, sayı sabit) · build ✓ (**70 sayfa**, 6.20s — sayfa sayısı sabit) · dist HTML doğrulaması: 5/5 rehberde `envanter-modelleri-karsilastirma` slug'ı geçiyor · Lighthouse — sadece MDX içeriği değişti, şablon aynı; ≥95 sabit beklenir.
 
-**Yayın:** cycle/inventory-xlinks → PR açılacak → merge sonrası Deploy workflow.
+**Yayın:** PR [#72](https://github.com/Mavrikant/or-araclari/pull/72) squash-merge edildi (cf08ac4). Deploy run 29117129265 başarıyla tamamlandı (9s). Canlı: 5 rehber URL'sinde blockquote görünür.
 
 **İşaret:** yok (sırf 🟢 yeşil — saf içerik cross-link, algoritma yok, bağımlılık yok, i18n bozmadı, statik-dışı yok; envanter tazeliğinin son cila adımı).
 
