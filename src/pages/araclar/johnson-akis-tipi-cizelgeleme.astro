@@ -41,10 +41,11 @@ const softwareJsonLd = {
       {tool.title}
     </h1>
     <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-400">
-      Her iş önce M1, sonra M2 (isteğe bağlı M3) makinesinden geçen akış-tipi
-      atölyede toplam süreyi (Cmax) minimize eden iş sırasını Johnson 1954
-      kuralıyla tarayıcıda anlık bul. İki makinada optimum garantili; üç
-      makinada indirgeme koşulu sağlanırsa optimum, sağlanmazsa sezgisel.
+      Her iş m makinadan aynı sırayla geçen akış-tipi (permutation flow-shop)
+      atölyede toplam süreyi (Cmax) minimize eden iş sırasını üç algoritmadan
+      biriyle tarayıcıda anlık bul: iki makinada optimum <strong>Johnson kuralı</strong>
+      (üç makinada koşullu optimum), m ≥ 2 için <strong>CDS (Campbell-Dudek-Smith 1970)</strong>
+      ve <strong>NEH (Nawaz-Enscore-Ham 1983)</strong> sezgiselleri.
       {guideHref && (
         <a href={guideHref} class="font-medium text-brand-600 hover:text-brand-700 dark:text-accent-400 dark:hover:text-accent-300"> Rehbere git →</a>
       )}
@@ -52,36 +53,73 @@ const softwareJsonLd = {
   </Container>
 
   <Container as="div" size="wide" class="grid gap-8 py-10 sm:py-12 lg:grid-cols-[minmax(0,380px)_1fr] print:block">
-    <form id="j-form" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
+    <form id="j-form" class="min-w-0 space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 print:hidden" novalidate>
       <div class="flex flex-wrap gap-2">
         <button type="button" id="sample1-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
-          Taha 5-iş
+          Taha 5-iş (2M)
         </button>
         <button type="button" id="sample2-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
           3-makina örneği
+        </button>
+        <button type="button" id="sample3-btn" class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          NEH 5-iş 4-makina
         </button>
         <button type="button" id="reset-btn" class="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
           Sıfırla
         </button>
       </div>
 
-      <fieldset class="space-y-3">
+      <fieldset class="min-w-0 space-y-3">
         <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
-          Problem tipi
+          Makina sayısı (m)
         </legend>
-        <div class="flex gap-4 text-sm">
-          <label class="inline-flex items-center gap-2 text-slate-700 dark:text-slate-300">
-            <input type="radio" name="mtype" value="2" checked class="accent-brand-600 dark:accent-accent-400" />
-            2 makina (M1 → M2)
-          </label>
-          <label class="inline-flex items-center gap-2 text-slate-700 dark:text-slate-300">
-            <input type="radio" name="mtype" value="3" class="accent-brand-600 dark:accent-accent-400" />
-            3 makina (M1 → M2 → M3)
-          </label>
+        <div class="grid grid-cols-7 gap-1.5 text-xs sm:text-sm">
+          {[2, 3, 4, 5, 6, 7, 8].map((m) => (
+            <label class="flex items-center justify-center rounded-md border border-slate-300 bg-white px-2 py-1.5 text-slate-700 has-checked:border-brand-500 has-checked:bg-brand-50 has-checked:font-semibold has-checked:text-brand-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:has-checked:border-accent-500 dark:has-checked:bg-accent-900/40 dark:has-checked:text-accent-200">
+              <input type="radio" name="mcount" value={m} class="sr-only" />
+              {m}
+            </label>
+          ))}
         </div>
       </fieldset>
 
-      <fieldset class="space-y-3">
+      <fieldset class="min-w-0 space-y-3">
+        <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
+          Algoritma
+        </legend>
+        <div class="space-y-1.5 text-sm">
+          <label class="flex items-start gap-2 text-slate-700 dark:text-slate-300">
+            <input type="radio" name="algo" value="johnson" checked class="mt-0.5 text-brand-600 focus:ring-brand-500" />
+            <span>
+              <strong>Johnson</strong> kuralı
+              <span class="text-xs text-slate-500 dark:text-slate-400">
+                (yalnızca m = 2 optimum; m = 3'te koşullu)
+              </span>
+            </span>
+          </label>
+          <label class="flex items-start gap-2 text-slate-700 dark:text-slate-300">
+            <input type="radio" name="algo" value="cds" class="mt-0.5 text-brand-600 focus:ring-brand-500" />
+            <span>
+              <strong>CDS</strong>
+              <span class="text-xs text-slate-500 dark:text-slate-400">
+                (Campbell-Dudek-Smith 1970 — m-1 alt problem)
+              </span>
+            </span>
+          </label>
+          <label class="flex items-start gap-2 text-slate-700 dark:text-slate-300">
+            <input type="radio" name="algo" value="neh" class="mt-0.5 text-brand-600 focus:ring-brand-500" />
+            <span>
+              <strong>NEH</strong>
+              <span class="text-xs text-slate-500 dark:text-slate-400">
+                (Nawaz-Enscore-Ham 1983 — açgözlü ekleme)
+              </span>
+            </span>
+          </label>
+        </div>
+        <p id="algo-note" class="mt-1 rounded-md border border-sky-200 bg-sky-50/60 px-2 py-1 text-xs text-sky-800 dark:border-sky-800/60 dark:bg-sky-950/30 dark:text-sky-300"></p>
+      </fieldset>
+
+      <fieldset class="min-w-0 space-y-3">
         <legend class="font-display text-sm font-semibold text-slate-900 dark:text-white">
           İşler
         </legend>
@@ -103,10 +141,10 @@ const softwareJsonLd = {
       <div id="error-box" hidden role="alert" class="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"></div>
     </form>
 
-    <section id="output" hidden aria-live="polite" class="space-y-6">
+    <section id="output" hidden aria-live="polite" class="min-w-0 space-y-6">
       <div class="rounded-2xl border border-emerald-300 bg-emerald-50 p-5 dark:border-emerald-800/60 dark:bg-emerald-950/30">
-        <p class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-          Toplam süre (Cmax) — Johnson kuralı
+        <p id="cmax-label" class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+          Toplam süre (Cmax)
         </p>
         <p id="makespan" class="mt-1 font-display text-4xl font-bold text-emerald-900 dark:text-emerald-100"></p>
         <p id="seq-summary" class="mt-1 text-xs text-emerald-800 dark:text-emerald-300"></p>
@@ -115,20 +153,20 @@ const softwareJsonLd = {
 
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
-          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">İş sayısı</div>
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">İş sayısı (n)</div>
           <div id="m-njobs" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
         </div>
         <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
-          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">M1 boş süre</div>
-          <div id="m-m1idle" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Makina (m)</div>
+          <div id="m-nmach" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
         </div>
         <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
-          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">M2 boş süre</div>
-          <div id="m-m2idle" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Toplam boş süre</div>
+          <div id="m-idle-total" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
         </div>
         <div class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40">
-          <div class="text-xs font-medium text-slate-500 dark:text-slate-400" id="m-m3-label">M3 boş süre</div>
-          <div id="m-m3idle" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
+          <div class="text-xs font-medium text-slate-500 dark:text-slate-400">Doluluk (Σp / (m·Cmax))</div>
+          <div id="m-fill" class="mt-1 font-display text-lg font-bold tabular-nums text-slate-900 dark:text-white"></div>
         </div>
       </div>
 
@@ -150,17 +188,7 @@ const softwareJsonLd = {
         <div id="sched-table" class="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800"></div>
       </div>
 
-      <div>
-        <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
-          Johnson kuralı adımları
-        </h2>
-        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          U kümesi: α ≤ β olan işler, α artan sırada. V kümesi: α &gt; β
-          olan işler, β azalan sırada. Optimum sıra: U ardından V. İki
-          makinada α=p₁, β=p₂; üç makinada α=p₁+p₂, β=p₂+p₃.
-        </p>
-        <div id="rule-table" class="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800"></div>
-      </div>
+      <div id="algo-panel"></div>
     </section>
   </Container>
 
@@ -171,13 +199,13 @@ const softwareJsonLd = {
           Konuyu derinleştir
         </p>
         <h2 class="mt-2 max-w-2xl font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
-          Akış-tipi çizelgeleme ve Johnson kuralı
+          Akış-tipi çizelgeleme: Johnson, CDS ve NEH
         </h2>
         <p class="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
           Akış-tipi (flow-shop) atölyede sıranın Cmax üzerindeki etkisi, Johnson
-          kuralının U/V yapısıyla neden optimum olduğu, üç makinaya
-          Johnson-Bellman uzantısı ve sırayla iş atölyesi (job-shop) modelleriyle
-          farkı üzerine kapsamlı Türkçe rehber.
+          kuralının U/V yapısıyla neden optimum olduğu, m ≥ 4 için CDS ile NEH
+          sezgisellerinin nasıl çalıştığı ve sırayla iş atölyesi (job-shop)
+          modelleriyle farkı üzerine kapsamlı Türkçe rehber.
         </p>
         <a href={guideHref} class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800 dark:text-accent-300 dark:hover:text-accent-200">
           Rehberi oku →
@@ -189,38 +217,62 @@ const softwareJsonLd = {
 
 <script>
   import { solveJohnson, JohnsonError, type JohnsonJob } from '../../lib/johnson';
+  import {
+    solveCDS,
+    solveNEH,
+    FlowShopMError,
+    type FlowShopMJob,
+    type FlowShopMResult,
+    type CDSResult,
+    type NEHResult,
+  } from '../../lib/flow-shop-m';
 
-  const STORAGE_KEY = 'johnson-state-v1';
+  const STORAGE_KEY = 'johnson-state-v2';
+
+  type Algo = 'johnson' | 'cds' | 'neh';
 
   interface JobRow {
     label: string;
-    p1: string;
-    p2: string;
-    p3: string;
+    times: string[]; // length = machines
   }
 
   interface State {
-    machines: 2 | 3;
+    machines: number;
+    algo: Algo;
     jobs: JobRow[];
   }
 
-  const SAMPLE_1: State = {
+  const SAMPLE_2M: State = {
     machines: 2,
+    algo: 'johnson',
     jobs: [
-      { label: 'J1', p1: '6', p2: '3', p3: '' },
-      { label: 'J2', p1: '2', p2: '8', p3: '' },
-      { label: 'J3', p1: '4', p2: '7', p3: '' },
-      { label: 'J4', p1: '1', p2: '4', p3: '' },
-      { label: 'J5', p1: '3', p2: '5', p3: '' },
+      { label: 'J1', times: ['6', '3'] },
+      { label: 'J2', times: ['2', '8'] },
+      { label: 'J3', times: ['4', '7'] },
+      { label: 'J4', times: ['1', '4'] },
+      { label: 'J5', times: ['3', '5'] },
     ],
   };
-  const SAMPLE_2: State = {
+  const SAMPLE_3M: State = {
     machines: 3,
+    algo: 'johnson',
     jobs: [
-      { label: 'A', p1: '11', p2: '3', p3: '5' },
-      { label: 'B', p1: '13', p2: '2', p3: '4' },
-      { label: 'C', p1: '15', p2: '1', p3: '6' },
-      { label: 'D', p1: '12', p2: '3', p3: '7' },
+      { label: 'A', times: ['11', '3', '5'] },
+      { label: 'B', times: ['13', '2', '4'] },
+      { label: 'C', times: ['15', '1', '6'] },
+      { label: 'D', times: ['12', '3', '7'] },
+    ],
+  };
+  // NEH original paper 1983 style 5-job 4-machine
+  const SAMPLE_5x4: State = {
+    machines: 4,
+    algo: 'neh',
+    jobs: [
+      { label: 'A', times: ['3', '4', '6', '2'] },
+      { label: 'B', times: ['1', '8', '3', '5'] },
+      { label: 'C', times: ['7', '2', '5', '4'] },
+      { label: 'D', times: ['4', '5', '2', '6'] },
+      { label: 'E', times: ['2', '3', '8', '3'] },
     ],
   };
 
@@ -244,29 +296,40 @@ const softwareJsonLd = {
   const addJobBtn = $('add-job-btn');
   const sample1Btn = $('sample1-btn');
   const sample2Btn = $('sample2-btn');
+  const sample3Btn = $('sample3-btn');
   const resetBtn = $('reset-btn');
   const errorBox = $('error-box');
   const output = $('output');
+  const cmaxLabel = $('cmax-label');
   const makespanEl = $('makespan');
   const seqSummary = $('seq-summary');
   const optNote = $('opt-note');
   const mNjobs = $('m-njobs');
-  const mM1Idle = $('m-m1idle');
-  const mM2Idle = $('m-m2idle');
-  const mM3Idle = $('m-m3idle');
-  const mM3Label = $('m-m3-label');
+  const mNmach = $('m-nmach');
+  const mIdleTotal = $('m-idle-total');
+  const mFill = $('m-fill');
   const gantt = $('gantt');
   const schedTable = $('sched-table');
-  const ruleTable = $('rule-table');
+  const algoPanel = $('algo-panel');
+  const algoNote = $('algo-note');
 
-  let state: State = { machines: 2, jobs: [] };
+  let state: State = { machines: 2, algo: 'johnson', jobs: [] };
 
   function loadState(): void {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const s = JSON.parse(raw) as State;
-        if (s && (s.machines === 2 || s.machines === 3) && Array.isArray(s.jobs) && s.jobs.length > 0) {
+        if (
+          s &&
+          Number.isInteger(s.machines) &&
+          s.machines >= 2 &&
+          s.machines <= 8 &&
+          (s.algo === 'johnson' || s.algo === 'cds' || s.algo === 'neh') &&
+          Array.isArray(s.jobs) &&
+          s.jobs.length > 0 &&
+          s.jobs.every((j) => Array.isArray(j.times) && j.times.length === s.machines)
+        ) {
           state = s;
           return;
         }
@@ -274,7 +337,11 @@ const softwareJsonLd = {
     } catch {
       /* ignore */
     }
-    state = { machines: SAMPLE_1.machines, jobs: SAMPLE_1.jobs.map((j) => ({ ...j })) };
+    state = {
+      machines: SAMPLE_2M.machines,
+      algo: SAMPLE_2M.algo,
+      jobs: SAMPLE_2M.jobs.map((j) => ({ label: j.label, times: [...j.times] })),
+    };
   }
   function saveState(): void {
     try {
@@ -285,25 +352,28 @@ const softwareJsonLd = {
   }
 
   function renderJobsTable(): void {
-    const three = state.machines === 3;
+    const m = state.machines;
+    const headCols = Array.from(
+      { length: m },
+      (_, r) => `<th class="px-2 py-1.5">M${r + 1} (p<sub>${r + 1}</sub>)</th>`,
+    ).join('');
     const rows = state.jobs
-      .map(
-        (j, i) => `<tr class="border-t border-slate-100 dark:border-slate-800">
-        <td class="px-2 py-1"><input data-i="${i}" data-f="label" value="${escapeHtml(j.label)}" class="w-16 rounded border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-900 focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" /></td>
-        <td class="px-2 py-1"><input data-i="${i}" data-f="p1" value="${escapeHtml(j.p1)}" inputmode="decimal" class="w-20 rounded border border-slate-300 bg-white px-2 py-1 font-mono text-xs tabular-nums text-slate-900 focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" /></td>
-        <td class="px-2 py-1"><input data-i="${i}" data-f="p2" value="${escapeHtml(j.p2)}" inputmode="decimal" class="w-20 rounded border border-slate-300 bg-white px-2 py-1 font-mono text-xs tabular-nums text-slate-900 focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" /></td>
-        ${three ? `<td class="px-2 py-1"><input data-i="${i}" data-f="p3" value="${escapeHtml(j.p3)}" inputmode="decimal" class="w-20 rounded border border-slate-300 bg-white px-2 py-1 font-mono text-xs tabular-nums text-slate-900 focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" /></td>` : ''}
-        <td class="px-2 py-1 text-right"><button type="button" data-del="${i}" class="rounded p-1 text-slate-400 hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-950/40 dark:hover:text-red-400" aria-label="İşi sil">×</button></td>
-      </tr>`,
-      )
+      .map((j, i) => {
+        const cells = Array.from({ length: m }, (_, r) =>
+          `<td class="px-2 py-1"><input data-i="${i}" data-r="${r}" value="${escapeHtml(j.times[r] ?? '0')}" inputmode="decimal" class="w-20 rounded border border-slate-300 bg-white px-2 py-1 font-mono text-xs tabular-nums text-slate-900 focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" /></td>`,
+        ).join('');
+        return `<tr class="border-t border-slate-100 dark:border-slate-800">
+          <td class="px-2 py-1"><input data-i="${i}" data-lbl="1" value="${escapeHtml(j.label)}" class="w-16 rounded border border-slate-300 bg-white px-2 py-1 font-mono text-xs text-slate-900 focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" /></td>
+          ${cells}
+          <td class="px-2 py-1 text-right"><button type="button" data-del="${i}" class="rounded p-1 text-slate-400 hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-950/40 dark:hover:text-red-400" aria-label="İşi sil">×</button></td>
+        </tr>`;
+      })
       .join('');
     jobsTable.innerHTML = `<table class="w-full text-sm">
       <thead>
         <tr class="bg-slate-50 text-left text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:bg-slate-900 dark:text-slate-400">
           <th class="px-2 py-1.5">Etiket</th>
-          <th class="px-2 py-1.5">M1 (p₁)</th>
-          <th class="px-2 py-1.5">M2 (p₂)</th>
-          ${three ? '<th class="px-2 py-1.5">M3 (p₃)</th>' : ''}
+          ${headCols}
           <th class="px-2 py-1.5 text-right">Sil</th>
         </tr>
       </thead>
@@ -313,11 +383,13 @@ const softwareJsonLd = {
     jobsTable.querySelectorAll<HTMLInputElement>('input[data-i]').forEach((input) => {
       input.addEventListener('input', () => {
         const i = Number(input.dataset.i);
-        const f = input.dataset.f as keyof JobRow;
-        if (state.jobs[i]) {
-          state.jobs[i][f] = input.value;
-          saveState();
+        if (input.dataset.lbl) {
+          if (state.jobs[i]) state.jobs[i].label = input.value;
+        } else {
+          const r = Number(input.dataset.r);
+          if (state.jobs[i] && Number.isInteger(r)) state.jobs[i].times[r] = input.value;
         }
+        saveState();
       });
     });
     jobsTable.querySelectorAll<HTMLButtonElement>('button[data-del]').forEach((btn) => {
@@ -331,42 +403,98 @@ const softwareJsonLd = {
     });
   }
 
-  function setMachines(m: 2 | 3): void {
-    state.machines = m;
-    if (m === 2) {
-      state.jobs.forEach((j) => (j.p3 = ''));
+  function updateAlgoNote(): void {
+    if (state.algo === 'johnson' && state.machines >= 4) {
+      algoNote.textContent = `⚠ Johnson kuralı yalnızca m = 2 (optimum) ve m = 3 (koşullu optimum) için tanımlıdır. m = ${state.machines} seçildiğinde CDS veya NEH kullan.`;
+      algoNote.hidden = false;
+    } else if (state.algo === 'johnson' && state.machines === 3) {
+      algoNote.textContent = `Not: m = 3'te Johnson-Bellman indirgemesi min(p₁) ≥ max(p₂) VEYA min(p₃) ≥ max(p₂) sağlanırsa optimum verir; aksi hâlde sezgiseldir.`;
+      algoNote.hidden = false;
+    } else if (state.algo === 'cds') {
+      algoNote.textContent = `CDS m-1 sanal iki-makina alt problemi üretir; her birini Johnson kuralıyla çözer; orijinal m makinada Cmax'ı en küçük olanı seçer.`;
+      algoNote.hidden = false;
+    } else if (state.algo === 'neh') {
+      algoNote.textContent = `NEH işleri Σp azalan sırada tek tek kısmi çizelgeye ekler; her adımda tüm pozisyonları dener; Cmax'ı en küçüğüne yerleştirir. m = 2'de Johnson'a eşit ya da çok yakın sonuç verir.`;
+      algoNote.hidden = false;
     } else {
+      algoNote.textContent = `Johnson kuralı iki makinada Cmax için optimumdur.`;
+      algoNote.hidden = false;
+    }
+  }
+
+  function setMachines(m: number): void {
+    if (m < 2 || m > 8 || !Number.isInteger(m)) return;
+    const oldM = state.machines;
+    state.machines = m;
+    if (m !== oldM) {
       state.jobs.forEach((j) => {
-        if (!j.p3.trim()) j.p3 = '0';
+        if (m > j.times.length) {
+          while (j.times.length < m) j.times.push('0');
+        } else {
+          j.times.length = m;
+        }
       });
     }
+    if (state.algo === 'johnson' && m >= 4) {
+      state.algo = 'neh';
+    }
+    updateAlgoRadios();
+    updateAlgoNote();
     saveState();
     renderJobsTable();
   }
+  function setAlgo(a: Algo): void {
+    if (a === 'johnson' && state.machines >= 4) return;
+    state.algo = a;
+    updateAlgoNote();
+    saveState();
+  }
 
-  form.querySelectorAll<HTMLInputElement>('input[name="mtype"]').forEach((r) => {
+  function updateAlgoRadios(): void {
+    form.querySelectorAll<HTMLInputElement>('input[name="algo"]').forEach((r) => {
+      const dis = r.value === 'johnson' && state.machines >= 4;
+      r.disabled = dis;
+      r.parentElement!.classList.toggle('opacity-40', dis);
+      r.checked = r.value === state.algo;
+    });
+    form.querySelectorAll<HTMLInputElement>('input[name="mcount"]').forEach((r) => {
+      r.checked = Number(r.value) === state.machines;
+    });
+  }
+
+  form.querySelectorAll<HTMLInputElement>('input[name="mcount"]').forEach((r) => {
     r.addEventListener('change', () => {
-      if (r.checked) setMachines(Number(r.value) as 2 | 3);
+      if (r.checked) setMachines(Number(r.value));
+    });
+  });
+  form.querySelectorAll<HTMLInputElement>('input[name="algo"]').forEach((r) => {
+    r.addEventListener('change', () => {
+      if (r.checked) setAlgo(r.value as Algo);
     });
   });
 
   addJobBtn.addEventListener('click', () => {
     const n = state.jobs.length + 1;
-    state.jobs.push({ label: `J${n}`, p1: '1', p2: '1', p3: state.machines === 3 ? '1' : '' });
+    state.jobs.push({ label: `J${n}`, times: Array.from({ length: state.machines }, () => '1') });
     saveState();
     renderJobsTable();
   });
 
   function applySample(s: State): void {
-    state = { machines: s.machines, jobs: s.jobs.map((j) => ({ ...j })) };
+    state = {
+      machines: s.machines,
+      algo: s.algo,
+      jobs: s.jobs.map((j) => ({ label: j.label, times: [...j.times] })),
+    };
     saveState();
-    const radio = form.querySelector<HTMLInputElement>(`input[name="mtype"][value="${state.machines}"]`);
-    if (radio) radio.checked = true;
+    updateAlgoRadios();
+    updateAlgoNote();
     renderJobsTable();
     clearError();
   }
-  sample1Btn.addEventListener('click', () => applySample(SAMPLE_1));
-  sample2Btn.addEventListener('click', () => applySample(SAMPLE_2));
+  sample1Btn.addEventListener('click', () => applySample(SAMPLE_2M));
+  sample2Btn.addEventListener('click', () => applySample(SAMPLE_3M));
+  sample3Btn.addEventListener('click', () => applySample(SAMPLE_5x4));
 
   resetBtn.addEventListener('click', () => {
     if (!confirm('Form sıfırlanacak. Devam edilsin mi?')) return;
@@ -375,7 +503,7 @@ const softwareJsonLd = {
     } catch {
       /* ignore */
     }
-    applySample(SAMPLE_1);
+    applySample(SAMPLE_2M);
     output.hidden = true;
   });
 
@@ -390,21 +518,37 @@ const softwareJsonLd = {
   }
 
   loadState();
-  const initRadio = form.querySelector<HTMLInputElement>(`input[name="mtype"][value="${state.machines}"]`);
-  if (initRadio) initRadio.checked = true;
+  updateAlgoRadios();
+  updateAlgoNote();
   renderJobsTable();
 
-  function parseJobs(): JohnsonJob[] {
+  function parseJobsM(): FlowShopMJob[] {
+    const out: FlowShopMJob[] = [];
+    for (let i = 0; i < state.jobs.length; i++) {
+      const r = state.jobs[i];
+      const times: number[] = [];
+      for (let k = 0; k < state.machines; k++) {
+        const raw = (r.times[k] ?? '').toString().trim().replace(',', '.');
+        const v = Number(raw);
+        if (!Number.isFinite(v)) throw new FlowShopMError(`İş ${i + 1} için M${k + 1} süresi geçerli değil.`);
+        times.push(v);
+      }
+      out.push({ label: r.label.trim() || `J${i + 1}`, times });
+    }
+    return out;
+  }
+
+  function parseJobsJohnson(): JohnsonJob[] {
     const out: JohnsonJob[] = [];
     for (let i = 0; i < state.jobs.length; i++) {
       const r = state.jobs[i];
-      const p1 = Number(r.p1);
-      const p2 = Number(r.p2);
+      const p1 = Number((r.times[0] ?? '').toString().trim().replace(',', '.'));
+      const p2 = Number((r.times[1] ?? '').toString().trim().replace(',', '.'));
       if (!Number.isFinite(p1)) throw new JohnsonError(`İş ${i + 1} için M1 süresi geçerli değil.`);
       if (!Number.isFinite(p2)) throw new JohnsonError(`İş ${i + 1} için M2 süresi geçerli değil.`);
       const job: JohnsonJob = { label: r.label.trim() || `J${i + 1}`, p1, p2 };
       if (state.machines === 3) {
-        const p3 = Number(r.p3);
+        const p3 = Number((r.times[2] ?? '').toString().trim().replace(',', '.'));
         if (!Number.isFinite(p3)) throw new JohnsonError(`İş ${i + 1} için M3 süresi geçerli değil.`);
         job.p3 = p3;
       }
@@ -413,39 +557,52 @@ const softwareJsonLd = {
     return out;
   }
 
-  function renderGantt(result: ReturnType<typeof solveJohnson>): void {
-    const three = result.machines === 3;
-    const rows = three ? 3 : 2;
+  const PALETTE = [
+    { fill: 'fill-brand-500/85 dark:fill-brand-400/75', stroke: 'stroke-brand-700' },
+    { fill: 'fill-accent-500/85 dark:fill-accent-400/75', stroke: 'stroke-accent-700' },
+    { fill: 'fill-emerald-500/85 dark:fill-emerald-400/75', stroke: 'stroke-emerald-700' },
+    { fill: 'fill-amber-500/85 dark:fill-amber-400/75', stroke: 'stroke-amber-700' },
+    { fill: 'fill-rose-500/85 dark:fill-rose-400/75', stroke: 'stroke-rose-700' },
+    { fill: 'fill-violet-500/85 dark:fill-violet-400/75', stroke: 'stroke-violet-700' },
+    { fill: 'fill-teal-500/85 dark:fill-teal-400/75', stroke: 'stroke-teal-700' },
+    { fill: 'fill-cyan-500/85 dark:fill-cyan-400/75', stroke: 'stroke-cyan-700' },
+  ];
+
+  interface GenericResult {
+    machines: number;
+    sequence: number[];
+    schedule: {
+      order: number;
+      label: string;
+      jobIndex: number;
+      starts: number[];
+      ends: number[];
+      idleBefore: number[];
+    }[];
+    makespan: number;
+    machineIdle: number[];
+  }
+
+  function renderGantt(result: GenericResult): void {
+    const rows = result.machines;
     const cmax = Math.max(1, result.makespan);
     const PL = 44;
     const PR = 12;
     const PT = 12;
-    const rowH = 40;
-    const gap = 8;
+    const rowH = 36;
+    const gap = 6;
     const H = PT + rows * rowH + (rows - 1) * gap + 24;
     const W = 720;
     const plotW = W - PL - PR;
     const sx = (t: number) => PL + (t / cmax) * plotW;
 
-    const palette = [
-      { fill: 'fill-brand-500/85 dark:fill-brand-400/75', stroke: 'stroke-brand-700' },
-      { fill: 'fill-accent-500/85 dark:fill-accent-400/75', stroke: 'stroke-accent-700' },
-      { fill: 'fill-emerald-500/85 dark:fill-emerald-400/75', stroke: 'stroke-emerald-700' },
-      { fill: 'fill-amber-500/85 dark:fill-amber-400/75', stroke: 'stroke-amber-700' },
-      { fill: 'fill-rose-500/85 dark:fill-rose-400/75', stroke: 'stroke-rose-700' },
-      { fill: 'fill-violet-500/85 dark:fill-violet-400/75', stroke: 'stroke-violet-700' },
-      { fill: 'fill-teal-500/85 dark:fill-teal-400/75', stroke: 'stroke-teal-700' },
-      { fill: 'fill-cyan-500/85 dark:fill-cyan-400/75', stroke: 'stroke-cyan-700' },
-    ];
-
     const rowY = (r: number) => PT + r * (rowH + gap);
-    const machineLabels = three ? ['M1', 'M2', 'M3'] : ['M1', 'M2'];
+    const machineLabels = Array.from({ length: rows }, (_, r) => `M${r + 1}`);
     const rowLabelSvg = machineLabels
       .map(
         (l, r) => `<text x="${PL - 8}" y="${rowY(r) + rowH / 2 + 4}" text-anchor="end" class="fill-slate-700 text-xs font-semibold dark:fill-slate-200">${l}</text>`,
       )
       .join('');
-
     const rowsSvg = machineLabels
       .map(
         (_, r) => `<rect x="${PL}" y="${rowY(r)}" width="${plotW}" height="${rowH}" class="fill-slate-100 dark:fill-slate-900" rx="4" />`,
@@ -454,21 +611,19 @@ const softwareJsonLd = {
 
     const bars: string[] = [];
     result.schedule.forEach((e) => {
-      const pal = palette[e.jobIndex % palette.length];
-      const push = (row: number, start: number, end: number) => {
-        if (end <= start) return;
+      const pal = PALETTE[e.jobIndex % PALETTE.length];
+      for (let r = 0; r < rows; r++) {
+        const start = e.starts[r];
+        const end = e.ends[r];
+        if (end <= start) continue;
         const x = sx(start);
         const w = Math.max(1, sx(end) - x);
-        const label = `${e.label}`;
-        const showLabel = w > 26;
+        const showLabel = w > 24;
         bars.push(`<g>
-          <rect x="${x}" y="${rowY(row) + 4}" width="${w}" height="${rowH - 8}" rx="4" class="${pal.fill} ${pal.stroke}" stroke-width="1" />
-          ${showLabel ? `<text x="${x + w / 2}" y="${rowY(row) + rowH / 2 + 4}" text-anchor="middle" class="fill-white text-[11px] font-semibold" pointer-events="none">${escapeHtml(label)}</text>` : ''}
+          <rect x="${x}" y="${rowY(r) + 3}" width="${w}" height="${rowH - 6}" rx="3" class="${pal.fill} ${pal.stroke}" stroke-width="1" />
+          ${showLabel ? `<text x="${x + w / 2}" y="${rowY(r) + rowH / 2 + 4}" text-anchor="middle" class="fill-white text-[11px] font-semibold" pointer-events="none">${escapeHtml(e.label)}</text>` : ''}
         </g>`);
-      };
-      push(0, e.m1Start, e.m1End);
-      push(1, e.m2Start, e.m2End);
-      if (three && e.m3Start !== undefined && e.m3End !== undefined) push(2, e.m3Start, e.m3End);
+      }
     });
 
     const tickCount = Math.min(10, Math.max(2, Math.floor(cmax)));
@@ -499,31 +654,34 @@ const softwareJsonLd = {
     </svg>`;
   }
 
-  function renderScheduleTable(result: ReturnType<typeof solveJohnson>): void {
-    const three = result.machines === 3;
+  function renderScheduleTable(result: GenericResult): void {
+    const m = result.machines;
+    const headCols = Array.from(
+      { length: m },
+      (_, r) => `<th class="px-3 py-2 text-right">M${r + 1} aralığı</th>`,
+    ).join('');
     const rows = result.schedule
-      .map(
-        (e) => `<tr class="border-t border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900/40">
-        <td class="px-3 py-2 font-mono text-xs font-semibold text-brand-700 dark:text-accent-300">${e.order}</td>
-        <td class="px-3 py-2 text-sm text-slate-900 dark:text-slate-100">${escapeHtml(e.label)}</td>
-        <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-700 dark:text-slate-300">${fmt(e.m1Start, 2)} → ${fmt(e.m1End, 2)}</td>
-        <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-700 dark:text-slate-300">${fmt(e.m2Start, 2)} → ${fmt(e.m2End, 2)}</td>
-        ${three ? `<td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-700 dark:text-slate-300">${fmt(e.m3Start!, 2)} → ${fmt(e.m3End!, 2)}</td>` : ''}
-        <td class="px-3 py-2 text-right font-mono text-xs tabular-nums ${e.m2IdleBefore > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-slate-400'}">${fmt(e.m2IdleBefore, 2)}</td>
-      </tr>`,
-      )
+      .map((e) => {
+        const cells = Array.from(
+          { length: m },
+          (_, r) =>
+            `<td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-700 dark:text-slate-300">${fmt(e.starts[r], 2)} → ${fmt(e.ends[r], 2)}</td>`,
+        ).join('');
+        return `<tr class="border-t border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900/40">
+          <td class="px-3 py-2 font-mono text-xs font-semibold text-brand-700 dark:text-accent-300">${e.order}</td>
+          <td class="px-3 py-2 text-sm text-slate-900 dark:text-slate-100">${escapeHtml(e.label)}</td>
+          ${cells}
+        </tr>`;
+      })
       .join('');
     schedTable.innerHTML = `<table class="w-full"><thead><tr class="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
       <th class="px-3 py-2">#</th>
       <th class="px-3 py-2">İş</th>
-      <th class="px-3 py-2 text-right">M1 aralığı</th>
-      <th class="px-3 py-2 text-right">M2 aralığı</th>
-      ${three ? '<th class="px-3 py-2 text-right">M3 aralığı</th>' : ''}
-      <th class="px-3 py-2 text-right">M2 boş (önce)</th>
+      ${headCols}
     </tr></thead><tbody>${rows}</tbody></table>`;
   }
 
-  function renderRuleTable(result: ReturnType<typeof solveJohnson>): void {
+  function renderJohnsonPanel(result: ReturnType<typeof solveJohnson>): void {
     const three = result.machines === 3;
     const seqIndex = new Map(result.sequence.map((idx, k) => [idx, k + 1]));
     const rows = result.virtualTimes
@@ -539,53 +697,226 @@ const softwareJsonLd = {
       </tr>`,
       )
       .join('');
-    ruleTable.innerHTML = `<table class="w-full"><thead><tr class="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
-      <th class="px-3 py-2">İş</th>
-      <th class="px-3 py-2 text-right">α ${three ? '= p₁+p₂' : '= p₁'}</th>
-      <th class="px-3 py-2 text-right">β ${three ? '= p₂+p₃' : '= p₂'}</th>
-      <th class="px-3 py-2 text-center">Grup</th>
-      <th class="px-3 py-2 text-right">Sıra</th>
-    </tr></thead><tbody>${rows}</tbody></table>`;
+    algoPanel.innerHTML = `
+      <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+        Johnson kuralı adımları
+      </h2>
+      <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        U kümesi: α ≤ β olan işler, α artan sırada. V kümesi: α &gt; β
+        olan işler, β azalan sırada. Optimum sıra: U ardından V.
+        ${three ? 'Üç makinada α = p₁ + p₂, β = p₂ + p₃.' : 'İki makinada α = p₁, β = p₂.'}
+      </p>
+      <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+        <table class="w-full"><thead><tr class="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+          <th class="px-3 py-2">İş</th>
+          <th class="px-3 py-2 text-right">α ${three ? '= p₁+p₂' : '= p₁'}</th>
+          <th class="px-3 py-2 text-right">β ${three ? '= p₂+p₃' : '= p₂'}</th>
+          <th class="px-3 py-2 text-center">Grup</th>
+          <th class="px-3 py-2 text-right">Sıra</th>
+        </tr></thead><tbody>${rows}</tbody></table>
+      </div>`;
+  }
+
+  function renderCDSPanel(result: CDSResult, jobs: FlowShopMJob[]): void {
+    const rows = result.subproblems
+      .map((s) => {
+        const seqLabels = s.sequence.map((i) => jobs[i].label).join(' → ');
+        const active = s.k === result.bestK;
+        return `<tr class="border-t border-slate-100 ${active ? 'bg-emerald-50 dark:bg-emerald-950/30' : 'bg-white dark:bg-slate-900/40'} dark:border-slate-800">
+          <td class="px-3 py-2 font-mono text-xs font-semibold ${active ? 'text-emerald-900 dark:text-emerald-100' : 'text-brand-700 dark:text-accent-300'}">k = ${s.k}</td>
+          <td class="px-3 py-2 text-xs text-slate-700 dark:text-slate-300">${escapeHtml(seqLabels)}</td>
+          <td class="px-3 py-2 text-right font-mono text-sm font-semibold ${active ? 'text-emerald-900 dark:text-emerald-100' : 'text-slate-900 dark:text-slate-100'} tabular-nums">
+            ${fmt(s.makespan, 2)}${active ? ' <span class="ml-1 rounded bg-emerald-200 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-900 dark:bg-emerald-800 dark:text-emerald-100">seçildi</span>' : ''}
+          </td>
+        </tr>`;
+      })
+      .join('');
+    algoPanel.innerHTML = `
+      <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+        CDS alt problemleri (Campbell-Dudek-Smith 1970)
+      </h2>
+      <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        k = 1..m-1 için sanal iki-makinalı problem: α<sub>i</sub> = ilk k
+        makinanın toplamı, β<sub>i</sub> = son k makinanın toplamı. Her alt
+        problem Johnson kuralı ile çözülür; orijinal m makinada Cmax'ı en
+        küçük olan seçilir.
+      </p>
+      <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+        <table class="w-full"><thead><tr class="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+          <th class="px-3 py-2">Alt problem</th>
+          <th class="px-3 py-2">Johnson sırası</th>
+          <th class="px-3 py-2 text-right">Cmax</th>
+        </tr></thead><tbody>${rows}</tbody></table>
+      </div>`;
+  }
+
+  function renderNEHPanel(result: NEHResult, jobs: FlowShopMJob[]): void {
+    const orderRows = result.orderByTotal
+      .map(
+        (o, i) => `<tr class="border-t border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900/40">
+        <td class="px-3 py-2 font-mono text-xs font-semibold text-brand-700 dark:text-accent-300">${i + 1}</td>
+        <td class="px-3 py-2 text-sm text-slate-900 dark:text-slate-100">${escapeHtml(o.label)}</td>
+        <td class="px-3 py-2 text-right font-mono text-xs tabular-nums text-slate-700 dark:text-slate-300">${fmt(o.total, 2)}</td>
+      </tr>`,
+      )
+      .join('');
+    const stepRows = result.steps
+      .map((s) => {
+        const cands = s.candidateMakespans
+          .map((c, p) => {
+            const chosen = p === s.insertedPos;
+            return `<span class="mr-1 inline-block rounded ${chosen ? 'bg-emerald-200 font-semibold text-emerald-900 dark:bg-emerald-800 dark:text-emerald-100' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'} px-1.5 py-0.5 font-mono text-[10px] tabular-nums">p${p}=${fmt(c, 1)}</span>`;
+          })
+          .join('');
+        const seqLabels = s.sequenceAfter.map((i) => jobs[i].label).join(' → ');
+        return `<tr class="border-t border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900/40">
+          <td class="px-3 py-2 font-mono text-xs font-semibold text-brand-700 dark:text-accent-300">${s.step}</td>
+          <td class="px-3 py-2 text-sm text-slate-900 dark:text-slate-100">${escapeHtml(s.insertedLabel)}</td>
+          <td class="px-3 py-2 text-xs">${cands}</td>
+          <td class="px-3 py-2 text-xs text-slate-700 dark:text-slate-300">${escapeHtml(seqLabels)}</td>
+        </tr>`;
+      })
+      .join('');
+    algoPanel.innerHTML = `
+      <h2 class="font-display text-base font-semibold text-slate-900 dark:text-white">
+        NEH ekleme izi (Nawaz-Enscore-Ham 1983)
+      </h2>
+      <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        1) İşler Σp azalan sırada sıralanır. 2) Her adımda bir sonraki iş,
+        kısmi çizelgede tüm pozisyonlara denenir; Cmax'ı en küçük olan
+        pozisyon seçilir. Beraberlikte ilk (en erken) pozisyon kazanır.
+      </p>
+      <div class="mt-3 grid gap-4 md:grid-cols-2">
+        <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+          <table class="w-full"><thead><tr class="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+            <th class="px-3 py-2">#</th>
+            <th class="px-3 py-2">İş</th>
+            <th class="px-3 py-2 text-right">Σp</th>
+          </tr></thead><tbody>${orderRows}</tbody></table>
+        </div>
+        <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+          <table class="w-full"><thead><tr class="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+            <th class="px-3 py-2">Adım</th>
+            <th class="px-3 py-2">Eklenen</th>
+            <th class="px-3 py-2">Aday pozisyonlar (Cmax)</th>
+            <th class="px-3 py-2">Sonuç sıra</th>
+          </tr></thead><tbody>${stepRows}</tbody></table>
+        </div>
+      </div>`;
+  }
+
+  function totalProcessing(jobs: FlowShopMJob[]): number {
+    let sum = 0;
+    for (const j of jobs) for (const p of j.times) sum += p;
+    return sum;
   }
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     clearError();
     try {
-      const jobs = parseJobs();
-      const result = solveJohnson(jobs);
-      makespanEl.textContent = fmt(result.makespan, 2);
-      const seqLabels = result.sequence.map((i) => jobs[i].label).join(' → ');
-      seqSummary.textContent = `Sıra: ${seqLabels}`;
-      if (result.machines === 3) {
-        optNote.textContent = result.optimality === 'exact'
-          ? `Üç makinada Johnson-Bellman indirgemesi optimum verir. ${result.reductionNote}`
-          : `⚠ ${result.reductionNote}`;
-        optNote.className = result.optimality === 'exact'
-          ? 'mt-2 text-xs text-emerald-900/80 dark:text-emerald-200/80'
-          : 'mt-2 text-xs text-amber-800 dark:text-amber-300';
+      if (state.algo === 'johnson') {
+        if (state.machines > 3) {
+          throw new JohnsonError('Johnson kuralı yalnızca 2 veya 3 makina için tanımlıdır.');
+        }
+        const jobs = parseJobsJohnson();
+        const result = solveJohnson(jobs);
+        const jobsM: FlowShopMJob[] = jobs.map((j) => ({
+          label: j.label,
+          times: j.p3 !== undefined ? [j.p1, j.p2, j.p3] : [j.p1, j.p2],
+        }));
+        const generic: GenericResult = {
+          machines: result.machines,
+          sequence: result.sequence,
+          schedule: result.schedule.map((s) => ({
+            order: s.order,
+            label: s.label,
+            jobIndex: s.jobIndex,
+            starts:
+              result.machines === 3
+                ? [s.m1Start, s.m2Start, s.m3Start!]
+                : [s.m1Start, s.m2Start],
+            ends:
+              result.machines === 3
+                ? [s.m1End, s.m2End, s.m3End!]
+                : [s.m1End, s.m2End],
+            idleBefore:
+              result.machines === 3
+                ? [0, s.m2IdleBefore, s.m3IdleBefore ?? 0]
+                : [0, s.m2IdleBefore],
+          })),
+          makespan: result.makespan,
+          machineIdle:
+            result.machines === 3
+              ? [result.m1Idle, result.m2Idle, result.m3Idle]
+              : [result.m1Idle, result.m2Idle],
+        };
+        renderResult(generic, jobsM);
+        const seqLabels = result.sequence.map((i) => jobs[i].label).join(' → ');
+        seqSummary.textContent = `Sıra: ${seqLabels}`;
+        cmaxLabel.textContent = 'Toplam süre (Cmax) — Johnson kuralı';
+        if (result.machines === 3) {
+          optNote.textContent =
+            result.optimality === 'exact'
+              ? `Üç makinada Johnson-Bellman indirgemesi optimum verir. ${result.reductionNote}`
+              : `⚠ ${result.reductionNote}`;
+          optNote.className =
+            result.optimality === 'exact'
+              ? 'mt-2 text-xs text-emerald-900/80 dark:text-emerald-200/80'
+              : 'mt-2 text-xs text-amber-800 dark:text-amber-300';
+        } else {
+          optNote.textContent = 'İki makinada Johnson kuralı Cmax için optimumdur.';
+          optNote.className = 'mt-2 text-xs text-emerald-900/80 dark:text-emerald-200/80';
+        }
+        renderJohnsonPanel(result);
       } else {
-        optNote.textContent = 'İki makinada Johnson kuralı Cmax için optimumdur.';
-        optNote.className = 'mt-2 text-xs text-emerald-900/80 dark:text-emerald-200/80';
+        const jobs = parseJobsM();
+        let result: FlowShopMResult;
+        if (state.algo === 'cds') {
+          const r = solveCDS(jobs);
+          renderCDSPanel(r, jobs);
+          result = r;
+          cmaxLabel.textContent = 'Toplam süre (Cmax) — CDS';
+        } else {
+          const r = solveNEH(jobs);
+          renderNEHPanel(r, jobs);
+          result = r;
+          cmaxLabel.textContent = 'Toplam süre (Cmax) — NEH';
+        }
+        renderResult(result, jobs);
+        const seqLabels = result.sequence.map((i) => jobs[i].label).join(' → ');
+        seqSummary.textContent = `Sıra: ${seqLabels}`;
+        optNote.textContent =
+          state.algo === 'cds'
+            ? `CDS sezgiseldir; m-1 alt problem içindeki en iyi permütasyonu döndürür. Optimum garanti edilmez.`
+            : `NEH sezgiseldir; büyük problemlerde en iyi bilinen inşa sezgiseli olarak kabul edilir. Optimum garanti edilmez.`;
+        optNote.className = 'mt-2 text-xs text-slate-700 dark:text-slate-300';
       }
-      mNjobs.textContent = String(jobs.length);
-      mM1Idle.textContent = fmt(result.m1Idle, 2);
-      mM2Idle.textContent = fmt(result.m2Idle, 2);
-      if (result.machines === 3) {
-        mM3Idle.textContent = fmt(result.m3Idle, 2);
-        mM3Label.textContent = 'M3 boş süre';
-        mM3Idle.parentElement!.hidden = false;
-      } else {
-        mM3Idle.parentElement!.hidden = true;
-      }
-      renderGantt(result);
-      renderScheduleTable(result);
-      renderRuleTable(result);
       output.hidden = false;
       output.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (err) {
-      const msg = err instanceof JohnsonError ? err.message : err instanceof Error ? err.message : 'Bilinmeyen hata.';
+      const msg =
+        err instanceof JohnsonError
+          ? err.message
+          : err instanceof FlowShopMError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : 'Bilinmeyen hata.';
       showError(msg);
     }
   });
+
+  function renderResult(generic: GenericResult, jobs: FlowShopMJob[]): void {
+    makespanEl.textContent = fmt(generic.makespan, 2);
+    mNjobs.textContent = String(jobs.length);
+    mNmach.textContent = String(generic.machines);
+    const idleTotal = generic.machineIdle.reduce((s, x) => s + x, 0);
+    mIdleTotal.textContent = fmt(idleTotal, 2);
+    const totalP = totalProcessing(jobs);
+    const denom = generic.machines * generic.makespan;
+    mFill.textContent = denom > 0 ? `${((totalP / denom) * 100).toFixed(1)}%` : '—';
+    renderGantt(generic);
+    renderScheduleTable(generic);
+  }
 </script>
