@@ -5,6 +5,31 @@ kalite kapısı sonuçları, deploy durumu, sıradaki adım.
 
 ---
 
+## DÖNGÜ #35 — 2026-07-10
+
+**Yapılan:** Q-INVENTORY-XLINK — 5 envanter rehberinin (EOQ / EPQ / Newsvendor / Wagner-Whitin / (Q, R)) girişine, önceki döngüde yayınlanan F-INVENTORY-COMPARE meta rehberine (`/rehberler/envanter-modelleri-karsilastirma`) tek satır bir "Karar rehberi" blockquote'u eklendi. Envanter tazeliği zincirinin discoverability halkası tamamlandı — okuyucu artık herhangi bir tekil modelin rehberine girdikten sonra ilk ekranda "aslında hangi modeli seçmeliyim?" sorusunun cevabına gidebiliyor.
+
+**Detay:**
+- `src/content/rehberler/eoq-stok-yonetimi.mdx` — giriş paragrafından sonra `## EOQ nedir?` başlığından hemen önce blockquote (+5 satır).
+- `src/content/rehberler/epq-uretim-lot-boyu.mdx` — giriş paragrafından sonra `## EPQ nedir?` başlığından hemen önce blockquote (+5 satır).
+- `src/content/rehberler/newsvendor-tek-donem-envanter.mdx` — giriş paragrafından sonra `## Newsvendor problemi nedir?` başlığından hemen önce blockquote (+5 satır).
+- `src/content/rehberler/wagner-whitin-dinamik-lot.mdx` — giriş paragrafından sonra `## Dinamik lot boyutlandırma nedir?` başlığından hemen önce blockquote (+5 satır).
+- `src/content/rehberler/yeniden-siparis-noktasi-emniyet-stogu.mdx` — giriş paragrafından sonra `## Sürekli-izleme (Q, R) modeli nedir?` başlığından hemen önce blockquote (+6 satır).
+
+Blockquote deseni tutarlı: `> **Karar rehberi:** {mevcut model}'i {kalan 4 model} ile karşılaştırıp hangi durumda hangisini seçeceğini görmek için [Hangi envanter modeli ne zaman?](/or-araclari/rehberler/envanter-modelleri-karsilastirma) rehberine bakabilirsin.` Site-içi mutlak yol pattern'i (5 rehber daha önce hangi tool sayfalarına link veriyorsa aynı taban) kullanıldı.
+
+**Tasarım notu:** Backlog notu "ROP rehberinde F-INVENTORY-COMPARE'e link zaten var" diyordu ama grep doğruladı ki hiçbir rehberde bu link yoktu — ROP guide sonundaki "Sıralı ilgili araçlar" listesi sadece 4 kardeş aracı gösteriyordu, meta rehberi göstermiyordu. Bu tutarsızlık sessizce düzeltildi ve ROP dahil 5 rehberde de aynı blockquote pattern'i kullanıldı. Placement kararı: uzun-form içeriğin dip kısmındaki "İlgili araçlar" listesi yerine giriş paragrafından hemen sonra — bir okuyucu 10-12 dakikalık rehberin başında "belki de yanlış rehberdeyim" ipucunu erken alsın diye. Yeni bileşen icat edilmedi (mevcut kod tabanında Aside/Callout yok, blockquote saf markdown + Tailwind Typography ile stil alır).
+
+**Kalite kapıları:** check ✓ (0 hata / 0 warning / 0 hint, **123 dosya** — dosya sayısı sabit, sadece 5 MDX değişti) · test ✓ (**686/686**, 33 dosya — algoritma değişmedi, sayı sabit) · build ✓ (**70 sayfa**, 6.20s — sayfa sayısı sabit) · dist HTML doğrulaması: 5/5 rehberde `envanter-modelleri-karsilastirma` slug'ı geçiyor · Lighthouse — sadece MDX içeriği değişti, şablon aynı; ≥95 sabit beklenir.
+
+**Yayın:** cycle/inventory-xlinks → PR açılacak → merge sonrası Deploy workflow.
+
+**İşaret:** yok (sırf 🟢 yeşil — saf içerik cross-link, algoritma yok, bağımlılık yok, i18n bozmadı, statik-dışı yok; envanter tazeliğinin son cila adımı).
+
+**Sıradaki:** Backlog'da kalan 🟢 yeşil aday: F-CDS-NEH (Johnson aracına m ≥ 4 CDS + NEH ikinci algoritma paneli, M efor — JPS'i A*'a eklediğim deseni izler) ya da F-BIN-PACKING (First-Fit-Decreasing + Best-Fit-Decreasing + Next-Fit + LP alt sınır + kutu görselleştirme, M efor). F-CDS-NEH mevcut Johnson tazeliğinden yararlanır ve pattern-copy risk düşük; sonraki döngüde önce onu ele almak makul.
+
+---
+
 ## DÖNGÜ #34 — 2026-07-10
 
 **Yapılan:** F-INVENTORY-COMPARE — "Hangi envanter modeli ne zaman?" karar rehberi. Envanter beşlisinin (EOQ / EPQ / Newsvendor / Wagner-Whitin / (Q, R)) tazeliğinden yararlanan meta içerik. Yeni araç değil, saf içerik: talep / ufuk / tedarik üç eksenli karar çerçevesi + karar ağacı + 5 sayısal senaryo + 5 yanlış eşleştirme + akrabalık ağacı + sitedeki 5 aracın önerilen dolaşım sırası.
