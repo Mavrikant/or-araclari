@@ -308,6 +308,16 @@ export const TOOLS: readonly Tool[] = [
     status: 'ready',
     guideSlug: 'wagner-whitin-dinamik-lot',
   },
+  {
+    slug: 'rop-emniyet-stogu',
+    title: 'Yeniden Sipariş Noktası & Emniyet Stoğu (ROP · SS)',
+    shortTitle: 'ROP / Emniyet Stoğu',
+    description:
+      'Sürekli-izleme (Q, R) modelinde ortalama günlük talep, talep standart sapması, ortalama ve isteğe bağlı tedarik süresi belirsizliği ile hedef servis seviyesinden yeniden sipariş noktası R = μL + z·σ_DL ve emniyet stoğu SS = z·σ_DL tarayıcıda anlık hesaplansın. Type-I (cycle service) veya Type-II (fill rate) hedef; EOQ türetimi ve toplam yıllık maliyet, testere dişi stok grafiği ve α duyarlılık tablosuyla EOQ + Newsvendor + Wagner-Whitin envanter serisini tamamlayan sürekli stokastik model.',
+    category: 'envanter',
+    status: 'ready',
+    guideSlug: 'yeniden-siparis-noktasi-emniyet-stogu',
+  },
 ] as const;
 
 export function getReadyTools(): readonly Tool[] {
