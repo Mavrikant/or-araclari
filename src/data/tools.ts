@@ -289,6 +289,16 @@ export const TOOLS: readonly Tool[] = [
     guideSlug: 'newsvendor-tek-donem-envanter',
   },
   {
+    slug: 'johnson-akis-tipi-cizelgeleme',
+    title: 'Johnson Kuralı — 2/3 Makina Akış-Tipi Çizelgeleme',
+    shortTitle: 'Johnson (Flow-Shop)',
+    description:
+      'Her iş önce M1 sonra M2 (isteğe bağlı M3) makinesinden geçen akış-tipi atölyede toplam süreyi (Cmax) minimize eden iş sırasını Johnson 1954 kuralı ile tarayıcıda anlık bul. İki makinada optimum garantili; üç makinada min(p₁) ≥ max(p₂) ya da min(p₃) ≥ max(p₂) sağlanırsa optimum, sağlanmazsa Johnson-Bellman sezgiseli. Gantt çizelgesi, U/V grup analizi ve makine boş süreleri tek geçişte.',
+    category: 'cizelgeleme',
+    status: 'ready',
+    guideSlug: 'johnson-akis-tipi-cizelgeleme',
+  },
+  {
     slug: 'wagner-whitin-cozucu',
     title: 'Wagner-Whitin Dinamik Lot Boyutlandırma',
     shortTitle: 'Wagner-Whitin',
