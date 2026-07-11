@@ -4,6 +4,21 @@ Kırılan her şey: belirti, kök neden, düzeltme, önlem.
 
 ---
 
+## 2026-07-10 — Dependabot PR #63 (Astro 6 → 7 major auto-merge) main'i kırdı; hotfix revert PR #75
+
+**Belirti:** Bin Packing merge (döngü #36) ile F-CDS-NEH (döngü #37, PR #74) arasında Dependabot `chore(deps): bump esbuild, @astrojs/mdx and astro (#63)` main'e squash-merge oldu. Sonraki her deploy `[vite] ✗ Build failed — 67:28: Could not parse expression with oxc: Invalid Unicode escape sequence (mdx-jsx:unexpected-character)` ile başarısız oldu. Deploy run 29119269721 (kendi Dependabot merge push'u) ve 29121820616 (F-CDS-NEH docs) art arda kırmızı; canlı site F-BIN-PACKING deploy'unda (döngü #36) dondu.
+
+**Kök neden:** BACKLOG.md içinde `Q-AUDIT-ESBUILD` bu upgrade'i açıkça **🔴 KIRMIZI (insan onayı gerekir)** olarak işaretliydi (satır: "esbuild ≤ 0.28.0 → astro → @astrojs/mdx fix `--force` **Astro 7.0.6** major upgrade ister — Astro 6 → 7 breaking changes: content collections API, integration API"). Ama Dependabot ajanın backlog policy'sini okumadan otomatik açtı ve — muhtemelen `.github/dependabot.yml` içindeki auto-merge kuralı veya PR check'lerinin permissive olması nedeniyle — merge oldu. Astro 7'nin yeni **oxc-based MDX parser'ı** `\sqrt`, `\text` gibi LaTeX escape sequence'lerini "Invalid Unicode escape sequence" olarak reddediyor (Astro 6'daki eski MDX parser kabul ediyordu). Site'da 5+ rehber KaTeX/LaTeX inline formül içerdiği için build çakıldı.
+
+**Düzeltme:** Döngü #37'de F-CDS-NEH tamamlanıp merge edildikten sonra (yerel build hâlâ eski lock ile geçmişti) CI kırmızıya devam etti. Ajan `npm install` ile fetch edip yerelde reprodüklikledi, `hotfix/revert-astro7` dalında `git revert 4335cae` ile Dependabot bump'ı geri aldı. PR [#75](https://github.com/Mavrikant/or-araclari/pull/75) → squash-merge (0babe64) → deploy run 29142324139 ✓ (8s). Canlı site F-CDS-NEH ile birlikte taze.
+
+**Önlem:**
+- BACKLOG.md 🔴 işaretlerinin Dependabot auto-merge'ünü tetiklemeyecek şekilde `.github/dependabot.yml` içinde major/minor için `ignore` ya da `open-pull-requests-limit: 0` kuralı gerekebilir. Şu an ajan bu dosyayı **değiştirmez** (🔴 workflow); insan onayı ile yapılmalı.
+- Ajan her cycle'ın ALGILA adımında `git log --oneline origin/main -5` çıktısına Dependabot commit'i olup olmadığına bakmalı; varsa **önce build'i yerelde doğrula**, yeni iş almadan.
+- Astro 7 geçişi backlog'a **F-ASTRO7-MIGRATE** olarak eklendi; ileride yapılacaksa LaTeX escape'lerin KaTeX/MathJax'e taşınması, content collections API göçü ve integration API refactor'ları kapsanmalı.
+
+---
+
 ## 2026-07-03 — Deploy run 28641032194 (döngü #27 docs commit) `actions/deploy-pages@v5` geçici hatası
 
 **Belirti:** `docs(ajan): döngü #27 kaydı — JPS PR #60 yayınlandı (#61)` push'unun Deploy to GitHub Pages workflow'u "Deploy" adımında `##[error]Deployment failed, try again later.` verdi (build + upload adımları yeşildi). Öncesindeki JPS deploy'u (28640962494) ve sonrasındaki audit-fix deploy'u (28641176649) sağlıklı; aynı içerik (75ab079 SHA'sı sonraki push'la etkin oldu).

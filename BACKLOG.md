@@ -15,14 +15,17 @@ Durum: open · in-progress · blocked · done
 
 | id | başlık | tür | değer | efor | durum |
 |---|---|---|---|---|---|
-| Q-CI-CHECK | CI workflow'una `npm run check` + `npm run test` adımları ekle (şu an sadece `astro build` çalışıyor) — 🔴 KIRMIZI: workflow değişikliği insan onayı ister | infra | H | S | blocked |
-| Q-AUDIT-ESBUILD | `npm audit` kalan 3 low zafiyet `esbuild ≤ 0.28.0 → astro → @astrojs/mdx` zincirinde; fix `--force` **Astro 7.0.6** major upgrade ister — 🔴 KIRMIZI: major Astro upgrade insan onayı ister (Astro 6 → 7 breaking changes: content collections API, integration API) | chore | M | L | blocked |
+| Q-DEPENDABOT-GUARD | `.github/dependabot.yml` için major/minor Astro upgrade'lerini `ignore` kuralı veya `open-pull-requests-limit: 0` — döngü #37'de Dependabot #63 Astro 6 → 7 auto-merge'ü BACKLOG 🔴 policy'sini ihlal edip main'i kırdı ([INCIDENTS](INCIDENTS.md) girişi). 🔴 KIRMIZI: `.github/dependabot.yml` deploy workflow'unun yanındaki config; insan onayı ister | infra | H | XS | blocked |
+| Q-CI-CHECK | CI workflow'una `npm run check` + `npm run test` adımları ekle (şu an sadece `astro build` çalışıyor; #63 gibi vakalar aynı zamanda test kırılmasını da erken yakalayacaktı) — 🔴 KIRMIZI: workflow değişikliği insan onayı ister | infra | H | S | blocked |
+| Q-AUDIT-ESBUILD | `npm audit` kalan 3 low zafiyet `esbuild ≤ 0.28.0 → astro → @astrojs/mdx` zincirinde; fix `--force` **Astro 7.0.6** major upgrade ister — 🔴 KIRMIZI: döngü #37'de auto-merge ile denendi, main'i kırdı ve revert edildi (INCIDENTS 2026-07-10). F-ASTRO7-MIGRATE tamamlanmadan tekrar denenmemeli | chore | M | L | blocked |
+| F-ASTRO7-MIGRATE | Astro 6 → 7 geçişi — LaTeX escape'lerini (`\sqrt`, `\text` vb.) 5+ MDX rehberinde KaTeX/MathJax'e veya raw string'e çevir; oxc parser'ın "Invalid Unicode escape sequence" hatasını yakalayacak yerel `npm run build` doğrulaması; content collections API + integration API göç ederse test/örnek sayfalarını hâlâ çalışır tut. 🔴 KIRMIZI: major sürüm geçişi + potansiyel API göçü + i18n mimarisine dokunma riski, insan onayı ister | infra | M | L | blocked |
 
 ## Yeni Araç Fikirleri (sıra dışı, fırsat olursa)
 
 | id | başlık | tür | değer | efor | durum |
 |---|---|---|---|---|---|
-| F-CDS-NEH | Johnson aracına m ≥ 4 makina için CDS (Campbell-Dudek-Smith 1970) + NEH (Nawaz-Enscore-Ham 1983) ikinci algoritma paneli — JPS'i A*'a eklediğim desenle, mevcut Gantt görselleştirmesi + U/V panelinin üzerine | feature | M | M | open |
+| F-STRIP-PACKING | 2D Strip Packing çözücü — FFDH (First Fit Decreasing Height) + BFDH (Best Fit Decreasing Height) + NFDH (Next Fit Decreasing Height) sezgiselleri, sabit genişlik W ve minimum yükseklik H problemi, rehberde 2·OPT sınırı ispatı; Bin Packing'in doğal 2D uzantısı | feature | M | M | open |
+| F-JOHNSON-BRUTE | Küçük n (≤ 8) için Johnson aracına brute-force optimum "sağlama" düğmesi — CDS/NEH sonucunu optimum ile karşılaştırıp "0/±%X" göstersin; kütüphanede zaten var (`bruteForceOptimumM`), sadece UI paneli | feature | L | S | open |
 
 ---
 
@@ -30,6 +33,7 @@ Durum: open · in-progress · blocked · done
 
 | id | başlık | döngü |
 |---|---|---|
+| F-CDS-NEH | Johnson aracına Campbell-Dudek-Smith (1970) + Nawaz-Enscore-Ham (1983) sezgiselleri ikinci ve üçüncü algoritma olarak eklendi — JPS-on-A* deseniyle: `src/lib/flow-shop-m.ts` genelleştirilmiş m-makina permütasyon simülatörü + CDS m-1 alt problem + NEH açgözlü ekleme + brute-force referans; +29 vitest; UI: 2..8 makine radyo seçici + algoritma radyosu (Johnson m ≥ 4'te auto-disabled) + dinamik iş tablosu sütunları + genelleştirilmiş m-makine Gantt + algoritma-özel panel (CDS alt problem tablosu, NEH ekleme adım izi); mobil `<fieldset>` `min-w-0` düzeltmesi (intrinsik `min-width: min-content` gotcha); localStorage v1 → v2; tools.ts başlık/description + rehber MDX güncellendi (`Akış-Tipi Çizelgeleme — Johnson · CDS · NEH`) | #37 |
 | F-BIN-PACKING | Bin Packing (Kutu Paketleme) Çözücü — 5 klasik sezgisel (Next Fit / First Fit / First Fit Decreasing / Best Fit / Best Fit Decreasing); L₁ = ⌈Σsᵢ/B⌉ hacim + L₂ = |sᵢ > B/2| büyük öge alt sınırları, L* = max(L₁,L₂), oran binCount/L*; renkli SVG kutu paketleme görseli (her sütun bir kutu, ögeler orijinal indekse göre renkli, amber kesikli çizgi = B kapasitesi), kutu içeriği tablosu, 5 sezgiseli aynı girdide karşılaştıran tablo (aktif seçim vurgulu); Johnson 1974 klasik {6,5,4,3,2,1}/B=10 → FFD 3 kutu = OPT + 10-öge zor instans örnekleri; +26 vitest (her algoritmada partition invariantı + Johnson hand-verify + BF > FF avantajı örneği + Vazirani 1.5·OPT sınırı + Türkçe ondalık parse) + ~11 dk uzun-form Türkçe rehber (NP-zorluk PARTITION indirgemesi, Johnson 1974 11/9 analizi, FF 17/10 sınırı, Vazirani 1.5·OPT eğitici ispatı, Karmarkar-Karp APTAS haritası, offline vs online, 2D/3D uzantıları, sanal makine konsolidasyonu uygulaması, 9 FAQ JSON-LD) | #36 |
 | Q-INVENTORY-XLINK | 5 envanter rehberinin (EOQ / EPQ / Newsvendor / Wagner-Whitin / (Q, R)) girişine "Karar rehberi" blockquote'u eklendi — hepsi F-INVENTORY-COMPARE meta rehberine (`/rehberler/envanter-modelleri-karsilastirma`) tek satır bir link ile bağlandı; dist HTML'de 5/5 link doğrulandı, algoritma değişmedi (test sayısı 686 sabit) | #35 |
 | F-INVENTORY-COMPARE | "Hangi envanter modeli ne zaman?" karar rehberi — EOQ / EPQ / Newsvendor / Wagner-Whitin / (Q, R) beşlisini üç eksende (talep / ufuk / tedarik) konumlandıran meta rehber (~10 dk); karar ağacı + 5 sayısal senaryo (otomotiv balata, kot pantolon sezon, motor bloğu EPQ, rüzgâr türbini WW, EOQ+(Q,R) melez); 5 yanlış eşleştirme + akrabalık ağacı (Harris 1913 → Taft 1918 → Wilson 1934 → Edgeworth/AHM → WW 1958 → Hadley-Whitin 1963 → Peterson-Silver 1979); 9 FAQ JSON-LD; her araca site-içi linkli dolaşım listesi | #34 |
